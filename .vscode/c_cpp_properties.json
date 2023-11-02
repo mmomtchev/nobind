@@ -1,0 +1,54 @@
+{
+  "env": {
+    "projectDefines": [
+      "NAPI_EXPERIMENTAL",
+      "NODE_ADDON_API_DISABLE_DEPRECATED",
+      "NAPI_VERSION=6"
+    ]
+  },
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "/usr/include/node",
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/node_modules/node-addon-api"
+      ],
+      "defines": [
+        "${projectDefines}"
+      ],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c17",
+      "cppStandard": "c++17"
+    },
+    {
+      "name": "macOS",
+      "includePath": [
+        "/usr/local/include/node",
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/node_modules/node-addon-api"
+      ],
+      "defines": [
+        "${projectDefines}"
+      ],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c17",
+      "cppStandard": "c++17"
+    },
+    {
+      "name": "Windows",
+      "includePath": [
+        "${workspaceFolder}/node_modules/node-addon-api",
+        "${workspaceFolder}/include",
+        "~/AppData/Local/node-gyp/Cache/16.10.0/include/node"
+      ],
+      "defines": [
+        "${projectDefines}"
+      ],
+      "compilerPath": "cl.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++17"
+    }
+  ],
+  "version": 4
+}

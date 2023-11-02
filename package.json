@@ -1,0 +1,34 @@
+{
+  "name": "nobind",
+  "version": "1.0.0",
+  "description": "Early experiments with a next-gen binding framework for Node.js / Node-API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node-gyp rebuild"
+  },
+  "author": "Momtchil Momtchev <momthchil@momtchev.com>",
+  "license": "ISC",
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  },
+  "gypfile": true,
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mmomtchev/nobind.git"
+  },
+  "keywords": [
+    "Node.js",
+    "nobind",
+    "node-addon-api",
+    "pybind11",
+    "embind",
+    "bindings",
+    "c++"
+  ],
+  "bugs": {
+    "url": "https://github.com/mmomtchev/nobind/issues"
+  },
+  "homepage": "https://github.com/mmomtchev/nobind#readme"
+}
