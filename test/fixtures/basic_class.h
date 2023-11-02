@@ -1,4 +1,3 @@
-#include <cmath>
 #include <sstream>
 
 class Hello {

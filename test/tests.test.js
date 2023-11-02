@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { assert } = require('chai');
-const { spawnSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 function build(test) {
   try {
@@ -14,16 +14,16 @@ function build(test) {
     while (include = match.exec(source)) {
       fixtures.push(include[1]);
     }
-    spawnSync('npx', [
+    execFileSync('npx', [
       'node-gyp',
       'configure',
       `--test=${test}`,
       `--fixtures="${fixtures.map((f) => `fixtures/${f}.cc`).join(' ')}"`
-    ]);
-    spawnSync('npx', [
+    ], { stdio: 'ignore', cwd: __dirname });
+    execFileSync('npx', [
       'node-gyp',
       'build'
-    ]);
+    ], { stdio: 'ignore', cwd: __dirname });
   } catch (e) {
     if (e.stdout) {
       console.error(e.stdout);

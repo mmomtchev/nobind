@@ -4,8 +4,7 @@
   "description": "Early experiments with a next-gen binding framework for Node.js / Node-API",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "node-gyp rebuild"
+    "test": "npx mocha test/tests.test.js"
   },
   "author": "Momtchil Momtchev <momthchil@momtchev.com>",
   "license": "ISC",
