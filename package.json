@@ -13,7 +13,10 @@
     "node-addon-api": "^7.0.0"
   },
   "gypfile": true,
-  "devDependencies": {},
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mmomtchev/nobind.git"

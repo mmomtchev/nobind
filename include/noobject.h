@@ -57,9 +57,7 @@ private:
           },
           args);
 
-      // For some strange reason this is invalid (both in clang and g++):
-      // std::invoke([](){}, std::tuple<>{})
-      RETURN result = std::invoke(FUNC, self, args);
+      RETURN result = std::apply(FUNC, std::tuple_cat(std::forward_as_tuple(self), args));
       return Typemap<RETURN>::FromJS(env, result);
     } else {
       RETURN result = std::invoke(FUNC, self);

@@ -32,8 +32,6 @@ int Hello::id_ = 0;
 
 #include "nobind.h"
 
-int fn();
-
 NOBIND_MODULE(hello, m) {
   m.def<add>("add");
   m.def<gte>("gte");
