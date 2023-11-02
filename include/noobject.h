@@ -40,6 +40,15 @@ public:
     return MethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
+  template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    return Typemap<T>::FromJS(env, self->*MEMBER);
+  }
+
+  template <typename T, T CLASS::*MEMBER> T Getter() {
+    return self->*MEMBER;
+  }
+
 private:
   template <typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...)>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
@@ -112,9 +121,16 @@ template <class CLASS> class ClassDefinition {
   std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &info)> constructors;
 
 public:
-  template <auto CLASS::*FUNC> ClassDefinition &def(const char *name) {
-    typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper = &NoObjectWrap<CLASS>::template MethodWrapper<FUNC>;
-    properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
+  template <auto CLASS::*MEMBER> ClassDefinition &def(const char *name) {
+    if constexpr (std::is_member_function_pointer<decltype(MEMBER)>()) {
+      typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper =
+          &NoObjectWrap<CLASS>::template MethodWrapper<MEMBER>;
+      properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
+    } else {
+      typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
+          &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
+      properties.emplace_back(NoObjectWrap<CLASS>::template InstanceAccessor(name, getter, nullptr));
+    }
     return *this;
   }
 

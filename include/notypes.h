@@ -15,6 +15,9 @@ template <typename... ARGS> inline void CheckArgLength(Napi::Env env, size_t len
   }
 }
 
+// https://stackoverflow.com/questions/22825512/get-type-of-member-memberpointer-points-to
+template <class C, typename T> T getMemberPointerType(T C::*v);
+
 template <typename T> class Typemap {
 public:
   static inline T ToJS(Napi::Value val) {

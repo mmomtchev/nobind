@@ -6,7 +6,7 @@ describe('constructor', () => {
     assert.instanceOf(o, dll.Hello);
   });
 
-  it('throws', () => {
+  it('exception', () => {
     assert.throws(() => {
       new dll.Hello;
     }, /No constructor with 0 arguments found/);
@@ -20,19 +20,26 @@ describe('constructor', () => {
 describe('methods', () => {
   it('nominal', () => {
     const o = new dll.Hello('Garga');
-    assert.isNumber(o.id());
+    assert.isNumber(o.get_id());
     assert.isString(o.greet('Mr'));
     assert.strictEqual(o.greet('Mr'), 'hello Mr Garga');
   });
 
-  it('throws', () => {
+  it('exception', () => {
     const o = new dll.Hello('Garga');
 
     assert.throws(() => {
-      o.id(2);
+      o.get_id(2);
     }, /Expected 0 arguments, got 1/);
     assert.throws(() => {
       o.greet(2);
     }, /Not a string/);
   });
-})
+});
+
+describe('getters', () => {
+  it('nominal', () => {
+    const o = new dll.Hello('Garga');
+    assert.isNumber(o.id);
+  });
+});
