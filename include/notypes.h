@@ -21,11 +21,11 @@ template <class C, typename T> T getMemberPointerType(T C::*v);
 template <typename T> class Typemap {
 public:
   static inline T FromJS(Napi::Value val) {
-    static_assert(std::is_same<T, T>(), "Type does not have a FromJS typemap");
+    static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
     return T();
   }
   static inline Napi::Value ToJS(Napi::Env env, T val) {
-    static_assert(std::is_same<T, T>(), "Type does not have a ToJS typemap");
+    static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
     return Napi::Value();
   }
 };
@@ -73,5 +73,13 @@ public:
   }
   static inline Napi::Value ToJS(Napi::Env env, std::string val) { return Napi::String::New(env, val); }
 };
+
+// Main entry point when processing a Napi::Value
+template <typename T> T inline FromJS(const Napi::Value &val) {
+  if constexpr (std::is_object_v<T>) {
+    static_assert(std::is_same_v<T, T>, "error");
+  }
+  return Typemap<T>::FromJS(val);
+}
 
 } // namespace Nobind

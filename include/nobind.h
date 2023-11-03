@@ -23,7 +23,7 @@ public:
       std::apply(
           [&info](auto &...args) {
             size_t i = 0;
-            ((args = Typemap<std::remove_reference_t<decltype(args)>>::FromJS(info[i++])), ...);
+            ((args = Nobind::FromJS<std::remove_reference_t<decltype(args)>>(info[i++])), ...);
           },
           args);
 
