@@ -6,7 +6,6 @@ class Hello {
 
 public:
   int id;
-  Hello();
   Hello(const std::string &name);
   int Id();
   std::string Greet(const std::string &);
