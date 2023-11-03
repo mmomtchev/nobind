@@ -150,6 +150,6 @@ public:
 } // namespace Typemap
 
 // Main entry point when processing a Napi::Value, should return a prvalue to a Typemap::FromJS
-template <typename T> auto inline FromJS(const Napi::Value &val) { return Typemap::FromJS<T>(val); }
+template <typename T> auto inline FromJS(const Napi::Value &val) { return Typemap::FromJS<std::remove_cv_t<T>>(val); }
 
 } // namespace Nobind
