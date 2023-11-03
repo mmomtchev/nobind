@@ -35,7 +35,7 @@ public:
     }
   }
 
-  // The member method wrapper pair (same std::integral_constant trick)
+  // The first function of the member method wrapper trio (same std::integral_constant trick)
   template <auto CLASS::*FUNC> Napi::Value MethodWrapper(const Napi::CallbackInfo &info) {
     return MethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
@@ -50,26 +50,22 @@ public:
   }
 
 private:
+  // The two remaining functions of the member method wrapper trio
   template <typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...)>
-  inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
+  Napi::Value MethodWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
+    return MethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
+  }
+  template <typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...), std::size_t... I>
+  Napi::Value MethodWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>,
+                            std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     CheckArgLength<ARGS...>(env, info.Length());
     if constexpr (sizeof...(ARGS) > 0) {
-      std::tuple<std::remove_const_t<std::decay_t<ARGS>>...> args;
-
-      std::apply(
-          [&info](auto &...args) {
-            size_t i = 0;
-            ((args = Nobind::FromJS<std::remove_reference_t<decltype(args)>>(info[i++])), ...);
-          },
-          args);
-
-      RETURN result = std::apply(FUNC, std::tuple_cat(std::forward_as_tuple(self), args));
+      RETURN result = (self->*FUNC)(Nobind::FromJS<std::remove_const_t<std::decay_t<ARGS>>>(info[I])...);
       return Typemap<RETURN>::ToJS(env, result);
     } else {
-      RETURN result = std::invoke(FUNC, self);
+      RETURN result = (self->*FUNC)();
       return Typemap<RETURN>::ToJS(env, result);
     }
   }

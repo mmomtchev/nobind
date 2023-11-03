@@ -1,40 +1,37 @@
 #pragma once
 #include <napi.h>
-#include <string>
 #include <tuple>
 #include <type_traits>
 
 #include <noobject.h>
 #include <notypes.h>
 
-using namespace std::literals::string_literals;
-
 namespace Nobind {
 
-template <typename RETURN, typename... ARGS> class FunctionWrapper {
-public:
-  template <RETURN(FUNC)(ARGS...)> static Napi::Value FromJS(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
+// This is a 3-stage version of a trick using std::integral_constant which is proposed here:
+// https://stackoverflow.com/questions/77404330/function-template-with-variable-argument-function-as-template-argument
+template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
+Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>, std::index_sequence<I...>) {
+  Napi::Env env = info.Env();
 
-    CheckArgLength<ARGS...>(env, info.Length());
-    if constexpr (sizeof...(ARGS) > 0) {
-      std::tuple<std::remove_const_t<std::decay_t<ARGS>>...> args;
-
-      std::apply(
-          [&info](auto &...args) {
-            size_t i = 0;
-            ((args = Nobind::FromJS<std::remove_reference_t<decltype(args)>>(info[i++])), ...);
-          },
-          args);
-
-      RETURN result = std::apply(FUNC, args);
-      return Typemap<RETURN>::ToJS(env, result);
-    } else {
-      RETURN result = FUNC();
-      return Typemap<RETURN>::ToJS(env, result);
-    }
+  CheckArgLength<ARGS...>(env, info.Length());
+  if constexpr (sizeof...(ARGS) > 0) {
+    RETURN result = FUNC(Nobind::FromJS<std::remove_const_t<std::decay_t<ARGS>>>(info[I])...);
+    return Typemap<RETURN>::ToJS(env, result);
+  } else {
+    RETURN result = FUNC();
+    return Typemap<RETURN>::ToJS(env, result);
   }
-};
+}
+
+template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
+Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+  return FunctionWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
+}
+
+template <auto *FUNC> Napi::Value FunctionWrapper(const Napi::CallbackInfo &info) {
+  return FunctionWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
+}
 
 class Module {
   Napi::Env env_;
@@ -43,16 +40,9 @@ class Module {
 public:
   Module(Napi::Env env, Napi::Object exports) : env_(env), exports_(exports) {}
 
-  // This rather interesting construct with two chained methods
-  // allows to deduce the signature of a function out of an 'auto' template argument
-  // C++17, tested to work with clang, gcc and MSVC
-  // https://stackoverflow.com/questions/77404330/function-template-with-variable-argument-function-as-template-argument
-  template <auto *fn> void def(const char *name) { def(name, std::integral_constant<decltype(fn), fn>{}); }
-
   // Global function
-  template <typename RETURN, typename... ARGS, RETURN (*FN)(ARGS...)>
-  void def(const char *name, std::integral_constant<RETURN (*)(ARGS...), FN>) {
-    Napi::Value (*wrapper)(const Napi::CallbackInfo &) = FunctionWrapper<RETURN, ARGS...>::template FromJS<FN>;
+  template <auto *FUNC> void def(const char *name) {
+    Napi::Value (*wrapper)(const Napi::CallbackInfo &) = FunctionWrapper<FUNC>;
     Napi::Function js = Napi::Function::New(env_, wrapper);
     exports_.Set(name, js);
   }
