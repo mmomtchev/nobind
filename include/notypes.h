@@ -18,65 +18,135 @@ template <typename... ARGS> inline void CheckArgLength(Napi::Env env, size_t len
 // https://stackoverflow.com/questions/22825512/get-type-of-member-memberpointer-points-to
 template <class C, typename T> T getMemberPointerType(T C::*v);
 
-template <typename T> class Typemap {
+namespace Typemap {
+
+// Typemap::FromJS rules
+// - The constructor should check the incoming value
+// - operator* should return an in-place constructed prvalue
+// - V8 GC context is preserved between the constructor and operator* (Local<>s are OK)
+template <typename T> class FromJS {
 public:
-  static inline T FromJS(Napi::Value val) {
-    static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
-    return T();
-  }
-  static inline Napi::Value ToJS(Napi::Env env, T val) {
-    static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
-    return Napi::Value();
-  }
+  inline FromJS(Napi::Value val) { static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap"); }
+  inline T operator*() { return T(); }
 };
 
-template <> class Typemap<int> {
+template <typename T> class ToJS {
 public:
-  static inline int FromJS(Napi::Value val) {
+  inline ToJS(Napi::Env env, T val) { static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap"); }
+  inline Napi::Value operator*() { return Napi::Value(); }
+};
+
+template <> class FromJS<int> {
+  int val_;
+
+public:
+  inline FromJS(Napi::Value val) {
     if (!val.IsNumber()) {
       throw Napi::TypeError::New(val.Env(), "Not a number");
     }
-    return val.ToNumber().Int32Value();
+    val_ = val.ToNumber().Int32Value();
   }
-  static inline Napi::Value ToJS(Napi::Env env, int val) { return Napi::Number::New(env, val); }
+  inline int operator*() { return val_; }
 };
 
-template <> class Typemap<double> {
+template <> class ToJS<int> {
+  Napi::Env env_;
+  int val_;
+
 public:
-  static inline double FromJS(Napi::Value val) {
+  inline ToJS(Napi::Env env, int val) : env_(env), val_(val) {}
+  inline Napi::Value operator*() { return Napi::Number::New(env_, val_); }
+};
+
+template <> class FromJS<double> {
+  double val_;
+
+public:
+  inline FromJS(Napi::Value val) {
     if (!val.IsNumber()) {
       throw Napi::TypeError::New(val.Env(), "Not a number");
     }
-    return val.ToNumber().DoubleValue();
+    val_ = val.ToNumber().DoubleValue();
   }
-  static inline Napi::Value ToJS(Napi::Env env, double val) { return Napi::Number::New(env, val); }
+  inline double operator*() { return val_; }
 };
 
-template <> class Typemap<bool> {
+template <> class ToJS<bool> {
+  Napi::Env env_;
+  bool val_;
+
 public:
-  static inline bool FromJS(Napi::Value val) {
+  inline ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
+  inline Napi::Value operator*() { return Napi::Boolean::New(env_, val_); }
+};
+
+template <> class FromJS<bool> {
+  bool val_;
+
+public:
+  inline FromJS(Napi::Value val) {
     if (!val.IsNumber()) {
       throw Napi::TypeError::New(val.Env(), "Not a number");
     }
-    return val.ToBoolean().Value();
+    val_ = val.ToBoolean().Value();
   }
-  static inline Napi::Value ToJS(Napi::Env env, bool val) { return Napi::Boolean::New(env, val); }
+  inline bool operator*() { return val_; }
 };
 
-template <> class Typemap<std::string> {
+template <> class ToJS<double> {
+  Napi::Env env_;
+  double val_;
+
 public:
-  static inline std::string FromJS(Napi::Value val) {
+  inline ToJS(Napi::Env env, double val) : env_(env), val_(val) {}
+  inline Napi::Value operator*() { return Napi::Number::New(env_, val_); }
+};
+
+template <> class FromJS<std::string> {
+  Napi::Value val_;
+
+public:
+  inline FromJS(Napi::Value val) : val_(val) {
     if (!val.IsString()) {
       throw Napi::TypeError::New(val.Env(), "Not a string");
     }
-    return val.ToString().Utf8Value();
   }
-  static inline Napi::Value ToJS(Napi::Env env, std::string val) { return Napi::String::New(env, val); }
+  inline std::string operator*() { return val_.ToString().Utf8Value(); }
 };
 
-// Main entry point when processing a Napi::Value
-template <typename T> std::remove_const_t<std::decay_t<T>> inline FromJS(const Napi::Value &val) {
-  return Typemap<std::remove_const_t<std::decay_t<T>>>::FromJS(val);
-}
+template <> class ToJS<std::string> {
+  Napi::Env env_;
+  std::string val_;
+
+public:
+  inline ToJS(Napi::Env env, const std::string &val) : env_(env), val_(val) {}
+  inline Napi::Value operator*() { return Napi::String::New(env_, val_); }
+};
+
+template <> class FromJS<const std::string &> {
+  Napi::Value val_;
+
+public:
+  inline FromJS(Napi::Value val) : val_(val) {
+    if (!val.IsString()) {
+      throw Napi::TypeError::New(val.Env(), "Not a string");
+    }
+  }
+  inline std::string operator*() { return val_.ToString().Utf8Value(); }
+};
+
+template <> class ToJS<const std::string &> {
+  Napi::Env env_;
+  std::string val_;
+
+public:
+  inline ToJS(Napi::Env env, const std::string &val) : env_(env), val_(val) {}
+  inline Napi::Value operator*() { return Napi::String::New(env_, val_); }
+};
+
+} // namespace Typemap
+
+// Main entry point when processing a Napi::Value, should return a prvalue to a Typemap::FromJS
+template <typename T> auto inline FromJS(const Napi::Value &val) { return Typemap::FromJS<T>(val); }
 
 } // namespace Nobind

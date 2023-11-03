@@ -25,7 +25,7 @@ public:
       std::apply(
           [&info](auto &...args) {
             size_t i = 0;
-            ((args = Typemap<std::remove_reference_t<decltype(args)>>::FromJS(info[i++])), ...);
+            ((args = *Nobind::FromJS<std::remove_reference_t<decltype(args)>>(info[i++])), ...);
           },
           args);
 
@@ -42,7 +42,7 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return Typemap<T>::ToJS(env, self->*MEMBER);
+    return *Typemap::ToJS<T>(env, self->*MEMBER);
   }
 
   template <typename T, T CLASS::*MEMBER> T Getter() { return self->*MEMBER; }
@@ -62,11 +62,11 @@ private:
 
     CheckArgLength<ARGS...>(env, info.Length());
     if constexpr (sizeof...(ARGS) > 0) {
-      RETURN result = (self->*FUNC)(Nobind::FromJS<ARGS>(info[I])...);
-      return Typemap<RETURN>::ToJS(env, result);
+      RETURN result = (self->*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
+      return *Typemap::ToJS<RETURN>(env, result);
     } else {
       RETURN result = (self->*FUNC)();
-      return Typemap<RETURN>::ToJS(env, result);
+      return *Typemap::ToJS<RETURN>(env, result);
     }
   }
 

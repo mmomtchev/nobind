@@ -17,11 +17,11 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
 
   CheckArgLength<ARGS...>(env, info.Length());
   if constexpr (sizeof...(ARGS) > 0) {
-    RETURN result = FUNC(Nobind::FromJS<ARGS>(info[I])...);
-    return Typemap<RETURN>::ToJS(env, result);
+    RETURN result = FUNC(*Nobind::FromJS<ARGS>(info[I])...);
+    return *Typemap::ToJS<RETURN>(env, result);
   } else {
     RETURN result = FUNC();
-    return Typemap<RETURN>::ToJS(env, result);
+    return *Typemap::ToJS<RETURN>(env, result);
   }
 }
 
