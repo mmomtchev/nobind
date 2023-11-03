@@ -13,7 +13,7 @@ namespace Nobind {
 
 template <typename RETURN, typename... ARGS> class FunctionWrapper {
 public:
-  template <RETURN(FUNC)(ARGS...)> static Napi::Value ToJS(const Napi::CallbackInfo &info) {
+  template <RETURN(FUNC)(ARGS...)> static Napi::Value FromJS(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
     CheckArgLength<ARGS...>(env, info.Length());
@@ -23,15 +23,15 @@ public:
       std::apply(
           [&info](auto &...args) {
             size_t i = 0;
-            ((args = Typemap<std::remove_reference_t<decltype(args)>>::ToJS(info[i++])), ...);
+            ((args = Typemap<std::remove_reference_t<decltype(args)>>::FromJS(info[i++])), ...);
           },
           args);
 
       RETURN result = std::apply(FUNC, args);
-      return Typemap<RETURN>::FromJS(env, result);
+      return Typemap<RETURN>::ToJS(env, result);
     } else {
       RETURN result = FUNC();
-      return Typemap<RETURN>::FromJS(env, result);
+      return Typemap<RETURN>::ToJS(env, result);
     }
   }
 };
@@ -52,7 +52,7 @@ public:
   // Global function
   template <typename RETURN, typename... ARGS, RETURN (*FN)(ARGS...)>
   void def(const char *name, std::integral_constant<RETURN (*)(ARGS...), FN>) {
-    Napi::Value (*wrapper)(const Napi::CallbackInfo &) = FunctionWrapper<RETURN, ARGS...>::template ToJS<FN>;
+    Napi::Value (*wrapper)(const Napi::CallbackInfo &) = FunctionWrapper<RETURN, ARGS...>::template FromJS<FN>;
     Napi::Function js = Napi::Function::New(env_, wrapper);
     exports_.Set(name, js);
   }

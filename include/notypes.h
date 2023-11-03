@@ -20,58 +20,58 @@ template <class C, typename T> T getMemberPointerType(T C::*v);
 
 template <typename T> class Typemap {
 public:
-  static inline T ToJS(Napi::Value val) {
-    static_assert(std::is_same<T, T>(), "Type does not have a ToJS typemap");
+  static inline T FromJS(Napi::Value val) {
+    static_assert(std::is_same<T, T>(), "Type does not have a FromJS typemap");
     return T();
   }
-  static inline Napi::Value FromJS(Napi::Env env, T val) {
-    static_assert(std::is_same<T, T>(), "Type does not have a FromJS typemap");
+  static inline Napi::Value ToJS(Napi::Env env, T val) {
+    static_assert(std::is_same<T, T>(), "Type does not have a ToJS typemap");
     return Napi::Value();
   }
 };
 
 template <> class Typemap<int> {
 public:
-  static inline int ToJS(Napi::Value val) {
+  static inline int FromJS(Napi::Value val) {
     if (!val.IsNumber()) {
       throw Napi::TypeError::New(val.Env(), "Not a number");
     }
     return val.ToNumber().Int32Value();
   }
-  static inline Napi::Value FromJS(Napi::Env env, int val) { return Napi::Number::New(env, val); }
+  static inline Napi::Value ToJS(Napi::Env env, int val) { return Napi::Number::New(env, val); }
 };
 
 template <> class Typemap<double> {
 public:
-  static inline double ToJS(Napi::Value val) {
+  static inline double FromJS(Napi::Value val) {
     if (!val.IsNumber()) {
       throw Napi::TypeError::New(val.Env(), "Not a number");
     }
     return val.ToNumber().DoubleValue();
   }
-  static inline Napi::Value FromJS(Napi::Env env, double val) { return Napi::Number::New(env, val); }
+  static inline Napi::Value ToJS(Napi::Env env, double val) { return Napi::Number::New(env, val); }
 };
 
 template <> class Typemap<bool> {
 public:
-  static inline bool ToJS(Napi::Value val) {
+  static inline bool FromJS(Napi::Value val) {
     if (!val.IsNumber()) {
       throw Napi::TypeError::New(val.Env(), "Not a number");
     }
     return val.ToBoolean().Value();
   }
-  static inline Napi::Value FromJS(Napi::Env env, bool val) { return Napi::Boolean::New(env, val); }
+  static inline Napi::Value ToJS(Napi::Env env, bool val) { return Napi::Boolean::New(env, val); }
 };
 
 template <> class Typemap<std::string> {
 public:
-  static inline std::string ToJS(Napi::Value val) {
+  static inline std::string FromJS(Napi::Value val) {
     if (!val.IsString()) {
       throw Napi::TypeError::New(val.Env(), "Not a string");
     }
     return val.ToString().Utf8Value();
   }
-  static inline Napi::Value FromJS(Napi::Env env, std::string val) { return Napi::String::New(env, val); }
+  static inline Napi::Value ToJS(Napi::Env env, std::string val) { return Napi::String::New(env, val); }
 };
 
 } // namespace Nobind

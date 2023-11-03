@@ -25,7 +25,7 @@ public:
       std::apply(
           [&info](auto &...args) {
             size_t i = 0;
-            ((args = Typemap<std::remove_reference_t<decltype(args)>>::ToJS(info[i++])), ...);
+            ((args = Typemap<std::remove_reference_t<decltype(args)>>::FromJS(info[i++])), ...);
           },
           args);
 
@@ -42,7 +42,7 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return Typemap<T>::FromJS(env, self->*MEMBER);
+    return Typemap<T>::ToJS(env, self->*MEMBER);
   }
 
   template <typename T, T CLASS::*MEMBER> T Getter() {
@@ -62,15 +62,15 @@ private:
       std::apply(
           [&info](auto &...args) {
             size_t i = 0;
-            ((args = Typemap<std::remove_reference_t<decltype(args)>>::ToJS(info[i++])), ...);
+            ((args = Typemap<std::remove_reference_t<decltype(args)>>::FromJS(info[i++])), ...);
           },
           args);
 
       RETURN result = std::apply(FUNC, std::tuple_cat(std::forward_as_tuple(self), args));
-      return Typemap<RETURN>::FromJS(env, result);
+      return Typemap<RETURN>::ToJS(env, result);
     } else {
       RETURN result = std::invoke(FUNC, self);
-      return Typemap<RETURN>::FromJS(env, result);
+      return Typemap<RETURN>::ToJS(env, result);
     }
   }
 
