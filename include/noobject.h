@@ -62,7 +62,7 @@ private:
 
     CheckArgLength<ARGS...>(env, info.Length());
     if constexpr (sizeof...(ARGS) > 0) {
-      RETURN result = (self->*FUNC)(Nobind::FromJS<std::remove_const_t<std::decay_t<ARGS>>>(info[I])...);
+      RETURN result = (self->*FUNC)(Nobind::FromJS<ARGS>(info[I])...);
       return Typemap<RETURN>::ToJS(env, result);
     } else {
       RETURN result = (self->*FUNC)();

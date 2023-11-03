@@ -17,7 +17,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
 
   CheckArgLength<ARGS...>(env, info.Length());
   if constexpr (sizeof...(ARGS) > 0) {
-    RETURN result = FUNC(Nobind::FromJS<std::remove_const_t<std::decay_t<ARGS>>>(info[I])...);
+    RETURN result = FUNC(Nobind::FromJS<ARGS>(info[I])...);
     return Typemap<RETURN>::ToJS(env, result);
   } else {
     RETURN result = FUNC();

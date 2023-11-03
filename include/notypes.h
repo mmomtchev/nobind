@@ -75,8 +75,8 @@ public:
 };
 
 // Main entry point when processing a Napi::Value
-template <typename T> T inline FromJS(const Napi::Value &val) {
-  return Typemap<T>::FromJS(val);
+template <typename T> std::remove_const_t<std::decay_t<T>> inline FromJS(const Napi::Value &val) {
+  return Typemap<std::remove_const_t<std::decay_t<T>>>::FromJS(val);
 }
 
 } // namespace Nobind
