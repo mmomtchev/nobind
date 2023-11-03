@@ -3,8 +3,11 @@
 #include <tuple>
 #include <type_traits>
 
-#include <noobject.h>
 #include <notypes.h>
+
+#include <nonumbermaps.h>
+#include <nostringmaps.h>
+#include <noobject.h>
 
 namespace Nobind {
 

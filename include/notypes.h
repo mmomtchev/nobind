@@ -37,41 +37,6 @@ public:
   inline Napi::Value operator*() { return Napi::Value(); }
 };
 
-template <> class FromJS<int> {
-  int val_;
-
-public:
-  inline FromJS(Napi::Value val) {
-    if (!val.IsNumber()) {
-      throw Napi::TypeError::New(val.Env(), "Not a number");
-    }
-    val_ = val.ToNumber().Int32Value();
-  }
-  inline int operator*() { return val_; }
-};
-
-template <> class ToJS<int> {
-  Napi::Env env_;
-  int val_;
-
-public:
-  inline ToJS(Napi::Env env, int val) : env_(env), val_(val) {}
-  inline Napi::Value operator*() { return Napi::Number::New(env_, val_); }
-};
-
-template <> class FromJS<double> {
-  double val_;
-
-public:
-  inline FromJS(Napi::Value val) {
-    if (!val.IsNumber()) {
-      throw Napi::TypeError::New(val.Env(), "Not a number");
-    }
-    val_ = val.ToNumber().DoubleValue();
-  }
-  inline double operator*() { return val_; }
-};
-
 template <> class ToJS<bool> {
   Napi::Env env_;
   bool val_;
@@ -94,58 +59,6 @@ public:
   inline bool operator*() { return val_; }
 };
 
-template <> class ToJS<double> {
-  Napi::Env env_;
-  double val_;
-
-public:
-  inline ToJS(Napi::Env env, double val) : env_(env), val_(val) {}
-  inline Napi::Value operator*() { return Napi::Number::New(env_, val_); }
-};
-
-template <> class FromJS<std::string> {
-  std::string val_;
-
-public:
-  inline FromJS(Napi::Value val) {
-    if (!val.IsString()) {
-      throw Napi::TypeError::New(val.Env(), "Not a string");
-    }
-    val_ = val.ToString().Utf8Value();
-  }
-  inline std::string &operator*() { return val_; }
-};
-
-template <> class ToJS<std::string> {
-  Napi::Env env_;
-  std::string val_;
-
-public:
-  inline ToJS(Napi::Env env, const std::string &val) : env_(env), val_(val) {}
-  inline Napi::Value operator*() { return Napi::String::New(env_, val_); }
-};
-
-template <> class FromJS<const std::string &> {
-  std::string val_;
-
-public:
-  inline FromJS(Napi::Value val) {
-    if (!val.IsString()) {
-      throw Napi::TypeError::New(val.Env(), "Not a string");
-    }
-    val_ = val.ToString().Utf8Value();
-  }
-  inline const std::string &operator*() { return val_; }
-};
-
-template <> class ToJS<const std::string &> {
-  Napi::Env env_;
-  std::string val_;
-
-public:
-  inline ToJS(Napi::Env env, const std::string &val) : env_(env), val_(val) {}
-  inline Napi::Value operator*() { return Napi::String::New(env_, val_); }
-};
 
 } // namespace Typemap
 
