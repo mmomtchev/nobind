@@ -11,7 +11,8 @@ namespace Nobind {
 // This is a 3-stage version of a trick using std::integral_constant which is proposed here:
 // https://stackoverflow.com/questions/77404330/function-template-with-variable-argument-function-as-template-argument
 template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
-Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>, std::index_sequence<I...>) {
+inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>,
+                                   std::index_sequence<I...>) {
   Napi::Env env = info.Env();
 
   CheckArgLength<ARGS...>(env, info.Length());
@@ -25,7 +26,7 @@ Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_consta
 }
 
 template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
-Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
   return FunctionWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
 }
 

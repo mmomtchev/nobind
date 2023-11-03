@@ -45,19 +45,19 @@ public:
     return Typemap<T>::ToJS(env, self->*MEMBER);
   }
 
-  template <typename T, T CLASS::*MEMBER> T Getter() {
-    return self->*MEMBER;
-  }
+  template <typename T, T CLASS::*MEMBER> T Getter() { return self->*MEMBER; }
 
 private:
   // The two remaining functions of the member method wrapper trio
   template <typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...)>
-  Napi::Value MethodWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
+  inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
+                                   std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
     return MethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
   }
   template <typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...), std::size_t... I>
-  Napi::Value MethodWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>,
-                            std::index_sequence<I...>) {
+  inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
+                                   std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>,
+                                   std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     CheckArgLength<ARGS...>(env, info.Length());
