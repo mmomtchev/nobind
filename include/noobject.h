@@ -10,6 +10,8 @@ namespace Nobind {
 
 // The JS proxy object type
 template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectWrap<CLASS>> {
+  template <typename T> friend class Typemap::FromJS;
+
 public:
   NoObjectWrap(const Napi::CallbackInfo &);
   static Napi::Function GetClass(Napi::Env, const char *,
@@ -144,5 +146,47 @@ public:
 
   ~ClassDefinition() { exports_.Set(name_, NoObjectWrap<CLASS>::GetClass(env_, name_, properties)); }
 };
+
+namespace Typemap {
+
+// Generic object reference typemap
+template <typename T> class FromJS<T &> {
+  T *val_;
+
+public:
+  inline FromJS(Napi::Value val) {
+    if constexpr (std::is_object_v<T>) {
+      if (val.IsObject()) {
+        val_ = Napi::ObjectWrap<NoObjectWrap<std::remove_reference_t<T>>>::Unwrap(val.ToObject())->self;
+      } else {
+        throw Napi::TypeError::New(val.Env(), "Not an object");
+      }
+    } else {
+      static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
+    }
+  }
+  inline T &operator*() { return *val_; }
+};
+
+// Generic object pointer typemap
+template <typename T> class FromJS<T *> {
+  T *val_;
+
+public:
+  inline FromJS(Napi::Value val) {
+    if constexpr (std::is_object_v<T>) {
+      if (val.IsObject()) {
+        val_ = Napi::ObjectWrap<NoObjectWrap<std::remove_reference_t<T>>>::Unwrap(val.ToObject())->self;
+      } else {
+        throw Napi::TypeError::New(val.Env(), "Not an object");
+      }
+    } else {
+      static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
+    }
+  }
+  inline T *operator*() { return val_; }
+};
+
+} // namespace Typemap
 
 } // namespace Nobind

@@ -23,7 +23,8 @@ namespace Typemap {
 // Typemap::FromJS rules
 // - The constructor should check the incoming value
 // - operator* should return an in-place constructed prvalue
-// - V8 GC context is preserved between the constructor and operator* (Local<>s are OK)
+// - operator* can be called in a background thread - no V8 Local<>s allowed
+// - The constructor can create state that will be destroyed after the function call
 template <typename T> class FromJS {
 public:
   inline FromJS(Napi::Value val) { static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap"); }
@@ -103,15 +104,16 @@ public:
 };
 
 template <> class FromJS<std::string> {
-  Napi::Value val_;
+  std::string val_;
 
 public:
-  inline FromJS(Napi::Value val) : val_(val) {
+  inline FromJS(Napi::Value val) {
     if (!val.IsString()) {
       throw Napi::TypeError::New(val.Env(), "Not a string");
     }
+    val_ = val.ToString().Utf8Value();
   }
-  inline std::string operator*() { return val_.ToString().Utf8Value(); }
+  inline std::string &operator*() { return val_; }
 };
 
 template <> class ToJS<std::string> {
@@ -124,15 +126,16 @@ public:
 };
 
 template <> class FromJS<const std::string &> {
-  Napi::Value val_;
+  std::string val_;
 
 public:
-  inline FromJS(Napi::Value val) : val_(val) {
+  inline FromJS(Napi::Value val) {
     if (!val.IsString()) {
       throw Napi::TypeError::New(val.Env(), "Not a string");
     }
+    val_ = val.ToString().Utf8Value();
   }
-  inline std::string operator*() { return val_.ToString().Utf8Value(); }
+  inline const std::string &operator*() { return val_; }
 };
 
 template <> class ToJS<const std::string &> {

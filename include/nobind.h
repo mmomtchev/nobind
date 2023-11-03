@@ -63,6 +63,6 @@ public:
   Napi::Object Nobind_##MODULE##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                                   \
     Nobind::Module m(env, exports);                                                                                    \
     Nobind_##MODULE##_Init_Wrapper(m);                                                                                 \
-    return Napi::Object();                                                                                             \
+    return exports;                                                                                                    \
   }                                                                                                                    \
   void Nobind_##MODULE##_Init_Wrapper(Nobind::Module &MODULE_ARG)
