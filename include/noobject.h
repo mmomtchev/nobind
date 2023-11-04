@@ -34,9 +34,19 @@ public:
     return MethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
+  // Static member wrappers are almost identical
+  template <auto *FUNC> static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info) {
+    return StaticMethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
+  }
+
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     return *Typemap::ToJS<T>(env, self->*MEMBER);
+  }
+
+  template <typename T, T *MEMBER> static Napi::Value StaticGetterWrapper(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    return *Typemap::ToJS<T>(env, *MEMBER);
   }
 
   static void
@@ -69,6 +79,28 @@ private:
       return *Typemap::ToJS<RETURN>(env, result);
     } else {
       RETURN result = (self->*FUNC)();
+      return *Typemap::ToJS<RETURN>(env, result);
+    }
+  }
+
+  // The two remaining functions of the static member method wrapper trio
+  template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
+  inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
+                                   std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+    return StaticMethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
+  }
+  template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
+  inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
+                                   std::integral_constant<RETURN (*)(ARGS...), FUNC>,
+                                   std::index_sequence<I...>) {
+    Napi::Env env = info.Env();
+
+    CheckArgLength<ARGS...>(env, info.Length());
+    if constexpr (sizeof...(ARGS) > 0) {
+      RETURN result = (*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
+      return *Typemap::ToJS<RETURN>(env, result);
+    } else {
+      RETURN result = (*FUNC)();
       return *Typemap::ToJS<RETURN>(env, result);
     }
   }
@@ -152,8 +184,9 @@ template <class CLASS> class ClassDefinition {
   size_t class_idx_;
 
 public:
+  // Instance class method/getter
   template <auto CLASS::*MEMBER> ClassDefinition &def(const char *name) {
-    if constexpr (std::is_member_function_pointer<decltype(MEMBER)>()) {
+    if constexpr (std::is_member_function_pointer_v<decltype(MEMBER)>) {
       typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper =
           &NoObjectWrap<CLASS>::template MethodWrapper<MEMBER>;
       properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
@@ -161,6 +194,19 @@ public:
       typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
           &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
       properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, nullptr));
+    }
+    return *this;
+  }
+
+  // Static class method/getter
+  template <auto *MEMBER> ClassDefinition &def(const char *name) {
+    if constexpr (std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>) {
+      typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper = &NoObjectWrap<CLASS>::template StaticMethodWrapper<MEMBER>;
+      properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
+    } else {
+      typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
+          &NoObjectWrap<CLASS>::template StaticGetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
+      properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, nullptr));
     }
     return *this;
   }
