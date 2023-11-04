@@ -18,6 +18,11 @@
       'VCCLCompilerTool': { 
         'AdditionalOptions': [ '/std:c++17' ]
       }
+    },
+    'xcode_settings': {
+      'OTHER_CPLUSPLUSFLAGS': [
+        '-std=c++17'
+      ]
     }
   }
 }

@@ -39,8 +39,6 @@ public:
     return *Typemap::ToJS<T>(env, self->*MEMBER);
   }
 
-  template <typename T, T CLASS::*MEMBER> T Getter() { return self->*MEMBER; }
-
   static void
   Configure(const std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> &constructors,
             size_t idx, const char *jsname) {
@@ -133,7 +131,8 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
       }
     }
   }
-  throw Napi::TypeError::New(info.Env(), "No constructor with the given " + std::to_string(info.Length()) + " arguments found");
+  throw Napi::TypeError::New(info.Env(),
+                             "No constructor with the given " + std::to_string(info.Length()) + " arguments found");
 }
 
 template <typename CLASS>
@@ -161,7 +160,7 @@ public:
     } else {
       typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
           &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
-      properties.emplace_back(NoObjectWrap<CLASS>::template InstanceAccessor(name, getter, nullptr));
+      properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, nullptr));
     }
     return *this;
   }
