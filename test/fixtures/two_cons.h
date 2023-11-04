@@ -3,9 +3,9 @@
 class TwoCons {
 public:
   int x;
-  double y;
 
-  TwoCons(int a, int b);
+  TwoCons(int a);
   TwoCons(const std::string &s);
+  TwoCons();
 };
 

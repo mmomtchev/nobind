@@ -29,5 +29,5 @@ NOBIND_MODULE(basic_class, m) {
   m.def<hello_const_ptr>("hello_const_ptr");
 
   m.def<TwoCons>("TwoCons")
-    .cons<int, int>();
+    .cons<>();
 }

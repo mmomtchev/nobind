@@ -123,7 +123,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
   }
   // From JS
   owned = true;
-  if (cons[info.Length()] != nullptr) {
+  if (cons.size() > info.Length() && cons[info.Length()] != nullptr) {
     (this->*cons[info.Length()])(info);
     return;
   }

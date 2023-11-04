@@ -1,11 +1,13 @@
 #include "two_cons.h"
 
-TwoCons::TwoCons(int a, int b) {
+TwoCons::TwoCons(int a) {
   x = a;
-  y = b;
 }
 
 TwoCons::TwoCons(const std::string &s) {
+  x = std::stoi(s);
+}
+
+TwoCons::TwoCons() {
  x = -1;
- y = -2.0;
 }

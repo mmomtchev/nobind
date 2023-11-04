@@ -12,7 +12,7 @@ describe('reference', () => {
     }, /Not an object/);
 
     assert.throws(() => {
-      dll.hello_ref(new dll.TwoCons(1, 2));
+      dll.hello_ref(new dll.TwoCons());
     }, /Not a Hello/);
 
     assert.throws(() => {
@@ -30,7 +30,7 @@ describe('pointer', () => {
     const o = new dll.Hello('pointer');
     assert.isNumber(dll.hello_ptr(o));
 
-    const b = new dll.TwoCons(1, 2);
+    const b = new dll.TwoCons();
   });
 
   it('exception', () => {
@@ -39,7 +39,7 @@ describe('pointer', () => {
     }, /Not an object/);
 
     assert.throws(() => {
-      dll.hello_ptr(new dll.TwoCons(1, 2));
+      dll.hello_ptr(new dll.TwoCons());
     }, /Not a Hello/);
 
     assert.throws(() => {
