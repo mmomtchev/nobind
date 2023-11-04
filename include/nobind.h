@@ -40,7 +40,7 @@ template <auto *FUNC> Napi::Value FunctionWrapper(const Napi::CallbackInfo &info
   return FunctionWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
 }
 
-class Module {
+template <char const MODULE[]> class Module {
   Napi::Env env_;
   Napi::Object exports_;
   size_t class_idx_;
@@ -64,13 +64,14 @@ public:
 } // namespace Nobind
 
 #define NOBIND_MODULE(MODULE_NAME, MODULE_ARG)                                                                         \
-  void Nobind_##MODULE##_Init_Wrapper(Nobind::Module &);                                                               \
+  char const Nobind_##MODULE##_name[] = #MODULE_NAME;                                                                  \
+  void Nobind_##MODULE##_Init_Wrapper(Nobind::Module<Nobind_##MODULE##_name> &);                                       \
   Napi::Object Nobind_##MODULE##_Init_Wrapper(Napi::Env, Napi::Object);                                                \
   NODE_API_MODULE(MODULE_NAME, Nobind_##MODULE##_Init_Wrapper)                                                         \
   Napi::Object Nobind_##MODULE##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                                   \
-    env.SetInstanceData(new Nobind::EnvInstanceData);                                                                          \
-    Nobind::Module m(env, exports);                                                                                    \
+    env.SetInstanceData(new Nobind::EnvInstanceData);                                                                  \
+    Nobind::Module<Nobind_##MODULE##_name> m(env, exports);                                                            \
     Nobind_##MODULE##_Init_Wrapper(m);                                                                                 \
     return exports;                                                                                                    \
   }                                                                                                                    \
-  void Nobind_##MODULE##_Init_Wrapper(Nobind::Module &MODULE_ARG)
+  void Nobind_##MODULE##_Init_Wrapper(Nobind::Module<Nobind_##MODULE##_name> &MODULE_ARG)
