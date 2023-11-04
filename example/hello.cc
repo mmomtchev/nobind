@@ -33,10 +33,10 @@ int Hello::id_ = 0;
 #include "nobind.h"
 
 NOBIND_MODULE(hello, m) {
-  m.def<add>("add");
-  m.def<gte>("gte");
-  m.def<power>("pow");
-  m.def<hello>("hello");
+  m.def<&add>("add");
+  m.def<&gte>("gte");
+  m.def<&power>("pow");
+  m.def<&hello>("hello");
   m.def<Hello>("Hello")
     .cons<std::string &>()
     .def<&Hello::Id>("id")

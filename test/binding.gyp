@@ -3,7 +3,6 @@
     {
       'target_name': '<(test)',
       'sources': [ 'tests/<(test).cc', '<@(fixtures)' ],
-      'cflags': [ '-fvisibility=hidden' ],
       'include_dirs': [
         '.',
         '../include',
@@ -13,6 +12,12 @@
     }
   ],
   'target_defaults': {
-    'includes': [ '../except.gypi' ]
+    'includes': [ '../except.gypi' ],
+    'cflags': [ '-fvisibility=hidden', '-std=c++17' ],
+    'msvs_settings': {
+      'VCCLCompilerTool': { 
+        'AdditionalOptions': [ '/std:c++17' ]
+      }
+    }
   }
 }

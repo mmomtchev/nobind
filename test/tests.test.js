@@ -1,7 +1,7 @@
 const framework = require('./framework');
 
 describe('nobind', function () {
-  this.timeout(10000);
+  this.timeout(60000);
   const tests = framework.list();
   for (const t of tests) {
     describe(t, () => {

@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const os = require('os');
+
+const npx = os.platform() === 'win32' ? 'npx.cmd' : 'npx';
 
 function list() {
   return fs.readdirSync(path.resolve(__dirname, 'tests'))
@@ -10,8 +13,6 @@ function list() {
 
 function configure(test, stdio, opts) {
   try {
-    fs.rmSync(path.resolve(__dirname, 'build'), { recursive: true, force: true });
-
     let include;
     const fixtures = [];
     const match = /#include\s+<fixtures\/(.+)\.h>/g;
@@ -19,7 +20,7 @@ function configure(test, stdio, opts) {
     while (include = match.exec(source)) {
       fixtures.push(include[1]);
     }
-    execFileSync('npx', [
+    execFileSync(npx, [
       'node-gyp',
       'configure',
       ...(opts || []),
@@ -35,7 +36,7 @@ function configure(test, stdio, opts) {
 }
 
 function build(stdio) {
-  execFileSync('npx', [
+  execFileSync(npx, [
     'node-gyp',
     'build'
   ], { stdio: stdio || 'pipe', cwd: __dirname });

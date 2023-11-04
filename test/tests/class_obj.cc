@@ -23,10 +23,10 @@ int hello_const_ptr(const Hello *h) {
 NOBIND_MODULE(class_obj, m) {
   m.def<Hello>("Hello")
     .cons<std::string &>();
-  m.def<hello_ref>("hello_ref");
-  m.def<hello_ptr>("hello_ptr");
-  m.def<hello_const_ref>("hello_const_ref");
-  m.def<hello_const_ptr>("hello_const_ptr");
+  m.def<&hello_ref>("hello_ref");
+  m.def<&hello_ptr>("hello_ptr");
+  m.def<&hello_const_ref>("hello_const_ref");
+  m.def<&hello_const_ptr>("hello_const_ptr");
 
   m.def<TwoCons>("TwoCons")
     .cons<>();
