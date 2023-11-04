@@ -24,24 +24,9 @@ public:
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
 
-  // Constructor wrapper
+  // Constructor wrapper, these are only a pair - there are no pointers to constructors in C++
   template <typename... ARGS> void ConsWrapper(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    CheckArgLength<ARGS...>(env, info.Length());
-    if constexpr (sizeof...(ARGS) > 0) {
-      std::tuple<std::remove_const_t<std::decay_t<ARGS>>...> args;
-
-      std::apply(
-          [&info](auto &...args) {
-            size_t i = 0;
-            ((args = *Nobind::FromJS<std::remove_reference_t<decltype(args)>>(info[i++])), ...);
-          },
-          args);
-
-      self = new CLASS(std::make_from_tuple<CLASS>(args));
-    } else {
-      self = new CLASS;
-    }
+    ConsWrapper<ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
   // The first function of the member method wrapper trio (same std::integral_constant trick)
@@ -86,6 +71,19 @@ private:
     } else {
       RETURN result = (self->*FUNC)();
       return *Typemap::ToJS<RETURN>(env, result);
+    }
+  }
+
+  // The constructor wrapper implementation
+  template <typename... ARGS, std::size_t... I>
+  inline void ConsWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
+    Napi::Env env = info.Env();
+
+    CheckArgLength<ARGS...>(env, info.Length());
+    if constexpr (sizeof...(ARGS) > 0) {
+      self = new CLASS(*Nobind::FromJS<ARGS>(info[I])...);
+    } else {
+      self = new CLASS;
     }
   }
 
