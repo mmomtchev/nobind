@@ -20,7 +20,7 @@ int hello_const_ptr(const Hello *h) {
 
 #include "nobind.h"
 
-NOBIND_MODULE(basic_class, m) {
+NOBIND_MODULE(class_obj, m) {
   m.def<Hello>("Hello")
     .cons<std::string &>();
   m.def<hello_ref>("hello_ref");

@@ -41,8 +41,9 @@ public:
 
   template <typename T, T CLASS::*MEMBER> T Getter() { return self->*MEMBER; }
 
-  static void Configure(const std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)> &constructors,
-                        size_t idx, const char *jsname) {
+  static void
+  Configure(const std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> &constructors,
+            size_t idx, const char *jsname) {
     // (class_idx == 0) - first module initialization
     // (class_idx == idx) - subsequent initialization (worker_thread)
     assert(class_idx == 0 || class_idx == idx);
@@ -92,7 +93,7 @@ private:
   // Mainly for debug purposes
   static std::string name;
   // The class constructors
-  static std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)> cons;
+  static std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> cons;
   // The underlying C++ object
   CLASS *self;
   // Should we destroy it in the destructor
@@ -102,7 +103,7 @@ private:
 template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
 template <typename CLASS> std::string NoObjectWrap<CLASS>::name;
 template <typename CLASS>
-std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)> NoObjectWrap<CLASS>::cons;
+std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> NoObjectWrap<CLASS>::cons;
 
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   if (owned && self != nullptr)
@@ -123,11 +124,16 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
   }
   // From JS
   owned = true;
-  if (cons.size() > info.Length() && cons[info.Length()] != nullptr) {
-    (this->*cons[info.Length()])(info);
-    return;
+  if (cons.size() > info.Length() && cons[info.Length()].size() > 0) {
+    for (auto ctor : cons[info.Length()]) {
+      try {
+        (this->*ctor)(info);
+        return;
+      } catch (...) {
+      }
+    }
   }
-  throw Napi::TypeError::New(info.Env(), "No constructor with " + std::to_string(info.Length()) + " arguments found");
+  throw Napi::TypeError::New(info.Env(), "No constructor with the given " + std::to_string(info.Length()) + " arguments found");
 }
 
 template <typename CLASS>
@@ -143,7 +149,7 @@ template <class CLASS> class ClassDefinition {
   Napi::Env env_;
   Napi::Object exports_;
   std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> properties;
-  std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)> constructors;
+  std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> constructors;
   size_t class_idx_;
 
 public:
@@ -164,7 +170,7 @@ public:
     void (NoObjectWrap<CLASS>::*wrapper)(const Napi::CallbackInfo &info) =
         &NoObjectWrap<CLASS>::template ConsWrapper<ARGS...>;
     constructors.resize(sizeof...(ARGS) + 1);
-    constructors[sizeof...(ARGS)] = wrapper;
+    constructors[sizeof...(ARGS)].push_back(wrapper);
     return *this;
   }
 

@@ -9,11 +9,11 @@ describe('constructor', () => {
   it('exception', () => {
     assert.throws(() => {
       new dll.Hello;
-    }, /No constructor with 0 arguments found/);
+    }, /No constructor with the given 0 arguments found/);
 
     assert.throws(() => {
       new dll.Hello(2);
-    }, /Not a string/);
+    }, /No constructor with the given 1 arguments found/);
   });
 });
 

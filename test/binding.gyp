@@ -3,6 +3,7 @@
     {
       'target_name': '<(test)',
       'sources': [ 'tests/<(test).cc', '<@(fixtures)' ],
+      'cflags': [ '-fvisibility=hidden' ],
       'include_dirs': [
         '.',
         '../include',
