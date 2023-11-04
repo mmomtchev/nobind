@@ -13,7 +13,10 @@
   ],
   'target_defaults': {
     'includes': [ '../except.gypi' ],
-    'cflags': [ '-fvisibility=hidden', '-std=c++17' ],
+    'cflags': [
+      '-fvisibility=hidden',
+      '-std=c++17'
+    ],
     'msvs_settings': {
       'VCCLCompilerTool': { 
         'AdditionalOptions': [ '/std:c++17' ]
@@ -21,6 +24,7 @@
     },
     'xcode_settings': {
       'OTHER_CPLUSPLUSFLAGS': [
+        '-fvisibility=hidden',
         '-std=c++17'
       ]
     }
