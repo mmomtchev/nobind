@@ -56,12 +56,14 @@ public:
 
   template <typename T, T CLASS::*MEMBER> T Getter() { return self->*MEMBER; }
 
-  static void Configure(size_t idx, const char *jsname) {
+  static void Configure(const std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)> &constructors,
+                        size_t idx, const char *jsname) {
     // (class_idx == 0) - first module initialization
     // (class_idx == idx) - subsequent initialization (worker_thread)
     assert(class_idx == 0 || class_idx == idx);
     class_idx = idx;
     name = jsname;
+    cons = constructors;
   }
 
 private:
@@ -91,6 +93,8 @@ private:
   static size_t class_idx;
   // Mainly for debug purposes
   static std::string name;
+  // The class constructors
+  static std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)> cons;
   // The underlying C++ object
   CLASS *self;
   // Should we destroy it in the destructor
@@ -99,6 +103,8 @@ private:
 
 template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
 template <typename CLASS> std::string NoObjectWrap<CLASS>::name;
+template <typename CLASS>
+std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)> NoObjectWrap<CLASS>::cons;
 
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   if (owned && self != nullptr)
@@ -118,15 +124,9 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
     return;
   }
   // From JS
-  // TODO: Avoid copying
   owned = true;
-  const std::string cons_name = "__cons_"s + std::to_string(info.Length());
-  auto cons = info.This().ToObject().Get("__proto__").ToObject().Get(cons_name.c_str());
-  if (cons.IsFunction()) {
-    std::vector<napi_value> args(info.Length());
-    for (size_t i = 0; i < info.Length(); i++)
-      args[i] = info[i];
-    cons.As<Napi::Function>().Call(info.This(), args);
+  if (cons[info.Length()] != nullptr) {
+    (this->*cons[info.Length()])(info);
     return;
   }
   throw Napi::TypeError::New(info.Env(), "No constructor with " + std::to_string(info.Length()) + " arguments found");
@@ -145,7 +145,7 @@ template <class CLASS> class ClassDefinition {
   Napi::Env env_;
   Napi::Object exports_;
   std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> properties;
-  std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &info)> constructors;
+  std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)> constructors;
   size_t class_idx_;
 
 public:
@@ -165,9 +165,8 @@ public:
   template <typename... ARGS> ClassDefinition &cons() {
     void (NoObjectWrap<CLASS>::*wrapper)(const Napi::CallbackInfo &info) =
         &NoObjectWrap<CLASS>::template ConsWrapper<ARGS...>;
-    // TODO: fix the leak (InstanceMethod trivially copies a const char *)
-    std::string *name = new std::string("__cons_"s + std::to_string(sizeof...(ARGS)));
-    properties.push_back(NoObjectWrap<CLASS>::InstanceMethod(name->c_str(), wrapper));
+    constructors.resize(sizeof...(ARGS) + 1);
+    constructors[sizeof...(ARGS)] = wrapper;
     return *this;
   }
 
@@ -177,7 +176,7 @@ public:
   ~ClassDefinition() {
     Napi::Function ctor = NoObjectWrap<CLASS>::GetClass(env_, name_, properties);
     auto instance = env_.GetInstanceData<EnvInstanceData>();
-    NoObjectWrap<CLASS>::Configure(class_idx_, name_);
+    NoObjectWrap<CLASS>::Configure(constructors, class_idx_, name_);
     instance->cons.emplace(instance->cons.begin() + class_idx_, Napi::Persistent(ctor));
     exports_.Set(name_, ctor);
   }

@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { assert } = require('chai');
 const { execFileSync } = require('child_process');
 
 function list() {
