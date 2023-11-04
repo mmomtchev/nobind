@@ -25,7 +25,7 @@ function configure(test, stdio, opts) {
       'configure',
       ...(opts || []),
       `--test=${test}`,
-      `--fixtures="${fixtures.map((f) => `fixtures/${f}.cc`).join(' ')}"`
+      `--fixtures=${fixtures.map((f) => `fixtures/${f}.cc`).join(' ')}`
     ], { stdio: stdio || 'pipe', cwd: __dirname });
   } catch (e) {
     if (e.stdout) {

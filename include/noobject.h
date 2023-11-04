@@ -1,4 +1,5 @@
 #pragma once
+#include <assert.h>
 #include <functional>
 #include <napi.h>
 #include <tuple>
@@ -8,12 +9,18 @@
 
 namespace Nobind {
 
+struct EnvInstanceData {
+  // Per-environment constructors for all proxied types
+  std::vector<Napi::FunctionReference> cons;
+};
+
 // The JS proxy object type
 template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectWrap<CLASS>> {
   template <typename T> friend class Typemap::FromJS;
 
 public:
   NoObjectWrap(const Napi::CallbackInfo &);
+  virtual ~NoObjectWrap();
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
 
@@ -49,6 +56,14 @@ public:
 
   template <typename T, T CLASS::*MEMBER> T Getter() { return self->*MEMBER; }
 
+  static void Configure(size_t idx, const char *jsname) {
+    // (class_idx == 0) - first module initialization
+    // (class_idx == idx) - subsequent initialization (worker_thread)
+    assert(class_idx == 0 || class_idx == idx);
+    class_idx = idx;
+    name = jsname;
+  }
+
 private:
   // The two remaining functions of the member method wrapper trio
   template <typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...)>
@@ -72,9 +87,23 @@ private:
     }
   }
 
+  // To look up the class constructor in the per-instance data
+  static size_t class_idx;
+  // Mainly for debug purposes
+  static std::string name;
+  // The underlying C++ object
   CLASS *self;
+  // Should we destroy it in the destructor
   bool owned;
 };
+
+template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
+template <typename CLASS> std::string NoObjectWrap<CLASS>::name;
+
+template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
+  if (owned && self != nullptr)
+    delete self;
+}
 
 // A constructor can be called in two ways:
 // * From JS with JS arguments -> it must construct the underlying object
@@ -117,6 +146,7 @@ template <class CLASS> class ClassDefinition {
   Napi::Object exports_;
   std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> properties;
   std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &info)> constructors;
+  size_t class_idx_;
 
 public:
   template <auto CLASS::*MEMBER> ClassDefinition &def(const char *name) {
@@ -141,10 +171,16 @@ public:
     return *this;
   }
 
-  ClassDefinition(const char *name, Napi::Env env, Napi::Object exports)
-      : name_(name), env_(env), exports_(exports), properties(), constructors() {}
+  ClassDefinition(const char *name, Napi::Env env, Napi::Object exports, size_t class_idx)
+      : name_(name), env_(env), exports_(exports), properties(), constructors(), class_idx_(class_idx) {}
 
-  ~ClassDefinition() { exports_.Set(name_, NoObjectWrap<CLASS>::GetClass(env_, name_, properties)); }
+  ~ClassDefinition() {
+    Napi::Function ctor = NoObjectWrap<CLASS>::GetClass(env_, name_, properties);
+    auto instance = env_.GetInstanceData<EnvInstanceData>();
+    NoObjectWrap<CLASS>::Configure(class_idx_, name_);
+    instance->cons.emplace(instance->cons.begin() + class_idx_, Napi::Persistent(ctor));
+    exports_.Set(name_, ctor);
+  }
 };
 
 namespace Typemap {
@@ -156,10 +192,18 @@ template <typename T> class FromJS<T &> {
 public:
   inline FromJS(Napi::Value val) {
     if constexpr (std::is_object_v<T>) {
+      Napi::Env env = val.Env();
       if (val.IsObject()) {
-        val_ = Napi::ObjectWrap<NoObjectWrap<std::remove_reference_t<T>>>::Unwrap(val.ToObject())->self;
+        using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+        Napi::Object obj = val.ToObject();
+        auto instance = env.GetInstanceData<EnvInstanceData>();
+        size_t class_idx = OBJCLASS::class_idx;
+        if (!obj.InstanceOf(instance->cons[class_idx].Value())) {
+          throw Napi::TypeError::New(env, "Not a " + OBJCLASS::name);
+        }
+        val_ = OBJCLASS::Unwrap(obj)->self;
       } else {
-        throw Napi::TypeError::New(val.Env(), "Not an object");
+        throw Napi::TypeError::New(env, "Not an object");
       }
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
@@ -175,10 +219,18 @@ template <typename T> class FromJS<T *> {
 public:
   inline FromJS(Napi::Value val) {
     if constexpr (std::is_object_v<T>) {
+      Napi::Env env = val.Env();
       if (val.IsObject()) {
-        val_ = Napi::ObjectWrap<NoObjectWrap<std::remove_reference_t<T>>>::Unwrap(val.ToObject())->self;
+        using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+        Napi::Object obj = val.ToObject();
+        auto instance = env.GetInstanceData<EnvInstanceData>();
+        size_t class_idx = OBJCLASS::class_idx;
+        if (!obj.InstanceOf(instance->cons[class_idx].Value())) {
+          throw Napi::TypeError::New(env, "Not a " + OBJCLASS::name);
+        }
+        val_ = OBJCLASS::Unwrap(obj)->self;
       } else {
-        throw Napi::TypeError::New(val.Env(), "Not an object");
+        throw Napi::TypeError::New(env, "Not an object");
       }
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");

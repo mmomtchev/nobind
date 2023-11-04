@@ -2,12 +2,15 @@
 #include <napi.h>
 #include <tuple>
 #include <type_traits>
+#include <typeindex>
+#include <typeinfo>
+#include <unordered_map>
 
 #include <notypes.h>
 
 #include <nonumbermaps.h>
-#include <nostringmaps.h>
 #include <noobject.h>
+#include <nostringmaps.h>
 
 namespace Nobind {
 
@@ -40,9 +43,10 @@ template <auto *FUNC> Napi::Value FunctionWrapper(const Napi::CallbackInfo &info
 class Module {
   Napi::Env env_;
   Napi::Object exports_;
+  size_t class_idx_;
 
 public:
-  Module(Napi::Env env, Napi::Object exports) : env_(env), exports_(exports) {}
+  Module(Napi::Env env, Napi::Object exports) : env_(env), exports_(exports), class_idx_(0) {}
 
   // Global function
   template <auto *FUNC> void def(const char *name) {
@@ -53,7 +57,7 @@ public:
 
   // Class
   template <class CLASS> ClassDefinition<CLASS> def(const char *name) {
-    return ClassDefinition<CLASS>(name, env_, exports_);
+    return ClassDefinition<CLASS>(name, env_, exports_, class_idx_++);
   }
 };
 
@@ -64,6 +68,7 @@ public:
   Napi::Object Nobind_##MODULE##_Init_Wrapper(Napi::Env, Napi::Object);                                                \
   NODE_API_MODULE(MODULE_NAME, Nobind_##MODULE##_Init_Wrapper)                                                         \
   Napi::Object Nobind_##MODULE##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                                   \
+    env.SetInstanceData(new Nobind::EnvInstanceData);                                                                          \
     Nobind::Module m(env, exports);                                                                                    \
     Nobind_##MODULE##_Init_Wrapper(m);                                                                                 \
     return exports;                                                                                                    \

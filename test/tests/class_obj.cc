@@ -1,4 +1,5 @@
 #include <fixtures/basic_class.h>
+#include <fixtures/two_cons.h>
 
 int hello_ref(Hello &h) {
   return h.id;
@@ -26,4 +27,7 @@ NOBIND_MODULE(basic_class, m) {
   m.def<hello_ptr>("hello_ptr");
   m.def<hello_const_ref>("hello_const_ref");
   m.def<hello_const_ptr>("hello_const_ptr");
+
+  m.def<TwoCons>("TwoCons")
+    .cons<int, int>();
 }
