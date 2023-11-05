@@ -50,7 +50,7 @@ public:
   }
 
   static void
-  Configure(const std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> &constructors,
+  Configure(const std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> &constructors,
             size_t idx, const char *jsname) {
     // (class_idx == 0) - first module initialization
     // (class_idx == idx) - subsequent initialization (worker_thread)
@@ -123,7 +123,7 @@ private:
   // Mainly for debug purposes
   static std::string name;
   // The class constructors
-  static std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> cons;
+  static std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> cons;
   // The underlying C++ object
   CLASS *self;
   // Should we destroy it in the destructor
@@ -133,7 +133,7 @@ private:
 template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
 template <typename CLASS> std::string NoObjectWrap<CLASS>::name;
 template <typename CLASS>
-std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> NoObjectWrap<CLASS>::cons;
+std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> NoObjectWrap<CLASS>::cons;
 
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   if (owned && self != nullptr)
@@ -180,7 +180,7 @@ template <class CLASS> class ClassDefinition {
   Napi::Env env_;
   Napi::Object exports_;
   std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> properties;
-  std::vector<std::vector<void (NoObjectWrap<CLASS>::*)(const Napi::CallbackInfo &)>> constructors;
+  std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> constructors;
   size_t class_idx_;
 
 public:
@@ -212,8 +212,7 @@ public:
   }
 
   template <typename... ARGS> ClassDefinition &cons() {
-    void (NoObjectWrap<CLASS>::*wrapper)(const Napi::CallbackInfo &info) =
-        &NoObjectWrap<CLASS>::template ConsWrapper<ARGS...>;
+    typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback wrapper = &NoObjectWrap<CLASS>::template ConsWrapper<ARGS...>;
     if (constructors.size() <= sizeof...(ARGS) + 1)
       constructors.resize(sizeof...(ARGS) + 1);
     constructors[sizeof...(ARGS)].push_back(wrapper);
