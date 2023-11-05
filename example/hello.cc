@@ -30,7 +30,7 @@ public:
 };
 int Hello::id_ = 0;
 
-#include "nobind.h"
+#include <nobind.h>
 
 NOBIND_MODULE(hello, m) {
   m.def<&add>("add");

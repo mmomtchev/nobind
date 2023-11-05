@@ -63,3 +63,15 @@ describe('string -> string', () => {
     }, /Expected 1 arguments, got 2/);
   });
 });
+
+describe('void -> void', () => {
+  it('nominal', () => {
+    assert.isUndefined(dll.nothing());
+  });
+
+  it('exception', () => {
+    assert.throws(() => {
+      dll.nothing(1);
+    }, /Expected 0 arguments, got 1/);
+  });
+});

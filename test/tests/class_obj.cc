@@ -18,7 +18,7 @@ int hello_const_ptr(const Hello *h) {
 }
 
 
-#include "nobind.h"
+#include <nobind.h>
 
 NOBIND_MODULE(class_obj, m) {
   m.def<Hello>("Hello")

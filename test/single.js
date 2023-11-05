@@ -29,11 +29,7 @@ switch (process.argv[2]) {
     framework.build('inherit');
     break;
   case 'run':
-    try {
-      framework.load(test);
-    } catch {
-      globalThis.dll = require(path.resolve(__dirname, 'build', 'Debug', `${test.split('.')[0]}.node`));
-    }
+    globalThis.dll = require(path.resolve(__dirname, 'build', 'Debug', `${test.split('.')[0]}.node`));
     globalThis.describe = (name, fn) => {
       console.log(name);
       fn();

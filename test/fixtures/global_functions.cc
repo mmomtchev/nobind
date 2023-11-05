@@ -11,3 +11,7 @@ std::string hello(const std::string &s) {
   r << "hello " << s;
   return r.str();
 }
+
+void nothing() {}
+
+void throws() { throw std::runtime_error("Global error"); }

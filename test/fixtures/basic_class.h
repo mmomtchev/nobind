@@ -9,4 +9,6 @@ public:
   Hello(const std::string &name);
   int Id();
   std::string Greet(const std::string &);
+  void nothing();
+  void throws();
 };

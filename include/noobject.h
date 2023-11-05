@@ -74,34 +74,63 @@ private:
     Napi::Env env = info.Env();
 
     CheckArgLength<ARGS...>(env, info.Length());
-    if constexpr (sizeof...(ARGS) > 0) {
-      RETURN result = (self->*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-      return *Typemap::ToJS<RETURN>(env, result);
-    } else {
-      RETURN result = (self->*FUNC)();
-      return *Typemap::ToJS<RETURN>(env, result);
+    try {
+      if constexpr (sizeof...(ARGS) > 0) {
+        if constexpr (std::is_void_v<RETURN>) {
+          (self->*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
+          return env.Undefined();
+        } else {
+          RETURN result = (self->*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
+          return *Typemap::ToJS<RETURN>(env, result);
+        }
+      } else {
+        if constexpr (std::is_void_v<RETURN>) {
+          (self->*FUNC)();
+          return env.Undefined();
+        } else {
+          RETURN result = (self->*FUNC)();
+          return *Typemap::ToJS<RETURN>(env, result);
+        }
+      }
+    } catch (const std::exception &e) {
+      throw Napi::Error::New(env, e.what());
     }
   }
 
   // The two remaining functions of the static member method wrapper trio
   template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
   inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
-    return StaticMethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
+                                                std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+    return StaticMethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{},
+                               std::index_sequence_for<ARGS...>{});
   }
   template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
   inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (*)(ARGS...), FUNC>,
-                                   std::index_sequence<I...>) {
+                                                std::integral_constant<RETURN (*)(ARGS...), FUNC>,
+                                                std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     CheckArgLength<ARGS...>(env, info.Length());
-    if constexpr (sizeof...(ARGS) > 0) {
-      RETURN result = (*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-      return *Typemap::ToJS<RETURN>(env, result);
-    } else {
-      RETURN result = (*FUNC)();
-      return *Typemap::ToJS<RETURN>(env, result);
+    try {
+      if constexpr (sizeof...(ARGS) > 0) {
+        if constexpr (std::is_void_v<RETURN>) {
+          (*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
+          return env.Undefined();
+        } else {
+          RETURN result = (*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
+          return *Typemap::ToJS<RETURN>(env, result);
+        }
+      } else {
+        if constexpr (std::is_void_v<RETURN>) {
+          (*FUNC)();
+          return env.Undefined();
+        } else {
+          RETURN result = (*FUNC)();
+          return *Typemap::ToJS<RETURN>(env, result);
+        }
+      }
+    } catch (const std::exception &e) {
+      throw Napi::Error::New(env, e.what());
     }
   }
 
@@ -201,7 +230,8 @@ public:
   // Static class method/getter
   template <auto *MEMBER> ClassDefinition &def(const char *name) {
     if constexpr (std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>) {
-      typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper = &NoObjectWrap<CLASS>::template StaticMethodWrapper<MEMBER>;
+      typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper =
+          &NoObjectWrap<CLASS>::template StaticMethodWrapper<MEMBER>;
       properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
     } else {
       typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
@@ -212,7 +242,8 @@ public:
   }
 
   template <typename... ARGS> ClassDefinition &cons() {
-    typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback wrapper = &NoObjectWrap<CLASS>::template ConsWrapper<ARGS...>;
+    typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback wrapper =
+        &NoObjectWrap<CLASS>::template ConsWrapper<ARGS...>;
     if (constructors.size() <= sizeof...(ARGS) + 1)
       constructors.resize(sizeof...(ARGS) + 1);
     constructors[sizeof...(ARGS)].push_back(wrapper);

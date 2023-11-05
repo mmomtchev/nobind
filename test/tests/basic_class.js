@@ -23,6 +23,7 @@ describe('methods', () => {
     assert.isNumber(o.get_id());
     assert.isString(o.greet('Mr'));
     assert.strictEqual(o.greet('Mr'), 'hello Mr Garga');
+    assert.isUndefined(o.nothing());
   });
 
   it('exception', () => {

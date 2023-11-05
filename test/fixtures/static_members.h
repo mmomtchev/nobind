@@ -5,4 +5,5 @@ struct StaticMembers {
   StaticMembers();
   int get_instance();
   static int get_static();
+  static void nothing_static();
 };

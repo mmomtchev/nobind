@@ -8,6 +8,7 @@
 
 #include <notypes.h>
 
+#include <nobuffer.h>
 #include <nonumbermaps.h>
 #include <noobject.h>
 #include <nostringmaps.h>
@@ -22,12 +23,26 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
   Napi::Env env = info.Env();
 
   CheckArgLength<ARGS...>(env, info.Length());
-  if constexpr (sizeof...(ARGS) > 0) {
-    RETURN result = FUNC(*Nobind::FromJS<ARGS>(info[I])...);
-    return *Typemap::ToJS<RETURN>(env, result);
-  } else {
-    RETURN result = FUNC();
-    return *Typemap::ToJS<RETURN>(env, result);
+  try {
+    if constexpr (sizeof...(ARGS) > 0) {
+      if constexpr (std::is_void_v<RETURN>) {
+        FUNC(*Nobind::FromJS<ARGS>(info[I])...);
+        return env.Undefined();
+      } else {
+        RETURN result = FUNC(*Nobind::FromJS<ARGS>(info[I])...);
+        return *Typemap::ToJS<RETURN>(env, result);
+      }
+    } else {
+      if constexpr (std::is_void_v<RETURN>) {
+        FUNC();
+        return env.Undefined();
+      } else {
+        RETURN result = FUNC();
+        return *Typemap::ToJS<RETURN>(env, result);
+      }
+    }
+  } catch (const std::exception &e) {
+    throw Napi::Error::New(env, e.what());
   }
 }
 
@@ -49,10 +64,11 @@ public:
   Module(Napi::Env env, Napi::Object exports) : env_(env), exports_(exports), class_idx_(0) {}
 
   // Global function
-  template <auto *FUNC> void def(const char *name) {
+  template <auto *FUNC> Module<MODULE> &def(const char *name) {
     Napi::Value (*wrapper)(const Napi::CallbackInfo &) = FunctionWrapper<FUNC>;
     Napi::Function js = Napi::Function::New(env_, wrapper);
     exports_.Set(name, js);
+    return *this;
   }
 
   // Class

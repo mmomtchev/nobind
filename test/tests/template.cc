@@ -1,6 +1,6 @@
 #include <fixtures/template.h>
 
-#include "nobind.h"
+#include <nobind.h>
 
 NOBIND_MODULE(template, m) {
   m.def<Template<int>>("int")
