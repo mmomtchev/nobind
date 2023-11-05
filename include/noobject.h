@@ -214,7 +214,8 @@ public:
   template <typename... ARGS> ClassDefinition &cons() {
     void (NoObjectWrap<CLASS>::*wrapper)(const Napi::CallbackInfo &info) =
         &NoObjectWrap<CLASS>::template ConsWrapper<ARGS...>;
-    constructors.resize(sizeof...(ARGS) + 1);
+    if (constructors.size() <= sizeof...(ARGS) + 1)
+      constructors.resize(sizeof...(ARGS) + 1);
     constructors[sizeof...(ARGS)].push_back(wrapper);
     return *this;
   }
