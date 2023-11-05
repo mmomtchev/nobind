@@ -19,4 +19,21 @@ describe('StaticMembers', () => {
     assert.strictEqual(dll.StaticMembers.static_member, 2);
     assert.isUndefined(o.static_member);
   });
+
+  describe('static member setter', () => {
+    it('nominal', () => {
+      const o = new dll.StaticMembers;
+      assert.instanceOf(o, dll.StaticMembers);
+
+      dll.StaticMembers.static_member = 0x1717;
+      assert.strictEqual(dll.StaticMembers.static_member, 0x1717);
+      dll.StaticMembers.static_member = 2;
+    });
+
+    it('exception', () => {
+      assert.throws(() => {
+        dll.StaticMembers.static_member = 'invalid';
+      }, /Not a number/);
+    });
+  });
 });

@@ -44,9 +44,18 @@ public:
     return *Typemap::ToJS<T>(env, self->*MEMBER);
   }
 
+  template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
+    self->*MEMBER = *Typemap::FromJS<T>(val);
+  }
+
   template <typename T, T *MEMBER> static Napi::Value StaticGetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     return *Typemap::ToJS<T>(env, *MEMBER);
+  }
+
+  template <typename T, T *MEMBER>
+  static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
+    *MEMBER = *Typemap::FromJS<T>(val);
   }
 
   static void
@@ -222,7 +231,9 @@ public:
     } else {
       typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
           &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
-      properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, nullptr));
+      typename NoObjectWrap<CLASS>::InstanceSetterCallback setter =
+          &NoObjectWrap<CLASS>::template SetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
+      properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, setter));
     }
     return *this;
   }
@@ -236,7 +247,9 @@ public:
     } else {
       typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
           &NoObjectWrap<CLASS>::template StaticGetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
-      properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, nullptr));
+      typename NoObjectWrap<CLASS>::StaticSetterCallback setter =
+          &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
+      properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
     }
     return *this;
   }

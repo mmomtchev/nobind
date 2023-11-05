@@ -44,3 +44,19 @@ describe('getters', () => {
     assert.isNumber(o.id);
   });
 });
+
+describe('setters', () => {
+  it('nominal', () => {
+    const o = new dll.Hello('Garga');
+    o.id = 0x1717;
+    assert.strictEqual(o.id, 0x1717);
+  });
+
+  it('exception', () => {
+    const o = new dll.Hello('Garga');
+
+    assert.throws(() => {
+      o.id = 'invalid';
+    }, /Not a number/);
+  });
+});

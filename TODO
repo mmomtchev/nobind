@@ -1,5 +1,4 @@
 For 1.0:
-* setters
 * attributes (read-only)
 * STL (only vector and map)
 * factory functions
