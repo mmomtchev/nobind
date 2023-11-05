@@ -10,7 +10,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline FromJS(Napi::Value val) {                                                                                   \
+    inline explicit FromJS(Napi::Value val) {                                                                          \
       if (!val.IsNumber()) {                                                                                           \
         throw Napi::TypeError::New(val.Env(), "Not a number");                                                         \
       }                                                                                                                \
@@ -24,7 +24,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                                     \
+    inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
     inline Napi::Value operator*() { return Napi::Number::New(env_, static_cast<int32_t>(val_)); }                     \
   };
 
@@ -33,7 +33,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline FromJS(Napi::Value val) {                                                                                   \
+    inline explicit FromJS(Napi::Value val) {                                                                          \
       if (!val.IsNumber()) {                                                                                           \
         throw Napi::TypeError::New(val.Env(), "Not a number");                                                         \
       }                                                                                                                \
@@ -47,7 +47,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                                     \
+    inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
     inline Napi::Value operator*() { return Napi::Number::New(env_, static_cast<uint32_t>(val_)); }                    \
   };
 
@@ -56,7 +56,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline FromJS(Napi::Value val) {                                                                                   \
+    inline explicit FromJS(Napi::Value val) {                                                                          \
       if (!val.IsNumber()) {                                                                                           \
         throw Napi::TypeError::New(val.Env(), "Not a number");                                                         \
       }                                                                                                                \
@@ -70,7 +70,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                                     \
+    inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
     inline Napi::Value operator*() { return Napi::Number::New(env_, static_cast<int64_t>(val_)); }                     \
   };
 
@@ -79,7 +79,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline FromJS(Napi::Value val) {                                                                                   \
+    inline explicit FromJS(Napi::Value val) {                                                                          \
       if (!val.IsNumber()) {                                                                                           \
         throw Napi::TypeError::New(val.Env(), "Not a number");                                                         \
       }                                                                                                                \
@@ -93,7 +93,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                                     \
+    inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
     inline Napi::Value operator*() { return Napi::Number::New(env_, static_cast<double>(val_)); }                      \
   };
 

@@ -27,7 +27,9 @@ namespace Typemap {
 // - The constructor can create state that will be destroyed after the function call
 template <typename T> class FromJS {
 public:
-  inline FromJS(Napi::Value val) { static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap"); }
+  inline explicit FromJS(Napi::Value val) {
+    static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
+  }
   inline T operator*() { return T(); }
 };
 
@@ -50,7 +52,7 @@ template <> class FromJS<bool> {
   bool val_;
 
 public:
-  inline FromJS(Napi::Value val) {
+  inline explicit FromJS(Napi::Value val) {
     if (!val.IsNumber()) {
       throw Napi::TypeError::New(val.Env(), "Not a number");
     }
@@ -58,7 +60,6 @@ public:
   }
   inline bool operator*() { return val_; }
 };
-
 
 } // namespace Typemap
 

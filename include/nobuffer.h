@@ -17,7 +17,7 @@ template <> class FromJS<Buffer> {
   Buffer val_;
 
 public:
-  inline FromJS(Napi::Value val) {
+  inline explicit FromJS(Napi::Value val) {
     if (!val.IsBuffer()) {
       throw Napi::TypeError::New(val.Env(), "Not a Buffer");
     }
@@ -33,7 +33,7 @@ template <> class ToJS<Buffer> {
   Buffer val_;
 
 public:
-  inline ToJS(Napi::Env env, Buffer val) : env_(env), val_(val) {}
+  inline explicit ToJS(Napi::Env env, Buffer val) : env_(env), val_(val) {}
   inline Napi::Value operator*() { return Napi::Buffer<uint8_t>::NewOrCopy(env_, val_.first, val_.second); }
 };
 

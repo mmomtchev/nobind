@@ -10,7 +10,7 @@ namespace Typemap {
     std::remove_cv_t<std::remove_reference_t<TYPE>> val_;                                                              \
                                                                                                                        \
   public:                                                                                                              \
-    inline FromJS(Napi::Value val) {                                                                                   \
+    inline explicit FromJS(Napi::Value val) {                                                                          \
       if (!val.IsString()) {                                                                                           \
         throw Napi::TypeError::New(val.Env(), "Not a string");                                                         \
       }                                                                                                                \
@@ -24,7 +24,7 @@ namespace Typemap {
     TYPE val_;                                                                                                         \
                                                                                                                        \
   public:                                                                                                              \
-    inline ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                                     \
+    inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
     inline Napi::Value operator*() { return Napi::String::New(env_, val_); }                                           \
   };
 
@@ -37,7 +37,7 @@ template <> class FromJS<char *> {
   char *val_;
 
 public:
-  inline FromJS(Napi::Value val) {
+  inline explicit FromJS(Napi::Value val) {
     if (!val.IsString()) {
       throw Napi::TypeError::New(val.Env(), "Not a string");
     }

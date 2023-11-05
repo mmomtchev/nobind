@@ -223,7 +223,7 @@ template <class CLASS> class ClassDefinition {
 
 public:
   // Instance class method/getter
-  template <auto CLASS::*MEMBER> ClassDefinition &def(const char *name) {
+  template <auto CLASS::*MEMBER, typename... Attributes> ClassDefinition &def(const char *name, const Attributes &...attrs) {
     if constexpr (std::is_member_function_pointer_v<decltype(MEMBER)>) {
       typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper =
           &NoObjectWrap<CLASS>::template MethodWrapper<MEMBER>;
@@ -282,7 +282,7 @@ template <typename T> class FromJS<T &> {
   T *val_;
 
 public:
-  inline FromJS(Napi::Value val) {
+  inline explicit FromJS(Napi::Value val) {
     if constexpr (std::is_object_v<T>) {
       Napi::Env env = val.Env();
       if (val.IsObject()) {
@@ -309,7 +309,7 @@ template <typename T> class FromJS<T *> {
   T *val_;
 
 public:
-  inline FromJS(Napi::Value val) {
+  inline explicit FromJS(Napi::Value val) {
     if constexpr (std::is_object_v<T>) {
       Napi::Env env = val.Env();
       if (val.IsObject()) {
