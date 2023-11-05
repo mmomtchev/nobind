@@ -48,15 +48,22 @@ describe('getters', () => {
 describe('setters', () => {
   it('nominal', () => {
     const o = new dll.Hello('Garga');
-    o.id = 0x1717;
-    assert.strictEqual(o.id, 0x1717);
+    o.var = 1717;
+    assert.strictEqual(o.var, 1717);
+  });
+
+  it('readOnly properties', () => {
+    const o = new dll.Hello('Garga');
+    assert.isNumber(o.id);
+    o.id = 7777;
+    assert.notEqual(o.id, 7777);
   });
 
   it('exception', () => {
     const o = new dll.Hello('Garga');
 
     assert.throws(() => {
-      o.id = 'invalid';
+      o.var = 'invalid';
     }, /Not a number/);
   });
 });

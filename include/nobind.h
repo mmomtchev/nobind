@@ -8,6 +8,8 @@
 
 #include <notypes.h>
 
+#include <noattributes.h>
+
 #include <nobuffer.h>
 #include <nonumbermaps.h>
 #include <noobject.h>

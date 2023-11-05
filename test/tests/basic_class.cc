@@ -8,5 +8,6 @@ NOBIND_MODULE(basic_class, m) {
     .def<&Hello::Id>("get_id")
     .def<&Hello::Greet>("greet")
     .def<&Hello::nothing>("nothing")
-    .def<&Hello::id>("id");
+    .def<&Hello::id, Nobind::readOnly>("id")
+    .def<&Hello::id>("var");
 }

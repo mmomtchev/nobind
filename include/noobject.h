@@ -223,32 +223,38 @@ template <class CLASS> class ClassDefinition {
 
 public:
   // Instance class method/getter
-  template <auto CLASS::*MEMBER, typename... Attributes> ClassDefinition &def(const char *name, const Attributes &...attrs) {
+  template <auto CLASS::*MEMBER, typename... Attributes> ClassDefinition &def(const char *name) {
     if constexpr (std::is_member_function_pointer_v<decltype(MEMBER)>) {
+      static_assert(sizeof...(Attributes) == 0, "Member methods do not support attributes at the moment");
       typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper =
           &NoObjectWrap<CLASS>::template MethodWrapper<MEMBER>;
       properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
     } else {
       typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
           &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
-      typename NoObjectWrap<CLASS>::InstanceSetterCallback setter =
-          &NoObjectWrap<CLASS>::template SetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
+      typename NoObjectWrap<CLASS>::InstanceSetterCallback setter = nullptr;
+      if constexpr (!Internal::isReadOnly<Attributes...>()) {
+        setter = &NoObjectWrap<CLASS>::template SetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
+      }
       properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, setter));
     }
     return *this;
   }
 
   // Static class method/getter
-  template <auto *MEMBER> ClassDefinition &def(const char *name) {
+  template <auto *MEMBER, typename... Attributes> ClassDefinition &def(const char *name) {
     if constexpr (std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>) {
+      static_assert(sizeof...(Attributes) == 0, "Member methods do not support attributes at the moment");
       typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper =
           &NoObjectWrap<CLASS>::template StaticMethodWrapper<MEMBER>;
       properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
     } else {
       typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
           &NoObjectWrap<CLASS>::template StaticGetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
-      typename NoObjectWrap<CLASS>::StaticSetterCallback setter =
-          &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
+      typename NoObjectWrap<CLASS>::StaticSetterCallback setter = nullptr;
+      if constexpr (!Internal::isReadOnly<Attributes...>()) {
+        setter = &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
+      }
       properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
     }
     return *this;

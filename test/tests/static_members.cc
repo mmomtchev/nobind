@@ -8,5 +8,6 @@ NOBIND_MODULE(static_members, m) {
     .def<&StaticMembers::get_instance>("get_instance")
     .def<&StaticMembers::get_static>("get_static")
     .def<&StaticMembers::static_member>("static_member")
+    .def<&StaticMembers::static_member, Nobind::readOnly>("static_readonly")
     .def<&StaticMembers::nothing_static>("nothing_static");
 }
