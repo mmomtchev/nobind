@@ -33,7 +33,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
         return env.Undefined();
       } else {
         RETURN result = FUNC(*Nobind::FromJS<ARGS>(info[I])...);
-        return *Typemap::ToJS<RETURN>(env, result);
+        return *ToJS<RETURN>(env, result);
       }
     } else {
       if constexpr (std::is_void_v<RETURN>) {
@@ -41,7 +41,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
         return env.Undefined();
       } else {
         RETURN result = FUNC();
-        return *Typemap::ToJS<RETURN>(env, result);
+        return *ToJS<RETURN>(env, result);
       }
     }
   } catch (const std::exception &e) {

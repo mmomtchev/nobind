@@ -48,21 +48,21 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return *Typemap::ToJS<T>(env, self->*MEMBER);
+    return *ToJS<T>(env, self->*MEMBER);
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    self->*MEMBER = *Typemap::FromJS<T>(val);
+    self->*MEMBER = *FromJS<T>(val);
   }
 
   template <typename T, T *MEMBER> static Napi::Value StaticGetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return *Typemap::ToJS<T>(env, *MEMBER);
+    return *ToJS<T>(env, *MEMBER);
   }
 
   template <typename T, T *MEMBER>
   static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    *MEMBER = *Typemap::FromJS<T>(val);
+    *MEMBER = *FromJS<T>(val);
   }
 
   static void
@@ -97,7 +97,7 @@ private:
           return env.Undefined();
         } else {
           RETURN result = (self->*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-          return *Typemap::ToJS<RETURN>(env, result);
+          return *ToJS<RETURN>(env, result);
         }
       } else {
         if constexpr (std::is_void_v<RETURN>) {
@@ -105,7 +105,7 @@ private:
           return env.Undefined();
         } else {
           RETURN result = (self->*FUNC)();
-          return *Typemap::ToJS<RETURN>(env, result);
+          return *ToJS<RETURN>(env, result);
         }
       }
     } catch (const std::exception &e) {
@@ -134,7 +134,7 @@ private:
           return env.Undefined();
         } else {
           RETURN result = (*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-          return *Typemap::ToJS<RETURN>(env, result);
+          return *ToJS<RETURN>(env, result);
         }
       } else {
         if constexpr (std::is_void_v<RETURN>) {
@@ -142,7 +142,7 @@ private:
           return env.Undefined();
         } else {
           RETURN result = (*FUNC)();
-          return *Typemap::ToJS<RETURN>(env, result);
+          return *ToJS<RETURN>(env, result);
         }
       }
     } catch (const std::exception &e) {
@@ -342,7 +342,7 @@ public:
     }
   }
   // C++ returned a reference, we consider this function to return a static object
-  // The JS proxy will not own this object
+  // By default, the JS proxy will not own this object
   inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, false); }
 };
 
@@ -403,7 +403,7 @@ template <typename T> class ToJS {
   T *object;
 
 public:
-  inline explicit ToJS(Napi::Env env, T val): env_(env) {
+  inline explicit ToJS(Napi::Env env, T val) : env_(env) {
     if constexpr (std::is_object_v<T>) {
       // C++ returned regular stack-allocated object, import to JS by copying to the heap
       object = new T(val);

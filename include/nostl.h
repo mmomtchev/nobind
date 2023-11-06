@@ -36,7 +36,7 @@ namespace Typemap {
     inline Napi::Value operator*() {                                                                                   \
       Napi::Array array = Napi::Array::New(env_, val_.size());                                                         \
       for (size_t i = 0; i < val_.size(); i++) {                                                                       \
-        array.Set(i, *Typemap::ToJS<T>(env_, val_[i]));                                                                \
+        array.Set(i, *ToJS<T>(env_, val_[i]));                                                                \
       }                                                                                                                \
       return array;                                                                                                    \
     }                                                                                                                  \
