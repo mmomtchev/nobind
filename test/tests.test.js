@@ -1,7 +1,6 @@
 const framework = require('./framework');
 
 describe('nobind', function () {
-  this.timeout(600e3);
   const tests = framework.list();
   for (const t of tests) {
     describe(t, () => {
@@ -9,6 +8,7 @@ describe('nobind', function () {
       before('configure', () => framework.configure(t));
       before('build', () => framework.build());
       before('load', () => framework.load(t));
+      after('GC', global.gc);
     });
   }
 });
