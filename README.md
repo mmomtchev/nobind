@@ -32,7 +32,8 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | C++ requirements | C++11 | C++17 with some features such as wrapping of lambdas requiring C++20 |
 | All C++ types | Yes | No `enum` |
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
-| STL | Limited, but will evolve | Limited |
+| `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
+| STL | Limited, but will evolve; Supports direct use of C++ STL containers from JavaScript without copying | Limited, all passing of STL arguments is by copying |
 | Async | Out-of-the-box | Planned to be out-of-the-box for 1.0 |
 | Smart pointers | Yes | Possible but not for 1.0 |
 | TypeScript support | Automatic | No, must write the typings |
