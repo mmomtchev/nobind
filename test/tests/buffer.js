@@ -2,7 +2,7 @@ const { assert } = require('chai');
 
 describe('get', () => {
   it('nominal', () => {
-    const buf = new dll.get_buffer();
+    const buf = dll.get_buffer();
     assert.instanceOf(buf, Buffer);
     assert.lengthOf(buf, 16);
     const typed = new Uint32Array(buf.buffer);

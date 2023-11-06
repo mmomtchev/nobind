@@ -328,6 +328,24 @@ public:
   inline T &operator*() { return *val_; }
 };
 
+template <typename T> class ToJS<T &> {
+  Napi::Env env_;
+  T *val_;
+  using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+
+public:
+  inline explicit ToJS(Napi::Env env, T &val) : env_(env), val_(&val) {
+    if constexpr (std::is_object_v<T>) {
+      return;
+    } else {
+      static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
+    }
+  }
+  // C++ returned a reference, we consider this function to return a static object
+  // The JS proxy will not own this object
+  inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, false); }
+};
+
 // Generic object pointer typemap
 template <typename T> class FromJS<T *> {
   T *val_;
