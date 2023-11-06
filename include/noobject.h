@@ -17,12 +17,19 @@ struct EnvInstanceData {
 // The JS proxy object type
 template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectWrap<CLASS>> {
   template <typename T> friend class Typemap::FromJS;
+  template <typename T> friend class Typemap::ToJS;
 
 public:
+  // JS convention constructor
   NoObjectWrap(const Napi::CallbackInfo &);
+  // C++ convention constructor
+  static Napi::Value New(Napi::Env, CLASS *, bool);
   virtual ~NoObjectWrap();
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
+
+  // Check types and extract the proxied C++ object
+  static CLASS *CheckUnwrap(Napi::Value);
 
   // Constructor wrapper, these are only a pair - there are no pointers to constructors in C++
   template <typename... ARGS> void ConsWrapper(const Napi::CallbackInfo &info) {
@@ -184,9 +191,9 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info) {
   // Napi::Env env = info.Env();
-  if (info.Length() == 1 && info[0].IsExternal()) {
+  if (info.Length() == 2 && info[0].IsExternal()) {
     // From C++
-    owned = false;
+    owned = info[1].ToBoolean().Value();
     self = info[0].As<Napi::External<CLASS>>().Data();
     return;
   }
@@ -210,6 +217,27 @@ Napi::Function
 NoObjectWrap<CLASS>::GetClass(Napi::Env env, const char *name,
                               const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &properties) {
   return Napi::ObjectWrap<NoObjectWrap<CLASS>>::DefineClass(env, name, properties, nullptr);
+}
+
+template <typename CLASS> inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj, bool ownership) {
+  napi_value ext = Napi::External<CLASS>::New(env, obj);
+  napi_value own = Napi::Boolean::New(env, ownership);
+  auto instance = env.GetInstanceData<EnvInstanceData>();
+  Napi::Value r = instance->cons[class_idx].New({ext, own});
+  return r;
+}
+
+template <typename CLASS> inline CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::Value val) {
+  Napi::Env env(val.Env());
+  if (!val.IsObject()) {
+    throw Napi::TypeError::New(env, "Not an object");
+  }
+  Napi::Object obj = val.ToObject();
+  auto instance = env.GetInstanceData<EnvInstanceData>();
+  if (!obj.InstanceOf(instance->cons[class_idx].Value())) {
+    throw Napi::TypeError::New(env, "Not a " + name);
+  }
+  return NoObjectWrap<CLASS>::Unwrap(obj)->self;
 }
 
 // API class for defining a class binding
@@ -290,19 +318,9 @@ template <typename T> class FromJS<T &> {
 public:
   inline explicit FromJS(Napi::Value val) {
     if constexpr (std::is_object_v<T>) {
+      using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
       Napi::Env env = val.Env();
-      if (val.IsObject()) {
-        using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
-        Napi::Object obj = val.ToObject();
-        auto instance = env.GetInstanceData<EnvInstanceData>();
-        size_t class_idx = OBJCLASS::class_idx;
-        if (!obj.InstanceOf(instance->cons[class_idx].Value())) {
-          throw Napi::TypeError::New(env, "Not a " + OBJCLASS::name);
-        }
-        val_ = OBJCLASS::Unwrap(obj)->self;
-      } else {
-        throw Napi::TypeError::New(env, "Not an object");
-      }
+      val_ = OBJCLASS::CheckUnwrap(val);
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
     }
@@ -317,24 +335,66 @@ template <typename T> class FromJS<T *> {
 public:
   inline explicit FromJS(Napi::Value val) {
     if constexpr (std::is_object_v<T>) {
+      using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
       Napi::Env env = val.Env();
-      if (val.IsObject()) {
-        using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
-        Napi::Object obj = val.ToObject();
-        auto instance = env.GetInstanceData<EnvInstanceData>();
-        size_t class_idx = OBJCLASS::class_idx;
-        if (!obj.InstanceOf(instance->cons[class_idx].Value())) {
-          throw Napi::TypeError::New(env, "Not a " + OBJCLASS::name);
-        }
-        val_ = OBJCLASS::Unwrap(obj)->self;
-      } else {
-        throw Napi::TypeError::New(env, "Not an object");
-      }
+      val_ = OBJCLASS::CheckUnwrap(val);
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
     }
   }
   inline T *operator*() { return val_; }
+};
+
+template <typename T> class ToJS<T *> {
+  Napi::Env env_;
+  T *val_;
+  using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+
+public:
+  inline explicit ToJS(Napi::Env env, T *val) : env_(env), val_(val) {
+    if constexpr (std::is_object_v<T>) {
+      return;
+    } else {
+      static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
+    }
+  }
+  // We consider this to be a factory function, it has returned a pointer
+  // The JS proxy will own this object
+  inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, true); }
+};
+
+// Generic stack-allocated object typemaps
+template <typename T> class FromJS {
+  T *object;
+
+public:
+  inline explicit FromJS(Napi::Value val) {
+    if constexpr (std::is_object_v<T>) {
+      // C++ asks for a regular stack-allocated object
+      object = NoObjectWrap<T>::CheckUnwrap(val);
+    } else {
+      static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
+    }
+  }
+  // will return a copy by value
+  inline T operator*() { return *object; }
+};
+
+template <typename T> class ToJS {
+  Napi::Env env_;
+  T *object;
+
+public:
+  inline explicit ToJS(Napi::Env env, T val): env_(env) {
+    if constexpr (std::is_object_v<T>) {
+      // C++ returned regular stack-allocated object, import to JS by copying to the heap
+      object = new T(val);
+    } else {
+      static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
+    }
+  }
+  // and wrapping it in a proxy, JS will own this new copy
+  inline Napi::Value operator*() { return NoObjectWrap<T>::New(env_, object, true); }
 };
 
 } // namespace Typemap

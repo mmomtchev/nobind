@@ -57,7 +57,7 @@ template <> class ToJS<char *> {
   char *val_;
 
 public:
-  inline ToJS(Napi::Env env, char *val) : env_(env), val_(val) {}
+  inline explicit ToJS(Napi::Env env, char *val) : env_(env), val_(val) {}
   inline Napi::Value operator*() { return Napi::String::New(env_, val_); }
 };
 

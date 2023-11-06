@@ -16,4 +16,8 @@ void Hello::throws() {
   throw std::runtime_error("Hello error");
 }
 
+Hello *Hello::Factory(const std::string &name) {
+  return new Hello(name);
+}
+
 int Hello::id_ = 0;

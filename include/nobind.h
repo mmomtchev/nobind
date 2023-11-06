@@ -14,6 +14,7 @@
 #include <nonumbermaps.h>
 #include <noobject.h>
 #include <nostringmaps.h>
+#include <nostl.h>
 
 namespace Nobind {
 

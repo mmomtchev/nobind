@@ -67,3 +67,11 @@ describe('setters', () => {
     }, /Not a number/);
   });
 });
+
+describe('Factory', () => {
+  it('nominal', () => {
+    const o = new dll.Hello.factory('Garga');
+    assert.instanceOf(o, dll.Hello);
+    assert.isNumber(o.id);
+  });
+});

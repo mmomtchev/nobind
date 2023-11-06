@@ -25,26 +25,15 @@ namespace Typemap {
 // - operator* should return an in-place constructed prvalue
 // - operator* can be called in a background thread - no V8 Local<>s allowed
 // - The constructor can create state that will be destroyed after the function call
-template <typename T> class FromJS {
-public:
-  inline explicit FromJS(Napi::Value val) {
-    static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
-  }
-  inline T operator*() { return T(); }
-};
-
-template <typename T> class ToJS {
-public:
-  inline ToJS(Napi::Env env, T val) { static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap"); }
-  inline Napi::Value operator*() { return Napi::Value(); }
-};
+template <typename T> class FromJS;
+template <typename T> class ToJS;
 
 template <> class ToJS<bool> {
   Napi::Env env_;
   bool val_;
 
 public:
-  inline ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
+  inline explicit ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
   inline Napi::Value operator*() { return Napi::Boolean::New(env_, val_); }
 };
 

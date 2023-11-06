@@ -12,4 +12,6 @@ public:
   std::string Greet(const std::string &);
   void nothing();
   void throws();
+
+  static Hello *Factory(const std::string &name);
 };

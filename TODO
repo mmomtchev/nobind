@@ -1,6 +1,4 @@
 For 1.0:
-* STL (only vector and map)
-* factory functions
 * async
 * overriding the default typemaps
 * C++ interface (expose the raw Napi API)
