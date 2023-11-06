@@ -25,22 +25,23 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 
 | Feature | SWIG Node-API | `nobind` |
 | --- | --- | --- |
-| Design goal | Create native-feeling bindings for (almost) any C++ library | Easy to use, easy to learn |
+| Design goal | Create bindings for (*almost*) any C++ code with (*almost*) native feel | Easy to use, easy to learn |
 | Target use | Commercial-grade bindings for large C++ libraries | Very fast porting of C++ code with few methods/classes |
 | Method of operation | Custom C++ header compiler, uses its own interface language, generates C++ code | Collection of C++ templates to be included in the project |
-| Method of using | Must write metaprogramming code | Must enumerate the binded methods |
+| Method of using | Must write metaprogramming code | Must enumerate the binded methods using C++ syntax |
 | C++ requirements | C++11 | C++17 with some features such as wrapping of lambdas requiring C++20 |
-| All primitives C++ types | everything | everything except `enum` |
-| C++ preprocessing integration | yes, can expose macros to JS | no |
-| STL | limited, but will evolve | limited |
-| Async | out-of-the-box | planned to be out-of-the-box for 1.0 |
-| Smart pointers | yes | possible but not for 1.0 |
-| TypeScript support | automatic | no, must write the typings |
-| WASM/Browser support | yes | not for 1.0, but planned through `embind` compatibility |
-| Cross-platform | yes | yes |
-| Cross-language | yes, most dynamic languages | an eventual abstraction layer between `nobind`, `embind` and `pybind` is planned in theory |
-| C++ inheritance | yes | no |
-| Overloading | yes | only for constructors, overloaded methods must be renamed to be usable in JS |
-| Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | yes | must manually write a wrapper |
-| Custom type casters | yes | planned for 1.0 |
-| Interfacing between multiple modules | yes | no |
+| All C++ types | Yes | No `enum` |
+| C++ preprocessing integration | Yes, can expose macros to JS | No |
+| STL | Limited, but will evolve | Limited |
+| Async | Out-of-the-box | Planned to be out-of-the-box for 1.0 |
+| Smart pointers | Yes | Possible but not for 1.0 |
+| TypeScript support | Automatic | No, must write the typings |
+| WASM/Browser support | Yes | Not for 1.0, but planned through `embind` compatibility |
+| Cross-platform | Yes | Yes |
+| Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind`, `embind` and `pybind` is planned in theory |
+| C++ inheritance | Yes | No |
+| Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
+| Optional arguments | Yes | No, must include a manual wrapper
+| Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | No, must include a manual wrapper |
+| Custom type casters | Yes | Planned for 1.0 |
+| Interfacing between multiple modules | Yes | No |
