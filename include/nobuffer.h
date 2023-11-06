@@ -29,7 +29,7 @@ public:
   inline Buffer operator*() { return val_; }
 };
 
-template <> class ToJS<Buffer> {
+template <const ReturnAttribute &RETATTR> class ToJS<Buffer, RETATTR> {
   Napi::Env env_;
   Buffer val_;
 

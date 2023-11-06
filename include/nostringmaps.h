@@ -19,7 +19,7 @@ namespace Typemap {
     inline TYPE operator*() { return val_; }                                                                           \
   };                                                                                                                   \
                                                                                                                        \
-  template <> class ToJS<TYPE> {                                                                                       \
+  template <const ReturnAttribute &RETATTR> class ToJS<TYPE, RETATTR> {                                                \
     Napi::Env env_;                                                                                                    \
     TYPE val_;                                                                                                         \
                                                                                                                        \
@@ -52,7 +52,7 @@ public:
   ~FromJS() { delete val_; }
 };
 
-template <> class ToJS<char *> {
+template <const ReturnAttribute &RETATTR> class ToJS<char *, RETATTR> {
   Napi::Env env_;
   char *val_;
 

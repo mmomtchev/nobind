@@ -27,7 +27,7 @@ namespace Typemap {
     inline VECTOR operator*() { return val_; }                                                                         \
   };                                                                                                                   \
                                                                                                                        \
-  template <typename T> class ToJS<VECTOR> {                                                                           \
+  template <typename T, const ReturnAttribute &RETATTR> class ToJS<VECTOR, RETATTR> {                                  \
     Napi::Env env_;                                                                                                    \
     std::remove_cv_t<std::remove_reference_t<VECTOR>> val_;                                                            \
                                                                                                                        \
@@ -36,7 +36,7 @@ namespace Typemap {
     inline Napi::Value operator*() {                                                                                   \
       Napi::Array array = Napi::Array::New(env_, val_.size());                                                         \
       for (size_t i = 0; i < val_.size(); i++) {                                                                       \
-        array.Set(i, *ToJS<T>(env_, val_[i]));                                                                \
+        array.Set(i, *ToJS<T, RETATTR>(env_, val_[i]));                                                                \
       }                                                                                                                \
       return array;                                                                                                    \
     }                                                                                                                  \
@@ -60,7 +60,7 @@ namespace Typemap {
     inline MAP operator*() { return val_; }                                                                            \
   };                                                                                                                   \
                                                                                                                        \
-  template <typename T> class ToJS<MAP> {                                                                              \
+  template <typename T, const ReturnAttribute &RETATTR> class ToJS<MAP, RETATTR> {                                     \
     Napi::Env env_;                                                                                                    \
     std::remove_cv_t<std::remove_reference_t<MAP>> val_;                                                               \
                                                                                                                        \
@@ -69,7 +69,7 @@ namespace Typemap {
     inline Napi::Value operator*() {                                                                                   \
       Napi::Object object = Napi::Object::New(env_);                                                                   \
       for (auto const &prop : val_) {                                                                                  \
-        object.Set(Napi::String::New(env_, prop.first), *ToJS<T>(env_, prop.second));                                  \
+        object.Set(Napi::String::New(env_, prop.first), *ToJS<T, RETATTR>(env_, prop.second));                         \
       }                                                                                                                \
       return object;                                                                                                   \
     }                                                                                                                  \

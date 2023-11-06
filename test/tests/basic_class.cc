@@ -8,7 +8,7 @@ NOBIND_MODULE(basic_class, m) {
     .def<&Hello::Id>("get_id")
     .def<&Hello::Greet>("greet")
     .def<&Hello::nothing>("nothing")
-    .def<&Hello::id, Nobind::readOnly>("id")
-    .def<&Hello::id>("var")
+    .def<&Hello::id, Nobind::ReadOnly>("id")
+    .def<&Hello::var>("var")
     .def<&Hello::Factory>("factory");
 }

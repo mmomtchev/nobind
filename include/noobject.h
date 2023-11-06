@@ -17,7 +17,7 @@ struct EnvInstanceData {
 // The JS proxy object type
 template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectWrap<CLASS>> {
   template <typename T> friend class Typemap::FromJS;
-  template <typename T> friend class Typemap::ToJS;
+  template <typename T, const ReturnAttribute &RETATTR> friend class Typemap::ToJS;
 
 public:
   // JS convention constructor
@@ -37,18 +37,20 @@ public:
   }
 
   // The first function of the member method wrapper trio (same std::integral_constant trick)
-  template <auto CLASS::*FUNC> Napi::Value MethodWrapper(const Napi::CallbackInfo &info) {
-    return MethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
+  template <const ReturnAttribute &RET = ReturnDefault, auto CLASS::*FUNC>
+  Napi::Value MethodWrapper(const Napi::CallbackInfo &info) {
+    return MethodWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
   // Static member wrappers are almost identical
-  template <auto *FUNC> static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info) {
-    return StaticMethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
+  template <const ReturnAttribute &RET = ReturnDefault, auto *FUNC>
+  static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info) {
+    return StaticMethodWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return *ToJS<T>(env, self->*MEMBER);
+    return *ToJS<T, ReturnDefault>(env, self->*MEMBER);
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
@@ -57,7 +59,7 @@ public:
 
   template <typename T, T *MEMBER> static Napi::Value StaticGetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return *ToJS<T>(env, *MEMBER);
+    return *ToJS<T, ReturnDefault>(env, *MEMBER);
   }
 
   template <typename T, T *MEMBER>
@@ -78,12 +80,14 @@ public:
 
 private:
   // The two remaining functions of the member method wrapper trio
-  template <typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...)>
+  template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS,
+            RETURN (CLASS::*FUNC)(ARGS...)>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
                                    std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
-    return MethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
+    return MethodWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
   }
-  template <typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...), std::size_t... I>
+  template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS,
+            RETURN (CLASS::*FUNC)(ARGS...), std::size_t... I>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
                                    std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>,
                                    std::index_sequence<I...>) {
@@ -97,7 +101,7 @@ private:
           return env.Undefined();
         } else {
           RETURN result = (self->*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-          return *ToJS<RETURN>(env, result);
+          return *ToJS<RETURN, RETATTR>(env, result);
         }
       } else {
         if constexpr (std::is_void_v<RETURN>) {
@@ -105,7 +109,7 @@ private:
           return env.Undefined();
         } else {
           RETURN result = (self->*FUNC)();
-          return *ToJS<RETURN>(env, result);
+          return *ToJS<RETURN, RETATTR>(env, result);
         }
       }
     } catch (const std::exception &e) {
@@ -114,13 +118,14 @@ private:
   }
 
   // The two remaining functions of the static member method wrapper trio
-  template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
+  template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
   inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
                                                 std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
-    return StaticMethodWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{},
-                               std::index_sequence_for<ARGS...>{});
+    return StaticMethodWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
+                                    std::index_sequence_for<ARGS...>{});
   }
-  template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
+  template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...),
+            std::size_t... I>
   inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
                                                 std::integral_constant<RETURN (*)(ARGS...), FUNC>,
                                                 std::index_sequence<I...>) {
@@ -134,7 +139,7 @@ private:
           return env.Undefined();
         } else {
           RETURN result = (*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-          return *ToJS<RETURN>(env, result);
+          return *ToJS<RETURN, RETATTR>(env, result);
         }
       } else {
         if constexpr (std::is_void_v<RETURN>) {
@@ -142,7 +147,7 @@ private:
           return env.Undefined();
         } else {
           RETURN result = (*FUNC)();
-          return *ToJS<RETURN>(env, result);
+          return *ToJS<RETURN, RETATTR>(env, result);
         }
       }
     } catch (const std::exception &e) {
@@ -250,41 +255,52 @@ template <class CLASS> class ClassDefinition {
   size_t class_idx_;
 
 public:
-  // Instance class method/getter
-  template <auto CLASS::*MEMBER, typename... Attributes> ClassDefinition &def(const char *name) {
-    if constexpr (std::is_member_function_pointer_v<decltype(MEMBER)>) {
-      static_assert(sizeof...(Attributes) == 0, "Member methods do not support attributes at the moment");
-      typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper =
-          &NoObjectWrap<CLASS>::template MethodWrapper<MEMBER>;
-      properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
-    } else {
-      typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
-          &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
-      typename NoObjectWrap<CLASS>::InstanceSetterCallback setter = nullptr;
-      if constexpr (!Internal::isReadOnly<Attributes...>()) {
-        setter = &NoObjectWrap<CLASS>::template SetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
-      }
-      properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, setter));
-    }
+  // Instance class method
+  template <auto CLASS::*MEMBER, const ReturnAttribute &RET = ReturnDefault,
+            std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>, bool> = true>
+  ClassDefinition &def(const char *name) {
+    typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper =
+        &NoObjectWrap<CLASS>::template MethodWrapper<RET, MEMBER>;
+    properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
+
     return *this;
   }
 
-  // Static class method/getter
-  template <auto *MEMBER, typename... Attributes> ClassDefinition &def(const char *name) {
-    if constexpr (std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>) {
-      static_assert(sizeof...(Attributes) == 0, "Member methods do not support attributes at the moment");
-      typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper =
-          &NoObjectWrap<CLASS>::template StaticMethodWrapper<MEMBER>;
-      properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
-    } else {
-      typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
-          &NoObjectWrap<CLASS>::template StaticGetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
-      typename NoObjectWrap<CLASS>::StaticSetterCallback setter = nullptr;
-      if constexpr (!Internal::isReadOnly<Attributes...>()) {
-        setter = &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
-      }
-      properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
+  // Instance class getter/setter
+  template <auto CLASS::*MEMBER, const PropertyAttribute &PROP = ReadWrite,
+            std::enable_if_t<std::is_member_object_pointer_v<decltype(MEMBER)>, bool> = true>
+  ClassDefinition &def(const char *name) {
+    typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
+        &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
+    typename NoObjectWrap<CLASS>::InstanceSetterCallback setter = nullptr;
+    if constexpr (!PROP.isReadOnly()) {
+      setter = &NoObjectWrap<CLASS>::template SetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
     }
+    properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, setter));
+    return *this;
+  }
+
+  // Static class method
+  template <auto *MEMBER, const ReturnAttribute &RET = ReturnDefault,
+            std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, bool> = true>
+  ClassDefinition &def(const char *name) {
+    typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper =
+        &NoObjectWrap<CLASS>::template StaticMethodWrapper<RET, MEMBER>;
+    properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
+    return *this;
+  }
+
+  // Static class getter/setter
+  template <auto *MEMBER, const PropertyAttribute &PROP = ReadWrite,
+            std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, bool> = true>
+  ClassDefinition &def(const char *name) {
+    typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
+        &NoObjectWrap<CLASS>::template StaticGetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
+    typename NoObjectWrap<CLASS>::StaticSetterCallback setter = nullptr;
+    if constexpr (!PROP.isReadOnly()) {
+      setter = &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
+    }
+    properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
     return *this;
   }
 
@@ -328,7 +344,7 @@ public:
   inline T &operator*() { return *val_; }
 };
 
-template <typename T> class ToJS<T &> {
+template <typename T, const ReturnAttribute &RETATTR> class ToJS<T &, RETATTR> {
   Napi::Env env_;
   T *val_;
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
@@ -343,7 +359,7 @@ public:
   }
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
-  inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, false); }
+  inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, RETATTR.ShouldOwn<false>()); }
 };
 
 // Generic object pointer typemap
@@ -363,7 +379,7 @@ public:
   inline T *operator*() { return val_; }
 };
 
-template <typename T> class ToJS<T *> {
+template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
   Napi::Env env_;
   T *val_;
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
@@ -377,8 +393,8 @@ public:
     }
   }
   // We consider this to be a factory function, it has returned a pointer
-  // The JS proxy will own this object
-  inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, true); }
+  // By default, the JS proxy will own this object
+  inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, RETATTR.ShouldOwn<true>()); }
 };
 
 // Generic stack-allocated object typemaps
@@ -398,7 +414,7 @@ public:
   inline T operator*() { return *object; }
 };
 
-template <typename T> class ToJS {
+template <typename T, const ReturnAttribute &RETATTR> class ToJS {
   Napi::Env env_;
   T *object;
 
@@ -411,8 +427,8 @@ public:
       static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
     }
   }
-  // and wrapping it in a proxy, JS will own this new copy
-  inline Napi::Value operator*() { return NoObjectWrap<T>::New(env_, object, true); }
+  // and wrapping it in a proxy, by default JS will own this new copy
+  inline Napi::Value operator*() { return NoObjectWrap<T>::New(env_, object, RETATTR.ShouldOwn<true>()); }
 };
 
 } // namespace Typemap

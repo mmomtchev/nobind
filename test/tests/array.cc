@@ -41,7 +41,7 @@ NOBIND_MODULE(array, m) {
   m.def<Hello>("Hello")
     .cons<std::string &>()
     .def<&Hello::Id>("get_id")
-    .def<&Hello::id, Nobind::readOnly>("id");
+    .def<&Hello::id, Nobind::ReadOnly>("id");
   m.def<&get_ptr_array>("get_ptr_array");
   m.def<&put_ptr_array>("put_ptr_array");
   m.def<&get_obj_array>("get_obj_array");

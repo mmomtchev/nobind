@@ -5,8 +5,8 @@
 NOBIND_MODULE(chained, m) {
   m.def<Chained>("Chained")
     .cons<>()
-    .def<&Chained::Inc1>("inc1")
-    .def<&Chained::Inc10>("inc10")
-    .def<&Chained::Inc100>("inc100")
+    .def<&Chained::Inc1, Nobind::ReturnShared>("inc1")
+    .def<&Chained::Inc10, Nobind::ReturnShared>("inc10")
+    .def<&Chained::Inc100, Nobind::ReturnShared>("inc100")
     .def<&Chained::Get>("get");
 }

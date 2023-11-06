@@ -3,7 +3,10 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+
 using namespace std::literals::string_literals;
+
+#include <noattributes.h>
 
 namespace Nobind {
 
@@ -26,9 +29,9 @@ namespace Typemap {
 // - operator* can be called in a background thread - no V8 Local<>s allowed
 // - The constructor can create state that will be destroyed after the function call
 template <typename T> class FromJS;
-template <typename T> class ToJS;
+template <typename T, const ReturnAttribute &RETATTR> class ToJS;
 
-template <> class ToJS<bool> {
+template <const ReturnAttribute &RETATTR> class ToJS<bool, RETATTR> {
   Napi::Env env_;
   bool val_;
 
@@ -56,8 +59,8 @@ public:
 template <typename T> auto inline FromJS(const Napi::Value &val) { return Typemap::FromJS<std::remove_cv_t<T>>(val); }
 
 // Main entry point when generating a Napi::Value, should return a prvalue to a Typemap::ToJS
-template <typename T> auto inline ToJS(const Napi::Env &env, T val) {
-  return Typemap::ToJS<std::remove_cv_t<T>>(env, val);
+template <typename T, const ReturnAttribute &RETATTR> auto inline ToJS(const Napi::Env &env, T val) {
+  return Typemap::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
 }
 
 } // namespace Nobind

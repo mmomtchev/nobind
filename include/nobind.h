@@ -13,14 +13,14 @@
 #include <nobuffer.h>
 #include <nonumbermaps.h>
 #include <noobject.h>
-#include <nostringmaps.h>
 #include <nostl.h>
+#include <nostringmaps.h>
 
 namespace Nobind {
 
 // This is a 3-stage version of a trick using std::integral_constant which is proposed here:
 // https://stackoverflow.com/questions/77404330/function-template-with-variable-argument-function-as-template-argument
-template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
+template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
 inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>,
                                    std::index_sequence<I...>) {
   Napi::Env env = info.Env();
@@ -33,7 +33,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
         return env.Undefined();
       } else {
         RETURN result = FUNC(*Nobind::FromJS<ARGS>(info[I])...);
-        return *ToJS<RETURN>(env, result);
+        return *ToJS<RETURN, RETATTR>(env, result);
       }
     } else {
       if constexpr (std::is_void_v<RETURN>) {
@@ -41,7 +41,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
         return env.Undefined();
       } else {
         RETURN result = FUNC();
-        return *ToJS<RETURN>(env, result);
+        return *ToJS<RETURN, RETATTR>(env, result);
       }
     }
   } catch (const std::exception &e) {
@@ -49,13 +49,14 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
   }
 }
 
-template <typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
+template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
 inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
-  return FunctionWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
+  return FunctionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
 }
 
-template <auto *FUNC> Napi::Value FunctionWrapper(const Napi::CallbackInfo &info) {
-  return FunctionWrapper(info, std::integral_constant<decltype(FUNC), FUNC>{});
+template <const ReturnAttribute &RETATTR = ReturnDefault, auto *FUNC>
+Napi::Value FunctionWrapper(const Napi::CallbackInfo &info) {
+  return FunctionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{});
 }
 
 template <char const MODULE[]> class Module {
@@ -67,8 +68,8 @@ public:
   Module(Napi::Env env, Napi::Object exports) : env_(env), exports_(exports), class_idx_(0) {}
 
   // Global function
-  template <auto *FUNC> Module<MODULE> &def(const char *name) {
-    Napi::Value (*wrapper)(const Napi::CallbackInfo &) = FunctionWrapper<FUNC>;
+  template <auto *FUNC, const ReturnAttribute &RETATTR = ReturnDefault> Module<MODULE> &def(const char *name) {
+    Napi::Value (*wrapper)(const Napi::CallbackInfo &) = FunctionWrapper<RETATTR, FUNC>;
     Napi::Function js = Napi::Function::New(env_, wrapper);
     exports_.Set(name, js);
     return *this;
