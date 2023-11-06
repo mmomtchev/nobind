@@ -46,3 +46,14 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | No, must include a manual wrapper |
 | Custom type casters | Yes | Planned for 1.0 |
 | Interfacing between multiple modules | Yes | No |
+
+## Developer info
+
+Running single unit tests (in a debugger) is possible by doing:
+
+```shell
+cd test
+node single configure <test>
+node single build
+node single run
+```
