@@ -1,5 +1,4 @@
 For 1.0:
-* `null` and `undefined`
 * async
 * overriding the default typemaps
 * C++ interface (expose the raw Napi API)

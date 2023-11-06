@@ -23,6 +23,24 @@ describe('reference', () => {
       dll.hello_ref();
     }, /Expected 1 arguments, got 0/);
   });
+
+  it('null', () => {
+    assert.throws(() => {
+      new dll.Hello(null);
+    }, /No constructor with the given 1 arguments found/);
+    assert.throws(() => {
+      assert.isNumber(dll.hello_ref(null));
+    }, /Not an object/);
+  });
+
+  it('undefined', () => {
+    assert.throws(() => {
+      new dll.Hello(null);
+    }, /No constructor with the given 1 arguments found/);
+    assert.throws(() => {
+      assert.isNumber(dll.hello_ref(undefined));
+    }, /Not an object/);
+  });
 });
 
 describe('pointer', () => {
@@ -49,6 +67,18 @@ describe('pointer', () => {
     assert.throws(() => {
       dll.hello_ptr();
     }, /Expected 1 arguments, got 0/);
+  });
+
+  it('null', () => {
+    assert.throws(() => {
+      assert.isNumber(dll.hello_ptr(null));
+    }, /Not an object/);
+  });
+
+  it('undefined', () => {
+    assert.throws(() => {
+      assert.isNumber(dll.hello_ptr(undefined));
+    }, /Not an object/);
   });
 });
 
