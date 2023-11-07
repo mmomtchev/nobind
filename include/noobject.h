@@ -5,8 +5,8 @@
 #include <tuple>
 #include <type_traits>
 
-#include <notypes.h>
 #include <nofunction.h>
+#include <notypes.h>
 
 namespace Nobind {
 
@@ -19,6 +19,62 @@ struct EnvInstanceData {
 template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectWrap<CLASS>> {
   template <typename T> friend class Typemap::FromJS;
   template <typename T, const ReturnAttribute &RETATTR> friend class Typemap::ToJS;
+
+  template <const ReturnAttribute &RETATTR, auto FUNC, typename RETURN, typename... ARGS>
+  class MethodWrapperTasklet : public Napi::AsyncWorker {
+    Napi::Env env_;
+    Napi::Promise::Deferred deferred_;
+    std::unique_ptr<Nobind::Typemap::ToJS<RETURN, RETATTR>> output;
+    std::tuple<Nobind::Typemap::FromJS<ARGS>...> args_;
+    CLASS *self_;
+
+  public:
+    MethodWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, CLASS *self,
+                         const std::tuple<Nobind::Typemap::FromJS<ARGS>...> &&args)
+        : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)),
+          self_(self) {}
+
+    template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
+      try {
+        if constexpr (sizeof...(ARGS) > 0) {
+          if constexpr (std::is_void_v<RETURN>) {
+            // Convert and call
+            (self_->*FUNC)(*std::get<I>(args_)...);
+          } else {
+            // Convert and call
+            RETURN result = (self_->*FUNC)(*std::get<I>(args_)...);
+            // Call the ToJS constructor
+            output = std::make_unique<Nobind::Typemap::ToJS<RETURN, RETATTR>>(env_, result);
+          }
+        } else {
+          if constexpr (std::is_void_v<RETURN>) {
+            // Call
+            (self_->*FUNC)();
+          } else {
+            // Call
+            RETURN result = (self_->*FUNC)();
+            // Call the ToJS constructor
+            output = std::make_unique<Nobind::Typemap::ToJS<RETURN, RETATTR>>(env_, result);
+          }
+        }
+      } catch (const std::exception &e) {
+        SetError(e.what());
+      }
+    }
+
+    virtual void Execute() override { ExecuteImpl(std::index_sequence_for<ARGS...>{}); }
+
+    virtual void OnOK() override {
+      if constexpr (std::is_void_v<RETURN>) {
+        deferred_.Resolve(env_.Undefined());
+      } else {
+        auto result = **output;
+        deferred_.Resolve(result);
+      }
+    }
+
+    virtual void OnError(const Napi::Error &e) override { deferred_.Reject(e.Value()); }
+  };
 
 public:
   // JS convention constructor
@@ -43,6 +99,14 @@ public:
   template <const ReturnAttribute &RET = ReturnDefault, auto CLASS::*FUNC>
   Napi::Value MethodWrapper(const Napi::CallbackInfo &info) {
     return MethodWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
+  }
+
+  // The first function of the async member trio
+  // This is the function that gets instantiated to create a wrapper (by getting a pointer)
+  // and gets will be called by JavaScript
+  template <const ReturnAttribute &RET = ReturnDefault, auto CLASS::*FUNC>
+  Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info) {
+    return MethodWrapperAsync<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
@@ -95,7 +159,7 @@ private:
     try {
       if constexpr (sizeof...(ARGS) > 0) {
         // Call the FromJS constructors
-        std::tuple<Nobind::Typemap::FromJS<ARGS>...> args(Nobind::FromJS<ARGS>(info[I])...);
+        std::tuple<Nobind::Typemap::FromJS<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
         if constexpr (std::is_void_v<RETURN>) {
           // Convert and call
           (self->*FUNC)(*std::get<I>(args)...);
@@ -128,6 +192,36 @@ private:
     } catch (const std::exception &e) {
       throw Napi::Error::New(env, e.what());
     }
+  }
+
+  // The two remaining functions of the member async method wrapper trio
+  template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS,
+            RETURN (CLASS::*FUNC)(ARGS...)>
+  inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
+                                   std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
+    return MethodWrapperAsync<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
+                                  std::index_sequence_for<ARGS...>{});
+  }
+  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...),
+            std::size_t... I>
+  inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
+                                        std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>,
+                                        std::index_sequence<I...>) {
+    Napi::Env env = info.Env();
+
+    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+    try {
+      CheckArgLength<ARGS...>(env, info.Length());
+
+      auto tasklet = new MethodWrapperTasklet<RETATTR, FUNC, RETURN, ARGS...>(
+          env, deferred, self, std::forward_as_tuple(Nobind::FromJS<ARGS>(info[I])...));
+
+      tasklet->Queue();
+    } catch (const std::exception &e) {
+      deferred.Reject(Napi::Error::New(env, e.what()).Value());
+    }
+    return deferred.Promise();
   }
 
   // The constructor wrapper implementation
@@ -234,8 +328,13 @@ public:
   template <auto CLASS::*MEMBER, const ReturnAttribute &RET = ReturnDefault,
             typename = std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>>>
   ClassDefinition &def(const char *name) {
-    typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper =
-        &NoObjectWrap<CLASS>::template MethodWrapper<RET, MEMBER>;
+    typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper;
+    
+    if constexpr (RET.isAsync()) {
+      wrapper = &NoObjectWrap<CLASS>::template MethodWrapperAsync<RET, MEMBER>;
+    } else {
+      wrapper = &NoObjectWrap<CLASS>::template MethodWrapper<RET, MEMBER>;
+    }
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
 
     return *this;
@@ -259,8 +358,7 @@ public:
   template <auto *MEMBER, const ReturnAttribute &RET = ReturnDefault,
             typename = std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>>>
   ClassDefinition &def(const char *name) {
-    typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper =
-        &FunctionWrapper<RET, MEMBER>;
+    typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper = &FunctionWrapper<RET, MEMBER>;
     properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
     return *this;
   }

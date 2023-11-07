@@ -30,7 +30,12 @@ public:
 
   // Global function
   template <auto *FUNC, const ReturnAttribute &RETATTR = ReturnDefault> Module<MODULE> &def(const char *name) {
-    Napi::Value (*wrapper)(const Napi::CallbackInfo &) = FunctionWrapper<RETATTR, FUNC>;
+    Napi::Value (*wrapper)(const Napi::CallbackInfo &);
+    if constexpr(RETATTR.isAsync()) {
+      wrapper = FunctionWrapperAsync<RETATTR, FUNC>;
+    } else {
+      wrapper = FunctionWrapper<RETATTR, FUNC>;
+    }
     Napi::Function js = Napi::Function::New(env_, wrapper);
     exports_.Set(name, js);
     return *this;
