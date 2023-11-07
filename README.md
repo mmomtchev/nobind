@@ -2,12 +2,16 @@
 
 Experimental next-gen binding framework for Node.js / Node-API
 
-Inspired by `pybind11` and `embind`, in turn inspired by the groundbreaking `Boost.Python`, this framework uses C++17 with fold expressions as baseline, allowing to generate separate precompiled wrappers for each method - instead of generic wrappers that process the arguments.
+Inspired by `pybind11` and `embind`, in turn inspired by the groundbreaking `Boost.Python`.
 
-It is tested with
+This framework is designed around C++17 fold expressions.
+
+It has one defining characteristic that sets it apart from `pybind11` and `embind` - every wrapper is statically generated at compile time and has no run-time state. All the state information is `constexpr` and it is encoded in the template parameters. The wrappers are instantiated by obtaining a pointer to the wrapper function.
+
+It is tested with:
   * g++ 11.4 on Linux
   * clang 13 on macOS
-  * MSVC 2022 on Windows
+  * MSVC 19.36 (from MSVS 2022) on Windows
 
 It is meant as an easy to use entry-level light-weight binding framework for simple projects.
 

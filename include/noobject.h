@@ -37,12 +37,16 @@ public:
   }
 
   // The first function of the member method wrapper trio (same std::integral_constant trick)
+  // This is the function that gets instantiated to create a wrapper (by getting a pointer)
+  // and gets will be called by JavaScript
   template <const ReturnAttribute &RET = ReturnDefault, auto CLASS::*FUNC>
   Napi::Value MethodWrapper(const Napi::CallbackInfo &info) {
     return MethodWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
   // Static member wrappers are almost identical
+  // This is the function that gets instantiated to create a wrapper (by getting a pointer)
+  // and gets will be called by JavaScript
   template <const ReturnAttribute &RET = ReturnDefault, auto *FUNC>
   static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info) {
     return StaticMethodWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});

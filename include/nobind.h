@@ -70,6 +70,8 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
                                   std::index_sequence_for<ARGS...>{});
 }
 
+// This is the function that gets instantiated to create a wrapper (by getting a pointer)
+// and gets will be called by JavaScript
 template <const ReturnAttribute &RETATTR = ReturnDefault, auto *FUNC>
 Napi::Value FunctionWrapper(const Napi::CallbackInfo &info) {
   return FunctionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{});
