@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include <notypes.h>
+#include <nofunction.h>
 
 namespace Nobind {
 
@@ -42,14 +43,6 @@ public:
   template <const ReturnAttribute &RET = ReturnDefault, auto CLASS::*FUNC>
   Napi::Value MethodWrapper(const Napi::CallbackInfo &info) {
     return MethodWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
-  }
-
-  // Static member wrappers are almost identical
-  // This is the function that gets instantiated to create a wrapper (by getting a pointer)
-  // and gets will be called by JavaScript
-  template <const ReturnAttribute &RET = ReturnDefault, auto *FUNC>
-  static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info) {
-    return StaticMethodWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
@@ -130,44 +123,6 @@ private:
           // Convert
           return *output;
           // ToJS object is destroyed
-        }
-      }
-    } catch (const std::exception &e) {
-      throw Napi::Error::New(env, e.what());
-    }
-  }
-
-  // The two remaining functions of the static member method wrapper trio
-  template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
-  inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
-                                                std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
-    return StaticMethodWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
-                                        std::index_sequence_for<ARGS...>{});
-  }
-  template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...),
-            std::size_t... I>
-  inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
-                                                std::integral_constant<RETURN (*)(ARGS...), FUNC>,
-                                                std::index_sequence<I...>) {
-    Napi::Env env = info.Env();
-
-    CheckArgLength<ARGS...>(env, info.Length());
-    try {
-      if constexpr (sizeof...(ARGS) > 0) {
-        if constexpr (std::is_void_v<RETURN>) {
-          (*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-          return env.Undefined();
-        } else {
-          RETURN result = (*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-          return *ToJS<RETURN, RETATTR>(env, result);
-        }
-      } else {
-        if constexpr (std::is_void_v<RETURN>) {
-          (*FUNC)();
-          return env.Undefined();
-        } else {
-          RETURN result = (*FUNC)();
-          return *ToJS<RETURN, RETATTR>(env, result);
         }
       }
     } catch (const std::exception &e) {
@@ -305,7 +260,7 @@ public:
             typename = std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>>>
   ClassDefinition &def(const char *name) {
     typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper =
-        &NoObjectWrap<CLASS>::template StaticMethodWrapper<RET, MEMBER>;
+        &FunctionWrapper<RET, MEMBER>;
     properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
     return *this;
   }

@@ -8,6 +8,8 @@ This framework is designed around C++17 fold expressions.
 
 It has one defining characteristic that sets it apart from `pybind11` and `embind` - every wrapper is statically generated at compile time and has no run-time state. All the state information is `constexpr` and it is encoded in the template parameters. The wrappers are instantiated by obtaining a pointer to the wrapper function.
 
+This allows for both a (slightly) better performance and code simplicity.
+
 It is tested with:
   * g++ 11.4 on Linux
   * clang 13 on macOS
