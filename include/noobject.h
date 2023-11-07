@@ -84,7 +84,8 @@ private:
             RETURN (CLASS::*FUNC)(ARGS...)>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
                                    std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
-    return MethodWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{}, std::index_sequence_for<ARGS...>{});
+    return MethodWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
+                                  std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS,
             RETURN (CLASS::*FUNC)(ARGS...), std::size_t... I>
@@ -146,7 +147,7 @@ private:
   inline static Napi::Value StaticMethodWrapper(const Napi::CallbackInfo &info,
                                                 std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
     return StaticMethodWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
-                                    std::index_sequence_for<ARGS...>{});
+                                        std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...),
             std::size_t... I>
@@ -281,7 +282,7 @@ template <class CLASS> class ClassDefinition {
 public:
   // Instance class method
   template <auto CLASS::*MEMBER, const ReturnAttribute &RET = ReturnDefault,
-            std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>, bool> = true>
+            typename = std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>>>
   ClassDefinition &def(const char *name) {
     typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper =
         &NoObjectWrap<CLASS>::template MethodWrapper<RET, MEMBER>;
@@ -292,7 +293,7 @@ public:
 
   // Instance class getter/setter
   template <auto CLASS::*MEMBER, const PropertyAttribute &PROP = ReadWrite,
-            std::enable_if_t<std::is_member_object_pointer_v<decltype(MEMBER)>, bool> = true>
+            typename = std::enable_if_t<std::is_member_object_pointer_v<decltype(MEMBER)>>>
   ClassDefinition &def(const char *name) {
     typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
         &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
@@ -306,7 +307,7 @@ public:
 
   // Static class method
   template <auto *MEMBER, const ReturnAttribute &RET = ReturnDefault,
-            std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, bool> = true>
+            typename = std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>>>
   ClassDefinition &def(const char *name) {
     typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper =
         &NoObjectWrap<CLASS>::template StaticMethodWrapper<RET, MEMBER>;
@@ -316,7 +317,7 @@ public:
 
   // Static class getter/setter
   template <auto *MEMBER, const PropertyAttribute &PROP = ReadWrite,
-            std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, bool> = true>
+            typename = std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>>>
   ClassDefinition &def(const char *name) {
     typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
         &NoObjectWrap<CLASS>::template StaticGetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
