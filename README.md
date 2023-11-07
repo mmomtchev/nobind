@@ -40,7 +40,8 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Limited, but will evolve; Supports direct use of C++ STL containers from JavaScript without copying | Limited, all passing of STL arguments is by copying |
-| Async | Out-of-the-box | Planned to be out-of-the-box for 1.0 |
+| Async | Out-of-the-box | Out-of-the-box |
+| Async locking | Yes with automatic dead-lock prevention | Not for 1.0 |
 | Smart pointers | Yes | Possible but not for 1.0 |
 | TypeScript support | Automatic | No, must write the typings |
 | WASM/Browser support | Yes | Not for 1.0, but planned through `embind` compatibility |
