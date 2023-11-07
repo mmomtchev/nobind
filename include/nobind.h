@@ -31,22 +31,13 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
       // Call the FromJS constructors
       std::tuple<Nobind::Typemap::FromJS<ARGS>...> args(Nobind::FromJS<ARGS>(info[I])...);
       if constexpr (std::is_void_v<RETURN>) {
-        // Pass the FromJS objects by reference to the lambda executor
-        std::apply(
-            [](Nobind::Typemap::FromJS<ARGS> &...args) {
-              // Convert and call
-              FUNC(*args...);
-            },
-            args);
+        // Convert and call
+        FUNC(*std::get<I>(args)...);
         return env.Undefined();
+        // FromJS objects are destroyed
       } else {
-        // Pass the FromJS objects by reference to the lambda executor
-        RETURN result = std::apply(
-            [](Nobind::Typemap::FromJS<ARGS> &...args) {
-              // Convert and call
-              return FUNC(*args...);
-            },
-            args);
+        // Convert and call
+        RETURN result = FUNC(*std::get<I>(args)...);
         // Call the ToJS constructor
         auto output = Nobind::Typemap::ToJS<RETURN, RETATTR>(env, result);
         // Convert
