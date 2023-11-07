@@ -96,20 +96,44 @@ private:
     CheckArgLength<ARGS...>(env, info.Length());
     try {
       if constexpr (sizeof...(ARGS) > 0) {
+        // Call the FromJS constructors
+        std::tuple<Nobind::Typemap::FromJS<ARGS>...> args(Nobind::FromJS<ARGS>(info[I])...);
         if constexpr (std::is_void_v<RETURN>) {
-          (self->*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
+          // Pass the FromJS objects by reference to the lambda executor
+          std::apply(
+              [this](Nobind::Typemap::FromJS<ARGS> &...args) {
+                // Convert and call
+                (self->*FUNC)(*args...);
+              },
+              args);
           return env.Undefined();
         } else {
-          RETURN result = (self->*FUNC)(*Nobind::FromJS<ARGS>(info[I])...);
-          return *ToJS<RETURN, RETATTR>(env, result);
+          // Pass the FromJS objects by reference to the lambda executor
+          RETURN result = std::apply(
+              [this](Nobind::Typemap::FromJS<ARGS> &...args) {
+                // Convert and call
+                return (self->*FUNC)(*args...);
+              },
+              args);
+          // Call the ToJS constructor
+          auto output = Nobind::Typemap::ToJS<RETURN, RETATTR>(env, result);
+          // Convert
+          return *output;
+          // FromJS/ToJS objects are destroyed
         }
       } else {
         if constexpr (std::is_void_v<RETURN>) {
+          // Call
           (self->*FUNC)();
           return env.Undefined();
         } else {
+          // Call
           RETURN result = (self->*FUNC)();
-          return *ToJS<RETURN, RETATTR>(env, result);
+          // Call the ToJS constructor
+          auto output = Nobind::Typemap::ToJS<RETURN, RETATTR>(env, result);
+          // Convert
+          return *output;
+          // ToJS object is destroyed
         }
       }
     } catch (const std::exception &e) {
