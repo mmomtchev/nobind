@@ -231,7 +231,10 @@ private:
 
     CheckArgLength<ARGS...>(env, info.Length());
     if constexpr (sizeof...(ARGS) > 0) {
-      self = new CLASS(*Nobind::FromJS<ARGS>(info[I])...);
+      // Call the FromJS constructors
+      std::tuple<Nobind::Typemap::FromJS<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+      // Convert and call
+      self = new CLASS(*std::get<I>(args)...);
     } else {
       self = new CLASS;
     }
