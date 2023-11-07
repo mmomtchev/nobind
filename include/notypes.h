@@ -35,10 +35,10 @@ template <typename T> class FromJS;
 
 /**
  * Typemap::ToJS rules
- * - The constructor will be called in a background thread
+ * - The constructor can be called in a background thread
  * - operator* should return an in-place constructed prvalue
- * - operator* can be called on the main V8 thread -> Local<>s allowed
- * - The constructor cannot create state
+ * - operator* will be called on the main V8 thread -> Local<>s allowed
+ * - The constructor can create state that will be destroyed after the function call
  */
 template <typename T, const ReturnAttribute &RETATTR> class ToJS;
 
