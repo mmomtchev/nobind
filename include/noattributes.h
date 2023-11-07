@@ -13,7 +13,14 @@ struct PropertyAttribute : public Attribute {
   constexpr bool isReadOnly() const { return value == ReadOnly; }
 };
 
+/**
+ * The property will be read only
+ */
 constexpr PropertyAttribute ReadOnly = PropertyAttribute(PropertyAttribute::ReadOnly);
+
+/**
+ * The property will be read-write (this is the default)
+ */
 constexpr PropertyAttribute ReadWrite = PropertyAttribute();
 
 struct ReturnAttribute : public Attribute {
@@ -29,8 +36,20 @@ struct ReturnAttribute : public Attribute {
     return DEFAULT;
   }
 };
+
+/**
+ * The returned object will be freed when the GC destroys the JS proxy object
+ */
 constexpr ReturnAttribute ReturnOwned = ReturnAttribute(ReturnAttribute::Owned);
+
+/**
+ * The returned object won't be freed when the GC destroys the JS proxy object
+ */
 constexpr ReturnAttribute ReturnShared = ReturnAttribute(ReturnAttribute::Shared);
+
+/**
+ * Returned pointers will be freed and returned references won't be freed (this is the default)
+ */
 constexpr ReturnAttribute ReturnDefault = ReturnAttribute();
 
 struct ArgumentAttribute : public Attribute {
