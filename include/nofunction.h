@@ -15,7 +15,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
   try {
     if constexpr (sizeof...(ARGS) > 0) {
       // Call the FromJS constructors
-      std::tuple<Nobind::Typemap::FromJS<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+      std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
         FUNC(*std::get<I>(args)...);
@@ -25,7 +25,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
         // Convert and call
         RETURN result = FUNC(*std::get<I>(args)...);
         // Call the ToJS constructor
-        auto output = Nobind::Typemap::ToJS<RETURN, RETATTR>(env, result);
+        auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert
         return *output;
         // FromJS/ToJS objects are destroyed
@@ -39,7 +39,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
         // Call
         RETURN result = FUNC();
         // Call the ToJS constructor
-        auto output = Nobind::Typemap::ToJS<RETURN, RETATTR>(env, result);
+        auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert
         return *output;
         // ToJS object is destroyed
@@ -54,12 +54,12 @@ template <const ReturnAttribute &RETATTR, auto *FUNC, typename RETURN, typename.
 class FunctionWrapperTasklet : public Napi::AsyncWorker {
   Napi::Env env_;
   Napi::Promise::Deferred deferred_;
-  std::unique_ptr<Nobind::Typemap::ToJS<RETURN, RETATTR>> output;
-  std::tuple<Nobind::Typemap::FromJS<ARGS>...> args_;
+  std::unique_ptr<ToJS_t<RETURN, RETATTR>> output;
+  std::tuple<FromJS_t<ARGS>...> args_;
 
 public:
   FunctionWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred,
-                         const std::tuple<Nobind::Typemap::FromJS<ARGS>...> &&args)
+                         const std::tuple<FromJS_t<ARGS>...> &&args)
       : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)) {}
 
   template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
@@ -72,7 +72,7 @@ public:
           // Convert and call
           RETURN result = FUNC(*std::get<I>(args_)...);
           // Call the ToJS constructor
-          output = std::make_unique<Nobind::Typemap::ToJS<RETURN, RETATTR>>(env_, result);
+          output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
         }
       } else {
         if constexpr (std::is_void_v<RETURN>) {
@@ -82,7 +82,7 @@ public:
           // Call
           RETURN result = FUNC();
           // Call the ToJS constructor
-          output = std::make_unique<Nobind::Typemap::ToJS<RETURN, RETATTR>>(env_, result);
+          output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
         }
       }
     } catch (const std::exception &e) {

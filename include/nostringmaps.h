@@ -28,6 +28,8 @@ namespace Typemap {
     inline Napi::Value operator*() { return Napi::String::New(env_, val_); }                                           \
   };
 
+// The const versions are needed to ensure that we
+// do not end up using the T& specialization (ie we are always more specialized)
 TYPEMAPS_FOR_STD_STRING(std::string);
 TYPEMAPS_FOR_STD_STRING(const std::string);
 TYPEMAPS_FOR_STD_STRING(std::string &);

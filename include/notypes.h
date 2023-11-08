@@ -64,21 +64,32 @@ public:
   inline bool operator*() { return val_; }
 };
 
-// Dummy void specializations
-template <> class FromJS<void> {};
-template <const ReturnAttribute &RETATTR> class ToJS<void, RETATTR> {};
-
 } // namespace Typemap
 
+// never_void is a helper that allows to declare function arguments
+// that can potentially be a void type
+template <typename T> struct never_void {
+  typedef T type;
+};
+template <> struct never_void<void> {
+  typedef int type;
+};
+template <typename T> using never_void_t = typename never_void<T>::type;
+
 // Main entry point when processing a Napi::Value, should return a prvalue to a Typemap::FromJS
-template <typename T> auto inline FromJS(const Napi::Value &val) {
-  return Typemap::FromJS<std::remove_cv_t<T>>(val);
-}
+template <typename T> auto inline FromJS(const Napi::Value &val) { return Typemap::FromJS<std::remove_cv_t<T>>(val); }
 
 // Main entry point when generating a Napi::Value, should return a prvalue to a Typemap::ToJS
-template <typename T, const ReturnAttribute &RETATTR>
-auto inline ToJS(const Napi::Env &env, T val) {
+template <typename T, const ReturnAttribute &RETATTR> auto inline ToJS(const Napi::Env &env, T val) {
   return Typemap::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
 }
+
+// Type getters for the above methods
+// These has been specially crafted to avoid triggering a compiler crash in g++-11 (fixed in g++-12)
+template <typename T> using FromJS_t = typename std::invoke_result_t<decltype(Nobind::FromJS<T>), const Napi::Value &>;
+
+template <typename T, const ReturnAttribute &RETATTR>
+using ToJS_t =
+    typename std::invoke_result_t<decltype(Nobind::ToJS<never_void_t<T>, RETATTR>), const Napi::Env &, never_void_t<T>>;
 
 } // namespace Nobind
