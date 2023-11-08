@@ -58,8 +58,7 @@ class FunctionWrapperTasklet : public Napi::AsyncWorker {
   std::tuple<FromJS_t<ARGS>...> args_;
 
 public:
-  FunctionWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred,
-                         const std::tuple<FromJS_t<ARGS>...> &&args)
+  FunctionWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, const std::tuple<FromJS_t<ARGS>...> &&args)
       : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)) {}
 
   template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
@@ -149,6 +148,17 @@ inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
 template <const ReturnAttribute &RETATTR = ReturnDefault, auto *FUNC>
 Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info) {
   return FunctionWrapperAsync<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{});
+}
+
+// Global or class static getter wrapper
+template <typename T, T *OBJECT> static Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  return *ToJS<T, ReturnDefault>(env, *OBJECT);
+}
+
+// Global or class static setter wrapper
+template <typename T, T *OBJECT> static void SetterWrapper(const Napi::CallbackInfo &info) {
+  *OBJECT = *FromJS<T>(info[0]);
 }
 
 } // namespace Nobind

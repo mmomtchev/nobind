@@ -118,11 +118,6 @@ public:
     self->*MEMBER = *FromJS<T>(val);
   }
 
-  template <typename T, T *MEMBER> static Napi::Value StaticGetterWrapper(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    return *ToJS<T, ReturnDefault>(env, *MEMBER);
-  }
-
   template <typename T, T *MEMBER>
   static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
     *MEMBER = *FromJS<T>(val);
@@ -198,9 +193,9 @@ private:
   template <const ReturnAttribute &RETATTR = ReturnDefault, typename RETURN, typename... ARGS,
             RETURN (CLASS::*FUNC)(ARGS...)>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
+                                        std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
     return MethodWrapperAsync<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
-                                  std::index_sequence_for<ARGS...>{});
+                                       std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...),
             std::size_t... I>
@@ -332,7 +327,7 @@ public:
             typename = std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>>>
   ClassDefinition &def(const char *name) {
     typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper;
-    
+
     if constexpr (RET.isAsync()) {
       wrapper = &NoObjectWrap<CLASS>::template MethodWrapperAsync<RET, MEMBER>;
     } else {
@@ -361,7 +356,12 @@ public:
   template <auto *MEMBER, const ReturnAttribute &RET = ReturnDefault,
             typename = std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>>>
   ClassDefinition &def(const char *name) {
-    typename NoObjectWrap<CLASS>::StaticMethodCallback wrapper = &FunctionWrapper<RET, MEMBER>;
+    Napi::Function::Callback wrapper;
+    if constexpr (RET.isAsync()) {
+      wrapper = &FunctionWrapperAsync<RET, MEMBER>;
+    } else {
+      wrapper = &FunctionWrapper<RET, MEMBER>;
+    }
     properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
     return *this;
   }
@@ -371,7 +371,7 @@ public:
             typename = std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>>>
   ClassDefinition &def(const char *name) {
     typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
-        &NoObjectWrap<CLASS>::template StaticGetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
+        &GetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
     typename NoObjectWrap<CLASS>::StaticSetterCallback setter = nullptr;
     if constexpr (!PROP.isReadOnly()) {
       setter = &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
@@ -409,7 +409,7 @@ template <typename T> class FromJS<T &> {
 
 public:
   inline explicit FromJS(Napi::Value val) {
-    if constexpr (std::is_object_v<T>) {
+    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
       Napi::Env env = val.Env();
       val_ = OBJCLASS::CheckUnwrap(val);
@@ -427,7 +427,7 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS<T &, RETATTR> {
 
 public:
   inline explicit ToJS(Napi::Env env, T &val) : env_(env), val_(&val) {
-    if constexpr (std::is_object_v<T>) {
+    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       return;
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
@@ -444,7 +444,7 @@ template <typename T> class FromJS<T *> {
 
 public:
   inline explicit FromJS(Napi::Value val) {
-    if constexpr (std::is_object_v<T>) {
+    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
       Napi::Env env = val.Env();
       val_ = OBJCLASS::CheckUnwrap(val);
@@ -462,7 +462,7 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
 
 public:
   inline explicit ToJS(Napi::Env env, T *val) : env_(env), val_(val) {
-    if constexpr (std::is_object_v<T>) {
+    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       return;
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
@@ -479,7 +479,7 @@ template <typename T> class FromJS {
 
 public:
   inline explicit FromJS(Napi::Value val) {
-    if constexpr (std::is_object_v<T>) {
+    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       // C++ asks for a regular stack-allocated object
       object = NoObjectWrap<T>::CheckUnwrap(val);
     } else {
@@ -496,7 +496,7 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS {
 
 public:
   inline explicit ToJS(Napi::Env env, T val) : env_(env) {
-    if constexpr (std::is_object_v<T>) {
+    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       // C++ returned regular stack-allocated object, import to JS by copying to the heap
       object = new T(val);
     } else {

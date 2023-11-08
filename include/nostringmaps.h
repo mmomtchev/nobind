@@ -35,33 +35,37 @@ TYPEMAPS_FOR_STD_STRING(const std::string);
 TYPEMAPS_FOR_STD_STRING(std::string &);
 TYPEMAPS_FOR_STD_STRING(const std::string &);
 
-template <> class FromJS<char *> {
-  char *val_;
+#define TYPEMAPS_FOR_CHAR_STRING(TYPE)                                                                                 \
+  template <> class FromJS<TYPE> {                                                                                     \
+    char *val_;                                                                                                        \
+                                                                                                                       \
+  public:                                                                                                              \
+    inline explicit FromJS(Napi::Value val) {                                                                          \
+      if (!val.IsString()) {                                                                                           \
+        throw Napi::TypeError::New(val.Env(), "Not a string");                                                         \
+      }                                                                                                                \
+      std::string s = val.ToString().Utf8Value();                                                                      \
+      val_ = new char[s.size() + 1];                                                                                   \
+      strncpy(val_, s.c_str(), s.size());                                                                              \
+      val_[s.size()] = 0;                                                                                              \
+    }                                                                                                                  \
+                                                                                                                       \
+    inline TYPE operator*() { return val_; }                                                                           \
+                                                                                                                       \
+    ~FromJS() { delete val_; }                                                                                         \
+  };                                                                                                                   \
+                                                                                                                       \
+  template <const ReturnAttribute &RETATTR> class ToJS<TYPE, RETATTR> {                                                \
+    Napi::Env env_;                                                                                                    \
+    TYPE val_;                                                                                                         \
+                                                                                                                       \
+  public:                                                                                                              \
+    inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
+    inline Napi::Value operator*() { return Napi::String::New(env_, val_); }                                           \
+  };
 
-public:
-  inline explicit FromJS(Napi::Value val) {
-    if (!val.IsString()) {
-      throw Napi::TypeError::New(val.Env(), "Not a string");
-    }
-    std::string s = val.ToString().Utf8Value();
-    val_ = new char[s.size() + 1];
-    strncpy(val_, s.c_str(), s.size());
-    val_[s.size()] = 0;
-  }
-
-  inline char *operator*() { return val_; }
-
-  ~FromJS() { delete val_; }
-};
-
-template <const ReturnAttribute &RETATTR> class ToJS<char *, RETATTR> {
-  Napi::Env env_;
-  char *val_;
-
-public:
-  inline explicit ToJS(Napi::Env env, char *val) : env_(env), val_(val) {}
-  inline Napi::Value operator*() { return Napi::String::New(env_, val_); }
-};
+TYPEMAPS_FOR_CHAR_STRING(char *);
+TYPEMAPS_FOR_CHAR_STRING(const char *);
 
 } // namespace Typemap
 

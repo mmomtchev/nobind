@@ -20,6 +20,11 @@ describe('StaticMembers', () => {
     assert.isUndefined(o.static_member);
   });
 
+  it('global getter', () => {
+    assert.isString(dll.version);
+    assert.strictEqual(dll.version, '0.0.7');
+  });
+
   describe('static member setter', () => {
     it('nominal', () => {
       const o = new dll.StaticMembers;

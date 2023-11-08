@@ -29,15 +29,30 @@ public:
   Module(Napi::Env env, Napi::Object exports) : env_(env), exports_(exports), class_idx_(0) {}
 
   // Global function
-  template <auto *FUNC, const ReturnAttribute &RETATTR = ReturnDefault> Module<MODULE> &def(const char *name) {
-    Napi::Value (*wrapper)(const Napi::CallbackInfo &);
-    if constexpr(RETATTR.isAsync()) {
-      wrapper = FunctionWrapperAsync<RETATTR, FUNC>;
+  template <auto *OBJECT, const ReturnAttribute &RET = ReturnDefault,
+            typename = std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(OBJECT)>>>>
+  Module<MODULE> &def(const char *name) {
+    Napi::Function::Callback wrapper;
+    if constexpr (RET.isAsync()) {
+      wrapper = FunctionWrapperAsync<RET, OBJECT>;
     } else {
-      wrapper = FunctionWrapper<RETATTR, FUNC>;
+      wrapper = FunctionWrapper<RET, OBJECT>;
     }
     Napi::Function js = Napi::Function::New(env_, wrapper);
     exports_.Set(name, js);
+    return *this;
+  }
+
+  // Global getter/setter
+  template <auto *OBJECT, const PropertyAttribute &PROP = ReadWrite,
+            typename = std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(OBJECT)>>>>
+  Module<MODULE> &def(const char *name) {
+    Napi::PropertyDescriptor::GetterCallback getter = &GetterWrapper<std::remove_pointer_t<decltype(OBJECT)>, OBJECT>;
+    Napi::PropertyDescriptor::SetterCallback setter = nullptr;
+    if constexpr (!PROP.isReadOnly()) {
+      setter = &SetterWrapper<std::remove_pointer_t<decltype(OBJECT)>, OBJECT>;
+    }
+    exports_.DefineProperty(Napi::PropertyDescriptor::Accessor(name, getter, setter));
     return *this;
   }
 
