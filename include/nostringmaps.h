@@ -64,6 +64,11 @@ TYPEMAPS_FOR_STD_STRING(const std::string &);
     inline Napi::Value operator*() { return Napi::String::New(env_, val_); }                                           \
   };
 
+// Same explanation as above:
+// remove_const_t<const char*> == const char* (it is a pointer before being a const)
+// remove_const_t<char const*> == char* (but few people use this notation)
+// remove_pointer_t<const char*> == const char
+// remove_const_t<remove_pointer_t<const char *>> == char
 TYPEMAPS_FOR_CHAR_STRING(char *);
 TYPEMAPS_FOR_CHAR_STRING(const char *);
 
