@@ -9,5 +9,5 @@ TwoCons::TwoCons(const std::string &s) {
 }
 
 TwoCons::TwoCons() {
- x = -1;
+  x = -1;
 }
