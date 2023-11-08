@@ -1,3 +1,2 @@
 For 1.0:
-* overriding the default typemaps
 * C++ interface (expose the raw Napi API)

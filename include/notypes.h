@@ -7,6 +7,7 @@
 using namespace std::literals::string_literals;
 
 #include <noattributes.h>
+#include <nooverrides.h>
 
 namespace Nobind {
 
@@ -77,11 +78,21 @@ template <> struct never_void<void> {
 template <typename T> using never_void_t = typename never_void<T>::type;
 
 // Main entry point when processing a Napi::Value, should return a prvalue to a Typemap::FromJS
-template <typename T> auto inline FromJS(const Napi::Value &val) { return Typemap::FromJS<std::remove_cv_t<T>>(val); }
+template <typename T> auto inline FromJS(const Napi::Value &val) {
+  if constexpr (TypemapOverrides::FromJS<std::remove_cv_t<T>>::enable) {
+    return TypemapOverrides::FromJS<std::remove_cv_t<T>>(val);
+  } else {
+    return Typemap::FromJS<std::remove_cv_t<T>>(val);
+  }
+}
 
 // Main entry point when generating a Napi::Value, should return a prvalue to a Typemap::ToJS
 template <typename T, const ReturnAttribute &RETATTR> auto inline ToJS(const Napi::Env &env, T val) {
-  return Typemap::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
+  if constexpr (TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>::enable) {
+    return TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
+  } else {
+    return Typemap::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
+  }
 }
 
 // Type getters for the above methods
