@@ -105,6 +105,8 @@ m.def<MyClass>("Hello")
 
 A class can have multiple constructors, including a default one (use `<>` for its arguments). The number of arguments on the JavaScript side determine which one will be used. If there a multiple constructors expecting the same number of arguments, they will be tried in the order of their declaration - the first one which is able to convert its arguments will win.
 
+Overloaded methods, other than constructors, must be explicitly resolved and each signature must have a different name in JavaScript.
+
 Arguments will be automatically converted. The basic types supported out of the box are:
 
 * converted from and to JS `number`
@@ -127,7 +129,7 @@ Arguments will be automatically converted. The basic types supported out of the 
 
   `std::vector<T>`
 
-* all pointers and references will be converted to a JS reference of the object type - provided that the class of the object has been registered in `embind`
+* all pointers and references will be converted to a JS reference of the object type - provided that the class of the object has been registered in `nobind`
 
 * converted from and to JS `Buffer`
 
@@ -139,7 +141,7 @@ Arguments will be automatically converted. The basic types supported out of the 
 
 ### Getters and setters
 
-Global as well as class static and instance variables can be exposed with the same type conversion rules.
+Global as well as class static and instance variables can be exposed with the same type conversion rules:
 
 ```cpp
 // Expose a read-only global variable version
@@ -150,6 +152,8 @@ m.def<MyClass>("Hello")
   .def(&Hello::name, "name");
 ```
 
+`nobind` will automatically determine if the object is a static or an instance one.
+
 ### Creating wrappers and using STLs
 
 Using STLs usually requires creating a wrapper function unless the original C++ function has been designed from the ground up to work with `nobind`:
@@ -159,7 +163,7 @@ Using STLs usually requires creating a wrapper function unless the original C++ 
 // It calls the .Greet() method of each object
 // and returns a JS array of strings
 std::vector<std::string>
-transform(const std::string &title, const std::vector<Hello *> &array) {
+GreetAll(const std::string &title, const std::vector<Hello *> &array) {
   std::vector<std::string> r;
   r.reserve(array.size());
   for (auto obj : array) {
@@ -169,7 +173,7 @@ transform(const std::string &title, const std::vector<Hello *> &array) {
 }
 
 NOBIND_MODULE(array, m) {
-  m.def<&transform>("transform");
+  m.def<&GreetAll>("greetAll");
   m.def<MyClass>("Hello")
     // Include a constructor with a single std::string & argument
     .cons<std::string &>()
@@ -180,11 +184,15 @@ NOBIND_MODULE(array, m) {
 Used from JavaScript this function will have the following semantics:
 
 ```js
-const output = dll.transform([new dll.Hello(''), new dll.Hello(''), new dll.Hello('')]);
+const output = dll.greetAll('Mr', [
+  new dll.Hello('Monday'),
+  new dll.Hello('Tuesday'),
+  new dll.Hello('Wednesday')
+]);
 typeof output[0] === 'string'
 ```
 
-`std::vector` can be of any supported type - including known registered object types, pointers or references to them, primitives types or any other additional custom type.
+`std::vector` can be of any supported type - including known registered object types, pointers or references to them, primitives types or any other additional custom type. `nobind` will take care to transform the pointers and the references to JS objects.
 
 ### C++ exceptions
 
@@ -301,6 +309,46 @@ NOBIND_MODULE(buffer, m) {
   .def<&nobind_put_buffer>("put_buffer");
 }
 ```
+
+### Factory functions
+
+Before continuing with this section, we should explain the notion of a JS proxy.
+
+Each C++ object is created with `new` and destroyed with `delete` in the C++ heap. These objects are not directly visible from JavaScript. What is visible from JavaScript is called a JS proxy - a pure JS object that contains a hidden pointer to the underlying C++ object. This JS object is managed by the V8 GC.
+
+This means that functions that return C++ objects need to be compatible with the GC rules in JavaScript. For every function, other than a constructor, that returns an object, there must be clear rules on who frees the C++ object.
+
+By default, `nobind` will consider that it owns objects returned as pointers and that it does not own objects returned as references. This behavior can be modified with an attribute:
+
+```cpp
+class Chained {
+public:
+  Chained();
+  Chained *Factory();
+  Chained &Do();
+};
+
+NOBIND_MODULE(chained, m) {
+  m.def<Chained>("Chained")
+    .cons<>()
+    // Nobind::ReturnOwned is the default behavior for pointers
+    .def<&Chained::Factory, Nobind::ReturnOwned>("create");
+    // Nobind::ReturnShared is the default behavior for references
+    .def<&Chained::Do, Nobind::ReturnShared>("do");
+}
+```
+
+`.do()` is a method that can be chained:
+```js
+const o = new Chained;
+o.do().do().do();
+```
+
+The `Nobind::ReturnShared` signals `nobind` that C++ objects returned by this method should not be considered new objects and should not be freed when the JS proxy is collected by the GC.
+
+`.create()` is a method that creates new objects. The `Nobind::ReturnOwned` signals `nobind` that C++ objects returned by this method should be considered new objects and should be freed when the GC destroys the JS proxy.
+
+Also, be sure to check [#1](https://github.com/mmomtchev/nobind/issues/1) for a very important warning about shared references.
 
 ### Directly accessing the underlying `node-addon-api`
 
