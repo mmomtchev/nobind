@@ -17,7 +17,7 @@ public:
   inline int operator*() { return val_; }
 };
 
-template <const ReturnAttribute &RETATTR> class ToJS<int, RETATTR> {
+template <> class ToJS<int> {
   Napi::Env env_;
   int val_;
 

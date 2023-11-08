@@ -10,7 +10,7 @@ namespace TypemapOverrides {
 template <typename T> class FromJS {
   FromJS() = delete;
 };
-template <typename T, const ReturnAttribute &RETATTR> class ToJS {
+template <typename T, const ReturnAttribute &RETATTR = ReturnOwned> class ToJS {
   ToJS() = delete;
 };
 

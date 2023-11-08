@@ -90,6 +90,8 @@ template <typename T> auto inline FromJS(const Napi::Value &val) {
 template <typename T, const ReturnAttribute &RETATTR> auto inline ToJS(const Napi::Env &env, T val) {
   if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>, const Napi::Env &, T>) {
     return TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
+  } else if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>>, const Napi::Env &, T>) {
+    return TypemapOverrides::ToJS<std::remove_cv_t<T>>(env, val);
   } else {
     return Typemap::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
   }
