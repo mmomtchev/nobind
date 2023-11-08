@@ -60,6 +60,14 @@ public:
   template <class CLASS> ClassDefinition<CLASS> def(const char *name) {
     return ClassDefinition<CLASS>(name, env_, exports_, class_idx_++);
   }
+
+  Napi::Env Env() {
+    return env_;
+  }
+
+  Napi::Object Exports() {
+    return exports_;
+  }
 };
 
 } // namespace Nobind

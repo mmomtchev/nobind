@@ -43,6 +43,7 @@ template <typename T> class FromJS;
  */
 template <typename T, const ReturnAttribute &RETATTR> class ToJS;
 
+// bool specializations
 template <const ReturnAttribute &RETATTR> class ToJS<bool, RETATTR> {
   Napi::Env env_;
   bool val_;
@@ -63,6 +64,26 @@ public:
     val_ = val.ToBoolean().Value();
   }
   inline bool operator*() { return val_; }
+};
+
+// native specializations (does not support async)
+template <const ReturnAttribute &RETATTR> class ToJS<Napi::Value, RETATTR> {
+  Napi::Env env_;
+  Napi::Value val_;
+
+public:
+  inline explicit ToJS(Napi::Env env, Napi::Value val) : env_(env), val_(val) {
+    static_assert(!RETATTR.isAsync(), "The native typemaps are not compatible with async mode");
+  }
+  inline Napi::Value operator*() { return val_; }
+};
+
+template <> class FromJS<Napi::Value> {
+  Napi::Value val_;
+
+public:
+  inline explicit FromJS(const Napi::Value &val) : val_(val) {}
+  inline Napi::Value operator*() { return val_; }
 };
 
 } // namespace Typemap
