@@ -209,6 +209,8 @@ m.def<MyClass>("Hello")
 
 Everything is fully automatic. Raising a C++ exception will reject the `Promise`.
 
+Enabling async mode will allow the JS user to potentially call the C++ method while a previous invocation is still running. If the C++ method is not fully reentrant, a wrapper with a lock mechanism should be implemented.
+
 ### Custom type converters
 
 Custom type converters can be declared as follows:
