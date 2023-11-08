@@ -1,6 +1,6 @@
 # nobind
 
-Experimental next-gen binding framework for Node.js / Node-API
+Experimental next-gen binding framework for Node.js / Node-API inspired by `pybind11`
 
 Inspired by `pybind11` and `embind`, in turn inspired by the groundbreaking `Boost.Python`.
 
@@ -53,6 +53,265 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | No, must include a manual wrapper |
 | Custom type casters | Yes | Planned for 1.0 |
 | Interfacing between multiple modules | Yes | No |
+
+## Usage
+`nobind` is a set of C++17 templates that must be included directly in the user project.
+
+### Module definition
+
+Let's try to wrap a simple C++ class:
+
+```cpp
+class Hello {
+  public:
+std::string name;
+Hello(const std::string &s) : name(s) {}
+std::string Greet(const std::string &s) {
+    std::stringstream r;
+    r << "hello " << s << " " << name_;
+    return r.str();
+  }
+};
+```
+
+Start by creating a module:
+
+```cpp
+#include <nobind.h>
+
+// Define a new module
+NOBIND_MODULE(basic_class, m) {
+  // Expose a C++ class called MyClass
+  m.def<MyClass>("Hello")
+    // Include a constructor with a single std::string & argument
+    .cons<std::string &>();
+}
+```
+
+### Adding methods
+
+`nobind` supports global methods and instance and static class methods. All of them are declared by using `.def()`:
+
+```cpp
+// Expose a global function global_fn
+m.def<&global_fn>("global_fn");
+m.def<MyClass>("Hello")
+  .cons<std::string &>()
+  // Expose a class method (whether it is static or instance)
+  .def(&Hello::Greet, "greet");
+```
+
+`nobind` will identify the type of the class method, static methods will be available through the class itself and instance methods will be available through the object instance.
+
+A class can have multiple constructors, including a default one (use `<>` for its arguments). The number of arguments on the JavaScript side determine which one will be used. If there a multiple constructors expecting the same number of arguments, they will be tried in the order of their declaration - the first one which is able to convert its arguments will win.
+
+Arguments will be automatically converted. The basic types supported out of the box are:
+
+* converted from and to JS `number`
+  
+  `int`, `short`, `long`, `unsigned`, `unsigned short`, `unsigned long`, `long long`, `unsigned long long`, `double`, `float`
+
+* converted from and to JS `string`
+
+  `std::string`, `char *`
+
+* converted from and to JS `boolean`
+
+  `bool`
+
+* converted from and to JS `object`
+
+  `std::map<string, T>`
+
+* converted from and to JS `Array`
+
+  `std::vector<T>`
+
+* all pointers and references will be converted to a JS reference of the object type - provided that the class of the object has been registered in `embind`
+
+* converted from and to JS `Buffer`
+
+  `std::pair<uint8_t *, size_t>`
+
+* all C++ objects that expect a `Napi::Value` or return a `Napi::Value` will also work
+
+* additional custom type converters can be registered by the user
+
+### Getters and setters
+
+Global as well as class static and instance variables can be exposed with the same type conversion rules.
+
+```cpp
+// Expose a read-only global variable version
+m.def<&version, Nobind::ReadOnly>("version");
+m.def<MyClass>("Hello")
+  .cons<std::string &>()
+  // Expose a class instance variable with getter and setter
+  .def(&Hello::name, "name");
+```
+
+### Creating wrappers and using STLs
+
+Using STLs usually requires creating a wrapper function unless the original C++ function has been designed from the ground up to work with `nobind`:
+
+```cpp
+// A function that receives a JS array of Hello objects
+// It calls the .Greet() method of each object
+// and returns a JS array of strings
+std::vector<std::string>
+transform(const std::string &title, const std::vector<Hello *> &array) {
+  std::vector<std::string> r;
+  r.reserve(array.size());
+  for (auto obj : array) {
+    r.push_back(obj->Greet(title));
+  }
+  return r;
+}
+
+NOBIND_MODULE(array, m) {
+  m.def<&transform>("transform");
+  m.def<MyClass>("Hello")
+    // Include a constructor with a single std::string & argument
+    .cons<std::string &>()
+    .def<&Hello::Greet>("greet");
+}
+```
+
+Used from JavaScript this function will have the following semantics:
+
+```js
+const output = dll.transform([new dll.Hello(''), new dll.Hello(''), new dll.Hello('')]);
+typeof output[0] === 'string'
+```
+
+`std::vector` can be of any supported type - including known registered object types, pointers or references to them, primitives types or any other additional custom type.
+
+### C++ exceptions
+
+Methods that raise a C++ exception will result in a normal JavaScript exception in the JavaScript code.
+
+### Async methods
+
+Methods can be made to run in a background thread from the `libuv` thread pool and to return a `Promise` to be resolved with the returned value:
+
+```js
+m.def<MyClass>("Hello")
+  .def<&Hello::Greet, Nobind::ReturnAsync>("greetAsync");
+```
+
+Everything is fully automatic. Raising a C++ exception will reject the `Promise`.
+
+### Custom type converters
+
+Custom type converters can be declared as follows:
+
+```cpp
+// This example overrides the default `int` typemaps
+// with typemaps that expect and return strings
+
+// Start by including this file
+#include <nooverrides.h>
+
+namespace Nobind {
+// Custom typemaps must live in this namespace to override
+// the default typemaps
+namespace TypemapOverrides {
+
+// They consist of two simple classes templated on the C++ type
+// (the C++ type is the determning type)
+// This one will be called whenever nobind needs to convert
+// a JS argument to C++ int
+template <> class FromJS<int> {
+  int val_;
+
+public:
+  // The first part will be called from the V8 context
+  // It must import the value and store it so that it can
+  // be accessed without V8
+  // It must check if the JS argument is of the correct type
+  inline explicit FromJS(Napi::Value val) {
+    if (!val.IsString()) {
+      throw Napi::TypeError::New(val.Env(), "Not a string");
+    }
+    val_ = std::atoi(val.ToString().Utf8Value().c_str());
+  }
+  // The second part may be called from a background thread
+  // It should not access V8
+  inline int operator*() { return val_; }
+};
+
+// This typemap will be used when C++ returns an int
+// It must create a value for JS
+template <> class ToJS<int> {
+  Napi::Env env_;
+  int val_;
+
+public:
+  // The first part may be called from a background thread
+  // It should simply store the value for later use
+  inline explicit ToJS(Napi::Env env, int val) : env_(env), val_(val) {}
+  // The second part will be called on the main V8 thread
+  // It should produce a JS value
+  inline Napi::Value operator*() { return Napi::String::New(env_, std::to_string(val_)); }
+};
+} // namespace TypemapOverrides
+
+} // namespace Nobind
+
+#include <nobind.h>
+
+int add(int a, int b) {
+  return a + b;
+}
+
+NOBIND_MODULE(override_tmaps, m) {
+  m.def<&add>("add");
+}
+```
+
+### Using `Buffer`s
+
+Unless the C++ code has been designed for `nobind`, using a `Buffer` will likely require creating custom wrappers to convert from and to `std::pair<uint8_t*, size_t>`:
+
+```cpp
+#include <fixtures/buffer.h>
+
+// Nobind::Buffer is defined as follows:
+// using Buffer = std::pair<uint8_t *, size_t>;
+
+#include <nobind.h>
+
+// These are the underlying C++ functions that use buffers
+// We want to call them from JS
+void get_buffer(uint8_t *&, size_t &);
+void put_buffer(uint8_t *, size_t);
+
+// These wrappers are what makes them nobind-compatible
+Nobind::Typemap::Buffer nobind_get_buffer() {
+  Nobind::Typemap::Buffer buf;
+  get_buffer(buf.first, buf.second);
+  return buf;
+}
+void nobind_put_buffer(Nobind::Typemap::Buffer buf) {
+  put_buffer(buf.first, buf.second);
+}
+
+NOBIND_MODULE(buffer, m) {
+  m.def<&nobind_get_buffer>("get_buffer")
+  .def<&nobind_put_buffer>("put_buffer");
+}
+```
+
+### Directly accessing the underlying `node-addon-api`
+
+C++ functions that expect `Napi::Value` arguments or return `Napi::Value` results will skip the type conversions. This can be used to interact directly with the underlying Node.js API.
+
+It is also possible to access the `exports` and `env` objects when initializing the module:
+```cpp
+NOBIND_MODULE(native, m) {
+  m.Exports().Set("debug_build", Napi::Boolean::New(m.Env(), true));
+}
+```
 
 ## Developer info
 
