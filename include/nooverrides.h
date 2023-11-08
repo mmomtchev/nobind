@@ -1,18 +1,17 @@
 #pragma once
-#include <noattributes.h>
 #include <napi.h>
+#include <noattributes.h>
+#include <type_traits>
 
 namespace Nobind {
 namespace TypemapOverrides {
 
+// Empty invalid overridden templates
 template <typename T> class FromJS {
-public:
-  static constexpr bool enable = false;
+  FromJS() = delete;
 };
-
 template <typename T, const ReturnAttribute &RETATTR> class ToJS {
-public:
-  static constexpr bool enable = false;
+  ToJS() = delete;
 };
 
 } // namespace TypemapOverrides

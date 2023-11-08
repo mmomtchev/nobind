@@ -79,7 +79,7 @@ template <typename T> using never_void_t = typename never_void<T>::type;
 
 // Main entry point when processing a Napi::Value, should return a prvalue to a Typemap::FromJS
 template <typename T> auto inline FromJS(const Napi::Value &val) {
-  if constexpr (TypemapOverrides::FromJS<std::remove_cv_t<T>>::enable) {
+  if constexpr (std::is_constructible_v<TypemapOverrides::FromJS<std::remove_cv_t<T>>, const Napi::Value &>) {
     return TypemapOverrides::FromJS<std::remove_cv_t<T>>(val);
   } else {
     return Typemap::FromJS<std::remove_cv_t<T>>(val);
@@ -88,7 +88,7 @@ template <typename T> auto inline FromJS(const Napi::Value &val) {
 
 // Main entry point when generating a Napi::Value, should return a prvalue to a Typemap::ToJS
 template <typename T, const ReturnAttribute &RETATTR> auto inline ToJS(const Napi::Env &env, T val) {
-  if constexpr (TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>::enable) {
+  if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>, const Napi::Env &, T>) {
     return TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
   } else {
     return Typemap::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);

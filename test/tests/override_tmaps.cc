@@ -15,8 +15,6 @@ public:
     val_ = std::atoi(val.ToString().Utf8Value().c_str());
   }
   inline int operator*() { return val_; }
-
-  static constexpr bool enable = true;
 };
 
 template <const ReturnAttribute &RETATTR> class ToJS<int, RETATTR> {
@@ -26,10 +24,8 @@ template <const ReturnAttribute &RETATTR> class ToJS<int, RETATTR> {
 public:
   inline explicit ToJS(Napi::Env env, int val) : env_(env), val_(val) {}
   inline Napi::Value operator*() { return Napi::String::New(env_, std::to_string(val_)); }
-
-  static constexpr bool enable = true;
 };
-} // namespace OverridesTypemap
+} // namespace TypemapOverrides
 
 } // namespace Nobind
 
