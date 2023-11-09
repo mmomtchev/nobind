@@ -36,7 +36,7 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | Method of operation | Custom C++ header compiler, uses its own interface language, generates C++ code | Collection of C++ templates to be included in the project |
 | Method of using | Must write metaprogramming code | Must enumerate the binded methods using C++ syntax |
 | C++ requirements | C++11 | C++17 with some features such as wrapping of lambdas requiring C++20 |
-| All C++ types | Yes | No `enum` |
+| C++ types | No function pointers | No `enum` and functions pointers |
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Limited, but will evolve; Supports direct use of C++ STL containers from JavaScript without copying | Limited, all passing of STL arguments is by copying |
