@@ -107,37 +107,20 @@ A class can have multiple constructors, including a default one (use `<>` for it
 
 Overloaded methods, other than constructors, must be explicitly resolved and each signature must have a different name in JavaScript.
 
-Arguments will be automatically converted. The basic types supported out of the box are:
+Arguments will be automatically converted. The C++ type of the wrapped function selects the type converter. The basic types supported out of the box are:
 
-* converted from and to JS `number`
-  
-  `int`, `short`, `long`, `unsigned`, `unsigned short`, `unsigned long`, `long long`, `unsigned long long`, `double`, `float`
+| JavaScript type | C++ type |
+| --- | --- |
+| `number`  | `int`, `short`, `long`, `unsigned`, `unsigned short`, `unsigned long`, `long long`, `unsigned long long`, `double`, `float` |
+| `string` | `std::string`, `char *` |
+| `boolean` | `bool` |
+| `object` | `std::map<string, T>` (*all properties must have the same type*) |
+| `Array` | `std::vector<T>` (*all items must have the same type*) |
+| instances of class registered to `nobind` | class object, pointers and references |
+| `Buffer` | `std::pair<uint8_t *, size_t>` |
+| A raw V8 `Napi::Value` | `Napi::Value` |
 
-* converted from and to JS `string`
-
-  `std::string`, `char *`
-
-* converted from and to JS `boolean`
-
-  `bool`
-
-* converted from and to JS `object`
-
-  `std::map<string, T>`
-
-* converted from and to JS `Array`
-
-  `std::vector<T>`
-
-* all pointers and references will be converted to a JS reference of the object type - provided that the class of the object has been registered in `nobind`
-
-* converted from and to JS `Buffer`
-
-  `std::pair<uint8_t *, size_t>`
-
-* all C++ objects that expect a `Napi::Value` or return a `Napi::Value` will also work
-
-* additional custom type converters can be registered by the user
+Additional custom type converters can be registered by the user.
 
 ### Getters and setters
 
@@ -312,7 +295,7 @@ NOBIND_MODULE(buffer, m) {
 }
 ```
 
-### Factory functions
+### Returning objects and factory functions
 
 Before continuing with this section, we should explain the notion of a JS proxy.
 
@@ -355,6 +338,19 @@ Also, be sure to check [#1](https://github.com/mmomtchev/nobind/issues/1) for a 
 ### Directly accessing the underlying `node-addon-api`
 
 C++ functions that expect `Napi::Value` arguments or return `Napi::Value` results will skip the type conversions. This can be used to interact directly with the underlying Node.js API.
+
+Unlike raw Node-API, C++ functions will receive their `Napi::Value`s with the usual C++ convention:
+
+```cpp
+Napi::Value add(Napi::Value a, Napi::Value b);
+```
+
+Mixing is also supported:
+```cpp
+int add(Napi::Value a, int b);
+```
+
+In this case only the first argument will contain the raw V8 value.
 
 It is also possible to access the `exports` and `env` objects when initializing the module:
 ```cpp
