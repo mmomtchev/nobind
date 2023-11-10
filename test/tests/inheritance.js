@@ -13,6 +13,7 @@ it('nominal', () => {
   assert.instanceOf(d, dll.Derived);
   assert.instanceOf(d, dll.Base);
   assert.strictEqual(d.get(), 11);
+  assert.strictEqual(d.virtual_base_get(), 11);
   assert.strictEqual(d.base_get(), 10);
   assert.strictEqual(d.derived_get(), 11);
 });
