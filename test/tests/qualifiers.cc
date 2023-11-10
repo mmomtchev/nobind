@@ -2,7 +2,7 @@
 
 #include <nobind.h>
 
-NOBIND_MODULE(static_members, m) {
+NOBIND_MODULE(qualifiers, m) {
   m.def<Qualified>("Qualified")
     .cons<>()
     .def<&Qualified::get1>("get1")
