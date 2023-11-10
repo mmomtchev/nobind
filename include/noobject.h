@@ -96,7 +96,7 @@ public:
   // The first function of the member method wrapper trio (same std::integral_constant trick)
   // This is the function that gets instantiated to create a wrapper (by getting a pointer)
   // and gets will be called by JavaScript
-  template <const ReturnAttribute &RET = ReturnDefault, auto CLASS::*FUNC>
+  template <const ReturnAttribute &RET = ReturnDefault, auto FUNC>
   Napi::Value MethodWrapper(const Napi::CallbackInfo &info) {
     return MethodWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
@@ -104,7 +104,7 @@ public:
   // The first function of the async member trio
   // This is the function that gets instantiated to create a wrapper (by getting a pointer)
   // and gets will be called by JavaScript
-  template <const ReturnAttribute &RET = ReturnDefault, auto CLASS::*FUNC>
+  template <const ReturnAttribute &RET = ReturnDefault, auto FUNC>
   Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info) {
     return MethodWrapperAsync<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
@@ -138,25 +138,28 @@ private:
   // The two remaining functions of the member method wrapper trio
   // The first (second of the three) has 4 possibles signatures:
   // - regular, const, noexcept and const noexcept
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...)>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
+            RETURN (BASE::*FUNC)(ARGS...)>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
+                                   std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
     return MethodWrapper<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...) const>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
+            RETURN (BASE::*FUNC)(ARGS...) const>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (CLASS::*)(ARGS...) const, FUNC>) {
+                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
     return MethodWrapper<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...) noexcept>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
+            RETURN (BASE::*FUNC)(ARGS...) noexcept>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (CLASS::*)(ARGS...) noexcept, FUNC>) {
+                                   std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
     return MethodWrapper<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS,
-            RETURN (CLASS::*FUNC)(ARGS...) const noexcept>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
+            RETURN (BASE::*FUNC)(ARGS...) const noexcept>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (CLASS::*)(ARGS...) const noexcept, FUNC>) {
+                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
     return MethodWrapper<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
@@ -205,25 +208,28 @@ private:
   }
 
   // The two remaining functions of the member async method wrapper trio (the first one with its 4 signatures)
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...)>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
+            RETURN (BASE::*FUNC)(ARGS...)>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (CLASS::*)(ARGS...), FUNC>) {
+                                   std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
     return MethodWrapperAsync<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...) const>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
+            RETURN (BASE::*FUNC)(ARGS...) const>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (CLASS::*)(ARGS...) const, FUNC>) {
+                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
     return MethodWrapperAsync<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (CLASS::*FUNC)(ARGS...) noexcept>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
+            RETURN (BASE::*FUNC)(ARGS...) noexcept>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (CLASS::*)(ARGS...) noexcept, FUNC>) {
+                                   std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
     return MethodWrapperAsync<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS,
-            RETURN (CLASS::*FUNC)(ARGS...) const noexcept>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
+            RETURN (BASE::*FUNC)(ARGS...) const noexcept>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (CLASS::*)(ARGS...) const noexcept, FUNC>) {
+                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
     return MethodWrapperAsync<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
@@ -350,7 +356,7 @@ template <class CLASS> class ClassDefinition {
 
 public:
   // Instance class method
-  template <auto CLASS::*MEMBER, const ReturnAttribute &RET = ReturnDefault,
+  template <auto MEMBER, const ReturnAttribute &RET = ReturnDefault,
             typename = std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>>>
   ClassDefinition &def(const char *name) {
     typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper;

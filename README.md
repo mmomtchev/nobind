@@ -45,7 +45,7 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | WASM/Browser support | Yes | Not for 1.0, but planned through `embind` compatibility |
 | Cross-platform | Yes | Yes |
 | Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind`, `embind` and `pybind` is planned in theory |
-| Exposing C++ inheritance to JavaScript | Yes | No |
+| Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support | Yes, but no downcasting support and `instanceof` requires a small kludge in the JavaScript wrapper (see [here](https://github.com/mmomtchev/nobind/blob/main/test/tests/inheritance.js)) |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes | No, must include a manual wrapper
 | Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | No, must include a manual wrapper |

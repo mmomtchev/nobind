@@ -11,7 +11,6 @@ NOBIND_MODULE(inheritance, m) {
   m.def<Derived>("Derived")
     .cons<int>()
     .def<&Derived::get>("get")
-    // Currently it is not possible to access Derived::base_get
-    //.def<&Derived::base_get>("base_get")
+    .def<&Derived::base_get>("base_get")
     .def<&Derived::derived_get>("derived_get");
 }
