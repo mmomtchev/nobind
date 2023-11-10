@@ -20,19 +20,19 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
   template <typename T> friend class Typemap::FromJS;
   template <typename T, const ReturnAttribute &RETATTR> friend class Typemap::ToJS;
 
-  template <const ReturnAttribute &RETATTR, auto FUNC, typename RETURN, typename... ARGS>
+  template <const ReturnAttribute &RETATTR, typename BASE, auto FUNC, typename RETURN, typename... ARGS>
   class MethodWrapperTasklet : public Napi::AsyncWorker {
     Napi::Env env_;
     Napi::Promise::Deferred deferred_;
     std::unique_ptr<ToJS_t<RETURN, RETATTR>> output;
     std::tuple<FromJS_t<ARGS>...> args_;
-    CLASS *self_;
+    BASE *self_;
 
   public:
     MethodWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, CLASS *self,
                          const std::tuple<FromJS_t<ARGS>...> &&args)
         : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)),
-          self_(self) {}
+          self_(static_cast<BASE *>(self)) {}
 
     template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
       try {
@@ -142,29 +142,30 @@ private:
             RETURN (BASE::*FUNC)(ARGS...)>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
                                    std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
-    return MethodWrapper<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+    return MethodWrapper<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) const>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
                                    std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
-    return MethodWrapper<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+    return MethodWrapper<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) noexcept>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
                                    std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
-    return MethodWrapper<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+    return MethodWrapper<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) const noexcept>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
                                    std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
-    return MethodWrapper<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+    return MethodWrapper<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
   // The last one of the trio
-  template <const ReturnAttribute &RETATTR, typename RETURN, auto FUNC, typename... ARGS, std::size_t... I>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS,
+            std::size_t... I>
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
@@ -175,12 +176,12 @@ private:
         std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
         if constexpr (std::is_void_v<RETURN>) {
           // Convert and call
-          (self->*FUNC)(*std::get<I>(args)...);
+          (static_cast<BASE *>(self)->*FUNC)(*std::get<I>(args)...);
           return env.Undefined();
           // FromJS objects are destroyed
         } else {
           // Convert and call
-          RETURN result = (self->*FUNC)(*std::get<I>(args)...);
+          RETURN result = (static_cast<BASE *>(self)->*FUNC)(*std::get<I>(args)...);
           // Call the ToJS constructor
           auto output = ToJS_t<RETURN, RETATTR>(env, result);
           // Convert
@@ -190,11 +191,11 @@ private:
       } else {
         if constexpr (std::is_void_v<RETURN>) {
           // Call
-          (self->*FUNC)();
+          (static_cast<BASE *>(self)->*FUNC)();
           return env.Undefined();
         } else {
           // Call
-          RETURN result = (self->*FUNC)();
+          RETURN result = (static_cast<BASE *>(self)->*FUNC)();
           // Call the ToJS constructor
           auto output = ToJS_t<RETURN, RETATTR>(env, result);
           // Convert
@@ -208,32 +209,33 @@ private:
   }
 
   // The two remaining functions of the member async method wrapper trio (the first one with its 4 signatures)
+  // (BASE == CLASS unless calling an inherited method, in this case it is the class defining it)
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...)>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
-    return MethodWrapperAsync<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+                                        std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
+    return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) const>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
-    return MethodWrapperAsync<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+                                        std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
+    return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) noexcept>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
-    return MethodWrapperAsync<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+                                        std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
+    return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) const noexcept>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
-    return MethodWrapperAsync<RETATTR, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+                                        std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
+    return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
-  template <const ReturnAttribute &RETATTR, typename RETURN, auto FUNC, typename... ARGS, std::size_t... I>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS, std::size_t... I>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
@@ -242,7 +244,7 @@ private:
     try {
       CheckArgLength<ARGS...>(env, info.Length());
 
-      auto tasklet = new MethodWrapperTasklet<RETATTR, FUNC, RETURN, ARGS...>(
+      auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(
           env, deferred, self, std::forward_as_tuple(Nobind::FromJS<ARGS>(info[I])...));
 
       tasklet->Queue();
