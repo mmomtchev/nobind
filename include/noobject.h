@@ -511,14 +511,24 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
 public:
   inline explicit ToJS(Napi::Env env, T *val) : env_(env), val_(val) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      return;
+      if constexpr (RETATTR.isNullForbidden()) {
+        if (val == nullptr) {
+          throw Napi::Error::New(env, "Returned nullptr");
+        }
+      }
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
     }
   }
   // We consider this to be a factory function, it has returned a pointer
   // By default, the JS proxy will own this object
-  inline Napi::Value operator*() { return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_); }
+  inline Napi::Value operator*() {
+    if constexpr (!RETATTR.isNullForbidden()) {
+      if (val_ == nullptr)
+        return env_.Null();
+    }
+    return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_);
+  }
 };
 
 // Generic stack-allocated object typemaps

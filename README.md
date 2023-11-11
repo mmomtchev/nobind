@@ -192,6 +192,10 @@ Everything is fully automatic. Raising a C++ exception will reject the `Promise`
 
 Enabling async mode will allow the JS user to potentially call the C++ method while a previous invocation is still running. If the C++ method is not fully reentrant, a wrapper with a lock mechanism should be implemented.
 
+### `nullptr`
+
+By default, when a C++ method returns a `nullptr`, `nobind` will convert it to `null` in JavaScript. This behavior can be overridden by specifying `Nobind::NullForbidden` as a return attribute - in this case the method will throw.
+
 ### Custom type converters
 
 Custom type converters can be declared as follows:

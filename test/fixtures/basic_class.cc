@@ -17,6 +17,8 @@ void Hello::throws() {
 }
 
 Hello *Hello::Factory(const std::string &name) {
+  if (name.size() == 0)
+    return nullptr;
   return new Hello(name);
 }
 

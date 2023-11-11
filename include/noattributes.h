@@ -32,15 +32,19 @@ class ReturnAttribute : public Attribute {
 public:
   enum Return { Shared = 0x1, Owned = 0x2 };
   enum Execution { Sync = 0x4, Async = 0x8 };
+  enum Null { Allowed = 0x10, Forbidden = 0x20 };
 
   constexpr ReturnAttribute() : flags(0) {}
   constexpr ReturnAttribute(Return v) : flags(v) {}
   constexpr ReturnAttribute(Execution v) : flags(v) {}
+  constexpr ReturnAttribute(Null v) : flags(v) {}
   constexpr ReturnAttribute operator|(const ReturnAttribute &other) const {
     return ReturnAttribute(flags | other.flags);
   }
   constexpr bool isShared() const { return (flags & Shared) == Shared; }
   constexpr bool isOwned() const { return (flags & Owned) == Owned; }
+  constexpr bool isNullAllowed() const { return (flags & Allowed) == Allowed; }
+  constexpr bool isNullForbidden() const { return (flags & Forbidden) == Forbidden; }
   constexpr bool isAsync() const { return (flags & Async) == Async; }
   template <bool DEFAULT> constexpr bool ShouldOwn() const {
     if (isShared())
@@ -79,6 +83,16 @@ constexpr ReturnAttribute ReturnSync = ReturnAttribute(ReturnAttribute::Sync);
  * The method will be asynchronous
  */
 constexpr ReturnAttribute ReturnAsync = ReturnAttribute(ReturnAttribute::Async);
+
+/**
+ * This method can return nullptr without raising an exception
+ */
+constexpr ReturnAttribute NullAllowed = ReturnAttribute(ReturnAttribute::Allowed);
+
+/**
+ * This method throws when it returns nullptr
+ */
+constexpr ReturnAttribute NullForbidden = ReturnAttribute(ReturnAttribute::Forbidden);
 
 class ArgumentAttribute : public Attribute {
 public:

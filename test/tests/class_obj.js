@@ -24,13 +24,26 @@ describe('reference', () => {
     }, /Expected 1 arguments, got 0/);
   });
 
-  it('null', () => {
-    assert.throws(() => {
-      new dll.Hello(null);
-    }, /No constructor with the given 1 arguments found/);
-    assert.throws(() => {
-      assert.isNumber(dll.hello_ref(null));
-    }, /Not an object/);
+  describe('null', () => {
+    it('null argument when not allowed', () => {
+      assert.throws(() => {
+        new dll.Hello(null);
+      }, /No constructor with the given 1 arguments found/);
+      assert.throws(() => {
+        assert.isNumber(dll.hello_ref(null));
+      }, /Not an object/);
+    });
+
+    it('null allowed as return value', () => {
+      const o = dll.Hello.factory_tolerant('');
+      assert.isNull(o);
+    });
+
+    it('null throws when returned', () => {
+      assert.throws(() => {
+        dll.Hello.factory_strict('');
+      }, /Returned nullptr/);
+    });
   });
 
   it('undefined', () => {
@@ -61,7 +74,7 @@ describe('pointer', () => {
     }, /Not a Hello/);
 
     assert.throws(() => {
-      dll.hello_ptr({a: 0});
+      dll.hello_ptr({ a: 0 });
     }, /Not a Hello/);
 
     assert.throws(() => {
