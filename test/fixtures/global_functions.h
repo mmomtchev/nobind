@@ -7,3 +7,4 @@ double power(double a, double b);
 std::string hello(const std::string &s);
 void throws();
 void nothing();
+int test(bool a);

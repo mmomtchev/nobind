@@ -32,6 +32,22 @@ describe('int, int -> bool', () => {
   });
 });
 
+describe('bool -> int', () => {
+  it('nominal', () => {
+    assert.isNumber(dll.test(true));
+  });
+
+  it('exception', () => {
+    assert.throws(() => {
+      dll.test('2');
+    }, /Not a boolean/);
+
+    assert.throws(() => {
+      dll.test();
+    }, /Expected 1 arguments, got 0/);
+  });
+});
+
 describe('double, double -> double', () => {
   it('nominal', () => {
     assert.isNumber(dll.pow(2.5, 0.75));

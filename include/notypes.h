@@ -39,8 +39,8 @@ template <> class FromJS<bool> {
 
 public:
   inline explicit FromJS(Napi::Value val) {
-    if (!val.IsNumber()) {
-      throw Napi::TypeError::New(val.Env(), "Not a number");
+    if (!val.IsBoolean()) {
+      throw Napi::TypeError::New(val.Env(), "Not a boolean");
     }
     val_ = val.ToBoolean().Value();
   }
