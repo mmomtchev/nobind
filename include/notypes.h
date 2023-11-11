@@ -24,25 +24,6 @@ template <class C, typename T> T getMemberPointerType(T C::*v);
 
 namespace Typemap {
 
-/**
- * Typemap::FromJS rules
- * - The constructor should check the incoming value
- * - The constructor is called on the V8 main thread
- * - operator* should return an in-place constructed prvalue
- * - operator* can be called in a background thread - no V8 Local<>s allowed
- * - The constructor can create state that will be destroyed after the function call
- */
-template <typename T> class FromJS;
-
-/**
- * Typemap::ToJS rules
- * - The constructor can be called in a background thread
- * - operator* should return an in-place constructed prvalue
- * - operator* will be called on the main V8 thread -> Local<>s allowed
- * - The constructor can create state that will be destroyed after the function call
- */
-template <typename T, const ReturnAttribute &RETATTR> class ToJS;
-
 // bool specializations
 template <const ReturnAttribute &RETATTR> class ToJS<bool, RETATTR> {
   Napi::Env env_;
