@@ -95,8 +95,12 @@ public:
     if constexpr (std::is_void_v<RETURN>) {
       deferred_.Resolve(env_.Undefined());
     } else {
-      auto result = **output;
-      deferred_.Resolve(result);
+      try {
+        auto result = **output;
+        deferred_.Resolve(result);
+      } catch (const std::exception &e) {
+        deferred_.Reject(Napi::String::New(env_, e.what()));
+      }
     }
   }
 

@@ -43,8 +43,8 @@ public:
   }
   constexpr bool isShared() const { return (flags & Shared) == Shared; }
   constexpr bool isOwned() const { return (flags & Owned) == Owned; }
-  constexpr bool isNullAllowed() const { return (flags & Allowed) == Allowed; }
-  constexpr bool isNullForbidden() const { return (flags & Forbidden) == Forbidden; }
+  constexpr bool isReturnNullAccept() const { return (flags & Allowed) == Allowed; }
+  constexpr bool isReturnNullThrow() const { return (flags & Forbidden) == Forbidden; }
   constexpr bool isAsync() const { return (flags & Async) == Async; }
   template <bool DEFAULT> constexpr bool ShouldOwn() const {
     if (isShared())
@@ -87,12 +87,12 @@ constexpr ReturnAttribute ReturnAsync = ReturnAttribute(ReturnAttribute::Async);
 /**
  * This method can return nullptr without raising an exception
  */
-constexpr ReturnAttribute NullAllowed = ReturnAttribute(ReturnAttribute::Allowed);
+constexpr ReturnAttribute ReturnNullAccept = ReturnAttribute(ReturnAttribute::Allowed);
 
 /**
  * This method throws when it returns nullptr
  */
-constexpr ReturnAttribute NullForbidden = ReturnAttribute(ReturnAttribute::Forbidden);
+constexpr ReturnAttribute ReturnNullThrow = ReturnAttribute(ReturnAttribute::Forbidden);
 
 class ArgumentAttribute : public Attribute {
 public:

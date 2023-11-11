@@ -194,7 +194,17 @@ Enabling async mode will allow the JS user to potentially call the C++ method wh
 
 ### `nullptr`
 
-By default, when a C++ method returns a `nullptr`, `nobind` will convert it to `null` in JavaScript. This behavior can be overridden by specifying `Nobind::NullForbidden` as a return attribute - in this case the method will throw.
+By default, when a C++ method returns a `nullptr`, `nobind` will convert it to `null` in JavaScript. This behavior can be overridden by specifying `Nobind::ReturnNullThrow` as a return attribute - in this case the method will throw. If the method is asynchronous, it will reject.
+
+### Combining attributes
+
+Attributes can be combined with `operator|`, however if compiling in C++17 mode (the default settings for `node-gyp`), only `static constexpr` variables can be used as non-type template arguments:
+
+```cpp
+static constexpr auto myAttrs = Nobind::ReturnAsync | Nobind::ReturnOwned | Nobind::ReturnNullThrow;
+```
+
+In later standards this requirement has been relaxed.
 
 ### Custom type converters
 

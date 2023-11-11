@@ -21,10 +21,12 @@ int hello_const_ptr(const Hello *h) {
 #include <nobind.h>
 
 NOBIND_MODULE(class_obj, m) {
+  static constexpr auto strictAsync = Nobind::ReturnAsync | Nobind::ReturnNullThrow;
   m.def<Hello>("Hello")
     .cons<std::string &>()
-    .def<&Hello::Factory, Nobind::NullAllowed>("factory_tolerant")
-    .def<&Hello::Factory, Nobind::NullForbidden>("factory_strict");
+    .def<&Hello::Factory, Nobind::ReturnNullAccept>("factory_tolerant")
+    .def<&Hello::Factory, Nobind::ReturnNullThrow>("factory_strict")
+    .def<&Hello::Factory, strictAsync>("factoryAsync_strict");
   m.def<&hello_ref>("hello_ref");
   m.def<&hello_ptr>("hello_ptr");
   m.def<&hello_const_ref>("hello_const_ref");

@@ -68,8 +68,12 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
       if constexpr (std::is_void_v<RETURN>) {
         deferred_.Resolve(env_.Undefined());
       } else {
-        auto result = **output;
-        deferred_.Resolve(result);
+        try {
+          auto result = **output;
+          deferred_.Resolve(result);
+        } catch (const std::exception &e) {
+          deferred_.Reject(Napi::String::New(env_, e.what()));
+        }
       }
     }
 
@@ -511,11 +515,7 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
 public:
   inline explicit ToJS(Napi::Env env, T *val) : env_(env), val_(val) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      if constexpr (RETATTR.isNullForbidden()) {
-        if (val == nullptr) {
-          throw Napi::Error::New(env, "Returned nullptr");
-        }
-      }
+      return;
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
     }
@@ -523,9 +523,13 @@ public:
   // We consider this to be a factory function, it has returned a pointer
   // By default, the JS proxy will own this object
   inline Napi::Value operator*() {
-    if constexpr (!RETATTR.isNullForbidden()) {
+    if constexpr (!RETATTR.isReturnNullThrow()) {
       if (val_ == nullptr)
         return env_.Null();
+    } else {
+      if (val_ == nullptr) {
+        throw Napi::Error::New(env_, "Returned nullptr");
+      }
     }
     return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_);
   }

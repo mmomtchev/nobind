@@ -13,6 +13,7 @@ namespace Typemap {
  * - operator* should return an in-place constructed prvalue
  * - operator* can be called in a background thread - no V8 Local<>s allowed
  * - The constructor can create state that will be destroyed after the function call
+ * - When throwing, throw in the constructor (throw where the Napi::Value is)
  */
 template <typename T> class FromJS;
 
@@ -22,6 +23,7 @@ template <typename T> class FromJS;
  * - operator* should return an in-place constructed prvalue
  * - operator* will be called on the main V8 thread -> Local<>s allowed
  * - The constructor can create state that will be destroyed after the function call
+ * - When throwing, throw in operator* (throw where the Napi::Value is)
  */
 template <typename T, const ReturnAttribute &RETATTR = ReturnDefault> class ToJS;
 } // namespace Typemap

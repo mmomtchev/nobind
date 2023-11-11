@@ -1,4 +1,7 @@
-const { assert } = require('chai');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
+chai.use(chaiAsPromised);
+const { assert } = chai;
 
 describe('reference', () => {
   it('nominal', () => {
@@ -43,6 +46,10 @@ describe('reference', () => {
       assert.throws(() => {
         dll.Hello.factory_strict('');
       }, /Returned nullptr/);
+    });
+
+    it('null rejects when returned in async mode', () => {
+      return assert.isRejected(dll.Hello.factoryAsync_strict(''), /Returned nullptr/);
     });
   });
 
