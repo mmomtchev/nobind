@@ -10,5 +10,6 @@ NOBIND_MODULE(basic_class, m) {
     .def<&Hello::nothing>("nothing")
     .def<&Hello::id, Nobind::ReadOnly>("id")
     .def<&Hello::var>("var")
-    .def<&Hello::Factory>("factory");
+    .def<&Hello::Factory>("factory")
+    .def<&Hello::StaticHello>("staticObject");
 }

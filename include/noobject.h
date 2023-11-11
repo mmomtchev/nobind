@@ -79,8 +79,9 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
 public:
   // JS convention constructor
   NoObjectWrap(const Napi::CallbackInfo &);
-  // C++ convention constructor
-  static Napi::Value New(Napi::Env, CLASS *, bool);
+  // C++ convention constructors
+  template <bool OWNED> static Napi::Value New(Napi::Env, CLASS *);
+  template <bool OWNED> static Napi::Value New(Napi::Env, const CLASS *);
   virtual ~NoObjectWrap();
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
@@ -235,7 +236,8 @@ private:
     return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
-  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS, std::size_t... I>
+  template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS,
+            std::size_t... I>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
@@ -326,9 +328,20 @@ NoObjectWrap<CLASS>::GetClass(Napi::Env env, const char *name,
   return Napi::ObjectWrap<NoObjectWrap<CLASS>>::DefineClass(env, name, properties, nullptr);
 }
 
-template <typename CLASS> inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj, bool ownership) {
+template <typename CLASS> template <bool OWNED> inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
   napi_value ext = Napi::External<CLASS>::New(env, obj);
-  napi_value own = Napi::Boolean::New(env, ownership);
+  napi_value own = Napi::Boolean::New(env, OWNED);
+  auto instance = env.GetInstanceData<EnvInstanceData>();
+  Napi::Value r = instance->cons[class_idx].New({ext, own});
+  return r;
+}
+
+template <typename CLASS>
+template <bool OWNED>
+inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
+  static_assert(OWNED == false, "Cannot create an owned object from a const object, use Nobind::ReturnShared");
+  napi_value ext = Napi::External<CLASS>::New(env, const_cast<CLASS *>(obj));
+  napi_value own = Napi::Boolean::New(env, false);
   auto instance = env.GetInstanceData<EnvInstanceData>();
   Napi::Value r = instance->cons[class_idx].New({ext, own});
   return r;
@@ -470,7 +483,7 @@ public:
   }
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
-  inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, RETATTR.ShouldOwn<false>()); }
+  inline Napi::Value operator*() { return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_); }
 };
 
 // Generic object pointer typemap
@@ -505,7 +518,7 @@ public:
   }
   // We consider this to be a factory function, it has returned a pointer
   // By default, the JS proxy will own this object
-  inline Napi::Value operator*() { return OBJCLASS::New(env_, val_, RETATTR.ShouldOwn<true>()); }
+  inline Napi::Value operator*() { return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_); }
 };
 
 // Generic stack-allocated object typemaps
@@ -539,7 +552,7 @@ public:
     }
   }
   // and wrapping it in a proxy, by default JS will own this new copy
-  inline Napi::Value operator*() { return NoObjectWrap<T>::New(env_, object, RETATTR.ShouldOwn<true>()); }
+  inline Napi::Value operator*() { return NoObjectWrap<T>::template New<RETATTR.ShouldOwn<true>()>(env_, object); }
 };
 
 } // namespace Typemap

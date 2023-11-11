@@ -14,4 +14,5 @@ public:
   void throws();
 
   static Hello *Factory(const std::string &name);
+  static const Hello &StaticHello();
 };

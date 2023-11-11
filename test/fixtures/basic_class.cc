@@ -20,4 +20,9 @@ Hello *Hello::Factory(const std::string &name) {
   return new Hello(name);
 }
 
+Hello staticHello{"Forever young"};
+const Hello &Hello::StaticHello() {
+  return staticHello;
+}
+
 int Hello::id_ = 0;

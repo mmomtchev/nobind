@@ -75,3 +75,13 @@ describe('Factory', () => {
     assert.isNumber(o.id);
   });
 });
+
+describe('Static object getter', () => {
+  it('nominal', () => {
+    const o1 = new dll.Hello.staticObject();
+    const o2 = new dll.Hello.staticObject();
+    assert.instanceOf(o1, dll.Hello);
+    assert.instanceOf(o2, dll.Hello);
+    assert.strictEqual(o1.id, o2.id);
+  });
+});
