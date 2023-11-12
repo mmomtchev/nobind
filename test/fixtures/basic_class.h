@@ -8,9 +8,9 @@ public:
   int id;
   int var;
   Hello(const std::string &name);
-  int Id();
+  int Id() const;
   std::string Greet(const std::string &);
-  void nothing();
+  void nothing() const;
   void throws();
 
   static Hello *Factory(const std::string &name);

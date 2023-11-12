@@ -68,6 +68,25 @@ describe('setters', () => {
   });
 });
 
+describe('extension', () => {
+  it('nominal', () => {
+    const o = new dll.Hello('Garga');
+    assert.isString(o.toString());
+  });
+
+  it('exception', () => {
+    const o = new dll.Hello('Garga');
+
+    assert.throws(() => {
+      o.toString(2);
+    }, /Expected 0 arguments, got 1/);
+
+    assert.throws(() => {
+      dll.Hello.prototype.toString();
+    }, /Illegal invocation/);
+  });
+});
+
 describe('Factory', () => {
   it('nominal', () => {
     const o = new dll.Hello.factory('Garga');
@@ -83,5 +102,11 @@ describe('Static object getter', () => {
     assert.instanceOf(o1, dll.Hello);
     assert.instanceOf(o2, dll.Hello);
     assert.strictEqual(o1.id, o2.id);
+  });
+});
+
+describe('Well-known symbol getter', () => {
+  it('nominal', () => {
+    assert.isBoolean(dll.Hello[Symbol.isConcatSpreadable]);
   });
 });

@@ -114,6 +114,11 @@ public:
     return MethodWrapperAsync<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
+  template <const ReturnAttribute &RET = ReturnDefault, auto FUNC>
+  Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info) {
+    return ExtensionWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
+  }
+
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     return *ToJS<T, ReturnDefault>(env, self->*MEMBER);
@@ -276,6 +281,59 @@ private:
     }
   }
 
+  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...)>
+  inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
+                                      std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
+    return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
+                                     std::index_sequence_for<ARGS...>{});
+  } // The extension wrapper, it adds an additional first argument by converting info.This()
+  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...),
+            std::size_t... I>
+  inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
+                                      std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>,
+                                      std::index_sequence<I...>) {
+    Napi::Env env = info.Env();
+
+    CheckArgLength<ARGS...>(env, info.Length());
+    try {
+      auto thisObj = Nobind::FromJS<CLASS &>(info.This());
+      if constexpr (sizeof...(ARGS) > 0) {
+        // Call the FromJS constructors
+        std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+        if constexpr (std::is_void_v<RETURN>) {
+          // Convert and call
+          FUNC(*thisObj, *std::get<I>(args)...);
+          return env.Undefined();
+          // FromJS objects are destroyed
+        } else {
+          // Convert and call
+          RETURN result = FUNC(*thisObj, *std::get<I>(args)...);
+          // Call the ToJS constructor
+          auto output = ToJS_t<RETURN, RETATTR>(env, result);
+          // Convert
+          return *output;
+          // FromJS/ToJS objects are destroyed
+        }
+      } else {
+        if constexpr (std::is_void_v<RETURN>) {
+          // Call
+          FUNC(*thisObj);
+          return env.Undefined();
+        } else {
+          // Call
+          RETURN result = FUNC(*thisObj);
+          // Call the ToJS constructor
+          auto output = ToJS_t<RETURN, RETATTR>(env, result);
+          // Convert
+          return *output;
+          // ToJS object is destroyed
+        }
+      }
+    } catch (const std::exception &e) {
+      throw Napi::Error::New(env, e.what());
+    }
+  }
+
   // To look up the class constructor in the per-instance data
   static size_t class_idx;
   // Mainly for debug purposes
@@ -375,9 +433,9 @@ template <class CLASS> class ClassDefinition {
 
 public:
   // Instance class method
-  template <auto MEMBER, const ReturnAttribute &RET = ReturnDefault,
+  template <auto MEMBER, const ReturnAttribute &RET = ReturnDefault, typename NAME = const char *,
             typename = std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>>>
-  ClassDefinition &def(const char *name) {
+  ClassDefinition &def(NAME name) {
     typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper;
 
     if constexpr (RET.isAsync()) {
@@ -391,9 +449,9 @@ public:
   }
 
   // Instance class getter/setter
-  template <auto CLASS::*MEMBER, const PropertyAttribute &PROP = ReadWrite,
+  template <auto CLASS::*MEMBER, const PropertyAttribute &PROP = ReadWrite, typename NAME = const char *,
             typename = std::enable_if_t<std::is_member_object_pointer_v<decltype(MEMBER)>>>
-  ClassDefinition &def(const char *name) {
+  ClassDefinition &def(NAME name) {
     typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
         &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
     typename NoObjectWrap<CLASS>::InstanceSetterCallback setter = nullptr;
@@ -405,9 +463,9 @@ public:
   }
 
   // Static class method
-  template <auto *MEMBER, const ReturnAttribute &RET = ReturnDefault,
+  template <auto *MEMBER, const ReturnAttribute &RET = ReturnDefault, typename NAME = const char *,
             typename = std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>>>
-  ClassDefinition &def(const char *name) {
+  ClassDefinition &def(NAME name) {
     Napi::Function::Callback wrapper;
     if constexpr (RET.isAsync()) {
       wrapper = &FunctionWrapperAsync<RET, MEMBER>;
@@ -419,9 +477,9 @@ public:
   }
 
   // Static class getter/setter
-  template <auto *MEMBER, const PropertyAttribute &PROP = ReadWrite,
+  template <auto *MEMBER, const PropertyAttribute &PROP = ReadWrite, typename NAME = const char *,
             typename = std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>>>
-  ClassDefinition &def(const char *name) {
+  ClassDefinition &def(NAME name) {
     typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
         &GetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
     typename NoObjectWrap<CLASS>::StaticSetterCallback setter = nullptr;
@@ -429,6 +487,18 @@ public:
       setter = &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
     }
     properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
+    return *this;
+  }
+
+  // Class extension
+  template <auto *FUNC, const ReturnAttribute &RET = ReturnDefault, typename NAME = const char *>
+  ClassDefinition &ext(NAME name) {
+    typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper;
+    static_assert(!RET.isAsync(), "Asynchronous class extensions are not supported, use a global function helper");
+
+    wrapper = &NoObjectWrap<CLASS>::template ExtensionWrapper<RET, FUNC>;
+    properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
+
     return *this;
   }
 

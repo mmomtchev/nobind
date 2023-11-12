@@ -166,9 +166,9 @@ Used from JavaScript this function will have the following semantics:
 
 ```js
 const output = dll.greetAll('Mr', [
-  new dll.Hello('Monday'),
-  new dll.Hello('Tuesday'),
-  new dll.Hello('Wednesday')
+  new dll.Hello('Brown'),
+  new dll.Hello('Orange'),
+  new dll.Hello('Pink')
 ]);
 typeof output[0] === 'string'
 ```
@@ -347,6 +347,20 @@ The `Nobind::ReturnShared` signals `nobind` that C++ objects returned by this me
 
 Also, be sure to check [#1](https://github.com/mmomtchev/nobind/issues/1) for a very important warning about shared references.
 
+### Extending classes
+
+Sometimes it is very handy to be able to add an additional class method in JavaScript that does not directly correspond to a C++ method. For example, the standard way of providing a method returning a readable string representation of an object is to overload the global `operator<<`. In JavaScript, the standard method is to replace the `Object.toString()`. This cannot be achieved with a simple helper function, because it will have to be a member of the binded class. In this case `nobind` allows to define a special function of the form `RETTYPE Method(CLASS &, ARGS...)` and to register it as a class extension:
+
+```cpp
+std::string HelloToString(const Hello &);
+```
+
+```cpp
+m.def<Hello>("Hello").ext<&ToString>("toString");
+```
+
+Currently, there is no way to register a getter with a function in order to override the `[@@toStringTag]` property.
+
 ### Directly accessing the underlying `node-addon-api`
 
 C++ functions that expect `Napi::Value` arguments or return `Napi::Value` results will skip the type conversions. This can be used to interact directly with the underlying Node.js API.
@@ -367,7 +381,11 @@ In this case only the first argument will contain the raw V8 value.
 It is also possible to access the `exports` and `env` objects when initializing the module:
 ```cpp
 NOBIND_MODULE(native, m) {
+  static constexpr bool False = false;
+
   m.Exports().Set("debug_build", Napi::Boolean::New(m.Env(), true));
+  m.def<Hello>("Hello")
+    .def<&False, Nobind::ReadOnly>(Napi::Symbol::WellKnown(m.Env(), "isConcatSpreadable"));
 }
 ```
 

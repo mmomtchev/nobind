@@ -2,7 +2,7 @@
 
 Hello::Hello(const std::string &name) : name_(name), id(id_++) {}
 
-int Hello::Id() { return id; }
+int Hello::Id() const { return id; }
 
 std::string Hello::Greet(const std::string &title) {
   std::stringstream r;
@@ -10,7 +10,7 @@ std::string Hello::Greet(const std::string &title) {
   return r.str();
 }
 
-void Hello::nothing() {}
+void Hello::nothing() const {}
 
 void Hello::throws() {
   throw std::runtime_error("Hello error");
