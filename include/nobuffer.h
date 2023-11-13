@@ -26,7 +26,7 @@ public:
     memcpy(val_.first, buf.Data() + buf.ByteOffset(), buf.ByteLength());
   }
 
-  inline Buffer operator*() { return val_; }
+  inline Buffer Get() { return val_; }
 };
 
 template <const ReturnAttribute &RETATTR> class ToJS<Buffer, RETATTR> {
@@ -35,7 +35,7 @@ template <const ReturnAttribute &RETATTR> class ToJS<Buffer, RETATTR> {
 
 public:
   inline explicit ToJS(Napi::Env env, Buffer val) : env_(env), val_(val) {}
-  inline Napi::Value operator*() { return Napi::Buffer<uint8_t>::Copy(env_, val_.first, val_.second); }
+  inline Napi::Value Get() { return Napi::Buffer<uint8_t>::Copy(env_, val_.first, val_.second); }
 };
 
 } // namespace Typemap

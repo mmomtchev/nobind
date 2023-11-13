@@ -16,7 +16,7 @@ namespace Typemap {
       }                                                                                                                \
       val_ = static_cast<TYPE>(val.ToNumber().Int32Value());                                                           \
     }                                                                                                                  \
-    inline TYPE operator*() { return val_; }                                                                           \
+    inline TYPE Get() { return val_; }                                                                           \
   };                                                                                                                   \
                                                                                                                        \
   template <const ReturnAttribute &RETATTR> class ToJS<TYPE, RETATTR> {                                                \
@@ -25,7 +25,7 @@ namespace Typemap {
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
-    inline Napi::Value operator*() { return Napi::Number::New(env_, static_cast<int32_t>(val_)); }                     \
+    inline Napi::Value Get() { return Napi::Number::New(env_, static_cast<int32_t>(val_)); }                     \
   };
 
 #define TYPEMAPS_FOR_UINT32(TYPE)                                                                                      \
@@ -39,7 +39,7 @@ namespace Typemap {
       }                                                                                                                \
       val_ = static_cast<TYPE>(val.ToNumber().Uint32Value());                                                          \
     }                                                                                                                  \
-    inline TYPE operator*() { return val_; }                                                                           \
+    inline TYPE Get() { return val_; }                                                                           \
   };                                                                                                                   \
                                                                                                                        \
   template <const ReturnAttribute &RETATTR> class ToJS<TYPE, RETATTR> {                                                \
@@ -48,7 +48,7 @@ namespace Typemap {
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
-    inline Napi::Value operator*() { return Napi::Number::New(env_, static_cast<uint32_t>(val_)); }                    \
+    inline Napi::Value Get() { return Napi::Number::New(env_, static_cast<uint32_t>(val_)); }                    \
   };
 
 #define TYPEMAPS_FOR_INT64(TYPE)                                                                                       \
@@ -62,7 +62,7 @@ namespace Typemap {
       }                                                                                                                \
       val_ = static_cast<TYPE>(val.ToNumber().Int64Value());                                                           \
     }                                                                                                                  \
-    inline TYPE operator*() { return val_; }                                                                           \
+    inline TYPE Get() { return val_; }                                                                           \
   };                                                                                                                   \
                                                                                                                        \
   template <const ReturnAttribute &RETATTR> class ToJS<TYPE, RETATTR> {                                                \
@@ -71,7 +71,7 @@ namespace Typemap {
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
-    inline Napi::Value operator*() { return Napi::Number::New(env_, static_cast<int64_t>(val_)); }                     \
+    inline Napi::Value Get() { return Napi::Number::New(env_, static_cast<int64_t>(val_)); }                     \
   };
 
 #define TYPEMAPS_FOR_DOUBLE(TYPE)                                                                                      \
@@ -85,7 +85,7 @@ namespace Typemap {
       }                                                                                                                \
       val_ = static_cast<TYPE>(val.ToNumber().DoubleValue());                                                          \
     }                                                                                                                  \
-    inline TYPE operator*() { return val_; }                                                                           \
+    inline TYPE Get() { return val_; }                                                                           \
   };                                                                                                                   \
                                                                                                                        \
   template <const ReturnAttribute &RETATTR> class ToJS<TYPE, RETATTR> {                                                \
@@ -94,7 +94,7 @@ namespace Typemap {
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
-    inline Napi::Value operator*() { return Napi::Number::New(env_, static_cast<double>(val_)); }                      \
+    inline Napi::Value Get() { return Napi::Number::New(env_, static_cast<double>(val_)); }                      \
   };
 
 TYPEMAPS_FOR_INT32(int);

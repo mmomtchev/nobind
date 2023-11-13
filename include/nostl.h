@@ -20,11 +20,11 @@ namespace Typemap {
       Napi::Array array = val.As<Napi::Array>();                                                                       \
       val_.reserve(array.Length());                                                                                    \
       for (size_t i = 0; i < array.Length(); i++) {                                                                    \
-        val_.push_back(*FromJS<T>(array.Get(i)));                                                                      \
+        val_.push_back(FromJS<T>(array.Get(i)).Get());                                                                 \
       }                                                                                                                \
     }                                                                                                                  \
                                                                                                                        \
-    inline VECTOR operator*() { return val_; }                                                                         \
+    inline VECTOR Get() { return val_; }                                                                               \
   };                                                                                                                   \
                                                                                                                        \
   template <typename T, const ReturnAttribute &RETATTR> class ToJS<VECTOR, RETATTR> {                                  \
@@ -33,10 +33,10 @@ namespace Typemap {
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, VECTOR val) : env_(env), val_(val) {}                                          \
-    inline Napi::Value operator*() {                                                                                   \
+    inline Napi::Value Get() {                                                                                         \
       Napi::Array array = Napi::Array::New(env_, val_.size());                                                         \
       for (size_t i = 0; i < val_.size(); i++) {                                                                       \
-        array.Set(i, *ToJS<T, RETATTR>(env_, val_[i]));                                                                \
+        array.Set(i, ToJS<T, RETATTR>(env_, val_[i]).Get());                                                           \
       }                                                                                                                \
       return array;                                                                                                    \
     }                                                                                                                  \
@@ -53,11 +53,11 @@ namespace Typemap {
       }                                                                                                                \
       Napi::Object object = val.ToObject();                                                                            \
       for (auto prop : object) {                                                                                       \
-        val_.insert({prop.first.ToString().Utf8Value(), *FromJS<T>(prop.second)});                                     \
+        val_.insert({prop.first.ToString().Utf8Value(), FromJS<T>(prop.second).Get()});                                \
       }                                                                                                                \
     }                                                                                                                  \
                                                                                                                        \
-    inline MAP operator*() { return val_; }                                                                            \
+    inline MAP Get() { return val_; }                                                                                  \
   };                                                                                                                   \
                                                                                                                        \
   template <typename T, const ReturnAttribute &RETATTR> class ToJS<MAP, RETATTR> {                                     \
@@ -66,10 +66,10 @@ namespace Typemap {
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, MAP val) : env_(env), val_(val) {}                                             \
-    inline Napi::Value operator*() {                                                                                   \
+    inline Napi::Value Get() {                                                                                         \
       Napi::Object object = Napi::Object::New(env_);                                                                   \
       for (auto const &prop : val_) {                                                                                  \
-        object.Set(Napi::String::New(env_, prop.first), *ToJS<T, RETATTR>(env_, prop.second));                         \
+        object.Set(Napi::String::New(env_, prop.first), ToJS<T, RETATTR>(env_, prop.second).Get());                    \
       }                                                                                                                \
       return object;                                                                                                   \
     }                                                                                                                  \

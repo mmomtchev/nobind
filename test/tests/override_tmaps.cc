@@ -14,7 +14,7 @@ public:
     }
     val_ = std::atoi(val.ToString().Utf8Value().c_str());
   }
-  inline int operator*() { return val_; }
+  inline int Get() { return val_; }
 };
 
 template <> class ToJS<int> {
@@ -23,7 +23,7 @@ template <> class ToJS<int> {
 
 public:
   inline explicit ToJS(Napi::Env env, int val) : env_(env), val_(val) {}
-  inline Napi::Value operator*() { return Napi::String::New(env_, std::to_string(val_)); }
+  inline Napi::Value Get() { return Napi::String::New(env_, std::to_string(val_)); }
 };
 } // namespace TypemapOverrides
 

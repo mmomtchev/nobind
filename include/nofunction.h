@@ -18,16 +18,16 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
       std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
-        FUNC(*std::get<I>(args)...);
+        FUNC(std::get<I>(args).Get()...);
         return env.Undefined();
         // FromJS objects are destroyed
       } else {
         // Convert and call
-        RETURN result = FUNC(*std::get<I>(args)...);
+        RETURN result = FUNC(std::get<I>(args).Get()...);
         // Call the ToJS constructor
         auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert
-        return *output;
+        return output.Get();
         // FromJS/ToJS objects are destroyed
       }
     } else {
@@ -41,7 +41,7 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
         // Call the ToJS constructor
         auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert
-        return *output;
+        return output.Get();
         // ToJS object is destroyed
       }
     }
@@ -66,10 +66,10 @@ public:
       if constexpr (sizeof...(ARGS) > 0) {
         if constexpr (std::is_void_v<RETURN>) {
           // Convert and call
-          FUNC(*std::get<I>(args_)...);
+          FUNC(std::get<I>(args_).Get()...);
         } else {
           // Convert and call
-          RETURN result = FUNC(*std::get<I>(args_)...);
+          RETURN result = FUNC(std::get<I>(args_).Get()...);
           // Call the ToJS constructor
           output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
         }
@@ -96,7 +96,7 @@ public:
       deferred_.Resolve(env_.Undefined());
     } else {
       try {
-        auto result = **output;
+        auto result = output->Get();
         deferred_.Resolve(result);
       } catch (const std::exception &e) {
         deferred_.Reject(Napi::String::New(env_, e.what()));
@@ -157,12 +157,12 @@ Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info) {
 // Global or class static getter wrapper
 template <typename T, T *OBJECT> static Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return *ToJS<T, ReturnDefault>(env, *OBJECT);
+  return ToJS<T, ReturnDefault>(env, *OBJECT).Get();
 }
 
 // Global or class static setter wrapper
 template <typename T, T *OBJECT> static void SetterWrapper(const Napi::CallbackInfo &info) {
-  *OBJECT = *FromJS<T>(info[0]);
+  *OBJECT = FromJS<T>(info[0]).Get();
 }
 
 } // namespace Nobind

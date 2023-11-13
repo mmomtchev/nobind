@@ -16,7 +16,7 @@ namespace Typemap {
       }                                                                                                                \
       val_ = val.ToString().Utf8Value();                                                                               \
     }                                                                                                                  \
-    inline TYPE operator*() { return val_; }                                                                           \
+    inline TYPE Get() { return val_; }                                                                           \
   };                                                                                                                   \
                                                                                                                        \
   template <const ReturnAttribute &RETATTR> class ToJS<TYPE, RETATTR> {                                                \
@@ -25,7 +25,7 @@ namespace Typemap {
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
-    inline Napi::Value operator*() { return Napi::String::New(env_, val_); }                                           \
+    inline Napi::Value Get() { return Napi::String::New(env_, val_); }                                           \
   };
 
 // The const versions are needed to ensure that we
@@ -50,7 +50,7 @@ TYPEMAPS_FOR_STD_STRING(const std::string &);
       val_[s.size()] = 0;                                                                                              \
     }                                                                                                                  \
                                                                                                                        \
-    inline TYPE operator*() { return val_; }                                                                           \
+    inline TYPE Get() { return val_; }                                                                           \
                                                                                                                        \
     ~FromJS() { delete val_; }                                                                                         \
   };                                                                                                                   \
@@ -61,7 +61,7 @@ TYPEMAPS_FOR_STD_STRING(const std::string &);
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
-    inline Napi::Value operator*() { return Napi::String::New(env_, val_); }                                           \
+    inline Napi::Value Get() { return Napi::String::New(env_, val_); }                                           \
   };
 
 // Same explanation as above:

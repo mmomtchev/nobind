@@ -39,10 +39,10 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
         if constexpr (sizeof...(ARGS) > 0) {
           if constexpr (std::is_void_v<RETURN>) {
             // Convert and call
-            (self_->*FUNC)(*std::get<I>(args_)...);
+            (self_->*FUNC)(std::get<I>(args_).Get()...);
           } else {
             // Convert and call
-            RETURN result = (self_->*FUNC)(*std::get<I>(args_)...);
+            RETURN result = (self_->*FUNC)(std::get<I>(args_).Get()...);
             // Call the ToJS constructor
             output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
           }
@@ -69,7 +69,7 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
         deferred_.Resolve(env_.Undefined());
       } else {
         try {
-          auto result = **output;
+          auto result = output->Get();
           deferred_.Resolve(result);
         } catch (const std::exception &e) {
           deferred_.Reject(Napi::String::New(env_, e.what()));
@@ -121,16 +121,16 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return *ToJS<T, ReturnDefault>(env, self->*MEMBER);
+    return ToJS<T, ReturnDefault>(env, self->*MEMBER).Get();
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    self->*MEMBER = *FromJS<T>(val);
+    self->*MEMBER = FromJS<T>(val).Get();
   }
 
   template <typename T, T *MEMBER>
   static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    *MEMBER = *FromJS<T>(val);
+    *MEMBER = FromJS<T>(val).Get();
   }
 
   static void
@@ -186,16 +186,16 @@ private:
         std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
         if constexpr (std::is_void_v<RETURN>) {
           // Convert and call
-          (static_cast<BASE *>(self)->*FUNC)(*std::get<I>(args)...);
+          (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
           return env.Undefined();
           // FromJS objects are destroyed
         } else {
           // Convert and call
-          RETURN result = (static_cast<BASE *>(self)->*FUNC)(*std::get<I>(args)...);
+          RETURN result = (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
           // Call the ToJS constructor
           auto output = ToJS_t<RETURN, RETATTR>(env, result);
           // Convert
-          return *output;
+          return output.Get();
           // FromJS/ToJS objects are destroyed
         }
       } else {
@@ -209,7 +209,7 @@ private:
           // Call the ToJS constructor
           auto output = ToJS_t<RETURN, RETATTR>(env, result);
           // Convert
-          return *output;
+          return output.Get();
           // ToJS object is destroyed
         }
       }
@@ -275,7 +275,7 @@ private:
       // Call the FromJS constructors
       std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
       // Convert and call
-      self = new CLASS(*std::get<I>(args)...);
+      self = new CLASS(std::get<I>(args).Get()...);
     } else {
       self = new CLASS;
     }
@@ -302,7 +302,7 @@ private:
         std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
         if constexpr (std::is_void_v<RETURN>) {
           // Convert and call
-          FUNC(*thisObj, *std::get<I>(args)...);
+          FUNC(thisObj.Get(), std::get<I>(args).Get()...);
           return env.Undefined();
           // FromJS objects are destroyed
         } else {
@@ -311,21 +311,21 @@ private:
           // Call the ToJS constructor
           auto output = ToJS_t<RETURN, RETATTR>(env, result);
           // Convert
-          return *output;
+          return output.Get();
           // FromJS/ToJS objects are destroyed
         }
       } else {
         if constexpr (std::is_void_v<RETURN>) {
           // Call
-          FUNC(*thisObj);
+          FUNC(thisObj.Get());
           return env.Undefined();
         } else {
           // Call
-          RETURN result = FUNC(*thisObj);
+          RETURN result = FUNC(thisObj.Get());
           // Call the ToJS constructor
           auto output = ToJS_t<RETURN, RETATTR>(env, result);
           // Convert
-          return *output;
+          return output.Get();
           // ToJS object is destroyed
         }
       }
@@ -539,7 +539,7 @@ public:
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
     }
   }
-  inline T &operator*() { return *val_; }
+  inline T &Get() { return *val_; }
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS<T &, RETATTR> {
@@ -557,7 +557,7 @@ public:
   }
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
-  inline Napi::Value operator*() { return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_); }
+  inline Napi::Value Get() { return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_); }
 };
 
 // Generic object pointer typemap
@@ -574,7 +574,7 @@ public:
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
     }
   }
-  inline T *operator*() { return val_; }
+  inline T *Get() { return val_; }
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
@@ -592,7 +592,7 @@ public:
   }
   // We consider this to be a factory function, it has returned a pointer
   // By default, the JS proxy will own this object
-  inline Napi::Value operator*() {
+  inline Napi::Value Get() {
     if constexpr (!RETATTR.isReturnNullThrow()) {
       if (val_ == nullptr)
         return env_.Null();
@@ -619,7 +619,7 @@ public:
     }
   }
   // will return a copy by value
-  inline T operator*() { return *object; }
+  inline T Get() { return *object; }
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS {
@@ -636,7 +636,7 @@ public:
     }
   }
   // and wrapping it in a proxy, by default JS will own this new copy
-  inline Napi::Value operator*() { return NoObjectWrap<T>::template New<RETATTR.ShouldOwn<true>()>(env_, object); }
+  inline Napi::Value Get() { return NoObjectWrap<T>::template New<RETATTR.ShouldOwn<true>()>(env_, object); }
 };
 
 } // namespace Typemap

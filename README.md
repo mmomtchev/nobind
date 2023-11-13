@@ -242,7 +242,7 @@ public:
   }
   // The second part may be called from a background thread
   // It should not access V8
-  inline int operator*() { return val_; }
+  inline int Get() { return val_; }
 };
 
 // This typemap will be used when C++ returns an int
@@ -257,7 +257,7 @@ public:
   inline explicit ToJS(Napi::Env env, int val) : env_(env), val_(val) {}
   // The second part will be called on the main V8 thread
   // It should produce a JS value
-  inline Napi::Value operator*() { return Napi::String::New(env_, std::to_string(val_)); }
+  inline Napi::Value Get() { return Napi::String::New(env_, std::to_string(val_)); }
 };
 } // namespace TypemapOverrides
 
