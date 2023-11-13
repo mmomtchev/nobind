@@ -13,37 +13,21 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
 
   CheckArgLength<ARGS...>(env, info.Length());
   try {
-    if constexpr (sizeof...(ARGS) > 0) {
-      // Call the FromJS constructors
-      std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
-      if constexpr (std::is_void_v<RETURN>) {
-        // Convert and call
-        FUNC(std::get<I>(args).Get()...);
-        return env.Undefined();
-        // FromJS objects are destroyed
-      } else {
-        // Convert and call
-        RETURN result = FUNC(std::get<I>(args).Get()...);
-        // Call the ToJS constructor
-        auto output = ToJS_t<RETURN, RETATTR>(env, result);
-        // Convert
-        return output.Get();
-        // FromJS/ToJS objects are destroyed
-      }
+    // Call the FromJS constructors
+    std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+    if constexpr (std::is_void_v<RETURN>) {
+      // Convert and call
+      FUNC(std::get<I>(args).Get()...);
+      return env.Undefined();
+      // FromJS objects are destroyed
     } else {
-      if constexpr (std::is_void_v<RETURN>) {
-        // Call
-        FUNC();
-        return env.Undefined();
-      } else {
-        // Call
-        RETURN result = FUNC();
-        // Call the ToJS constructor
-        auto output = ToJS_t<RETURN, RETATTR>(env, result);
-        // Convert
-        return output.Get();
-        // ToJS object is destroyed
-      }
+      // Convert and call
+      RETURN result = FUNC(std::get<I>(args).Get()...);
+      // Call the ToJS constructor
+      auto output = ToJS_t<RETURN, RETATTR>(env, result);
+      // Convert
+      return output.Get();
+      // FromJS/ToJS objects are destroyed
     }
   } catch (const std::exception &e) {
     throw Napi::Error::New(env, e.what());
@@ -63,26 +47,14 @@ public:
 
   template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
     try {
-      if constexpr (sizeof...(ARGS) > 0) {
-        if constexpr (std::is_void_v<RETURN>) {
-          // Convert and call
-          FUNC(std::get<I>(args_).Get()...);
-        } else {
-          // Convert and call
-          RETURN result = FUNC(std::get<I>(args_).Get()...);
-          // Call the ToJS constructor
-          output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
-        }
+      if constexpr (std::is_void_v<RETURN>) {
+        // Convert and call
+        FUNC(std::get<I>(args_).Get()...);
       } else {
-        if constexpr (std::is_void_v<RETURN>) {
-          // Call
-          FUNC();
-        } else {
-          // Call
-          RETURN result = FUNC();
-          // Call the ToJS constructor
-          output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
-        }
+        // Convert and call
+        RETURN result = FUNC(std::get<I>(args_).Get()...);
+        // Call the ToJS constructor
+        output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
       }
     } catch (const std::exception &e) {
       SetError(e.what());

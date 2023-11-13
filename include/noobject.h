@@ -36,26 +36,14 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
 
     template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
       try {
-        if constexpr (sizeof...(ARGS) > 0) {
-          if constexpr (std::is_void_v<RETURN>) {
-            // Convert and call
-            (self_->*FUNC)(std::get<I>(args_).Get()...);
-          } else {
-            // Convert and call
-            RETURN result = (self_->*FUNC)(std::get<I>(args_).Get()...);
-            // Call the ToJS constructor
-            output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
-          }
+        if constexpr (std::is_void_v<RETURN>) {
+          // Convert and call
+          (self_->*FUNC)(std::get<I>(args_).Get()...);
         } else {
-          if constexpr (std::is_void_v<RETURN>) {
-            // Call
-            (self_->*FUNC)();
-          } else {
-            // Call
-            RETURN result = (self_->*FUNC)();
-            // Call the ToJS constructor
-            output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
-          }
+          // Convert and call
+          RETURN result = (self_->*FUNC)(std::get<I>(args_).Get()...);
+          // Call the ToJS constructor
+          output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
         }
       } catch (const std::exception &e) {
         SetError(e.what());
@@ -181,37 +169,21 @@ private:
 
     CheckArgLength<ARGS...>(env, info.Length());
     try {
-      if constexpr (sizeof...(ARGS) > 0) {
-        // Call the FromJS constructors
-        std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
-        if constexpr (std::is_void_v<RETURN>) {
-          // Convert and call
-          (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
-          return env.Undefined();
-          // FromJS objects are destroyed
-        } else {
-          // Convert and call
-          RETURN result = (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
-          // Call the ToJS constructor
-          auto output = ToJS_t<RETURN, RETATTR>(env, result);
-          // Convert
-          return output.Get();
-          // FromJS/ToJS objects are destroyed
-        }
+      // Call the FromJS constructors
+      std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+      if constexpr (std::is_void_v<RETURN>) {
+        // Convert and call
+        (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
+        return env.Undefined();
+        // FromJS objects are destroyed
       } else {
-        if constexpr (std::is_void_v<RETURN>) {
-          // Call
-          (static_cast<BASE *>(self)->*FUNC)();
-          return env.Undefined();
-        } else {
-          // Call
-          RETURN result = (static_cast<BASE *>(self)->*FUNC)();
-          // Call the ToJS constructor
-          auto output = ToJS_t<RETURN, RETATTR>(env, result);
-          // Convert
-          return output.Get();
-          // ToJS object is destroyed
-        }
+        // Convert and call
+        RETURN result = (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
+        // Call the ToJS constructor
+        auto output = ToJS_t<RETURN, RETATTR>(env, result);
+        // Convert
+        return output.Get();
+        // FromJS/ToJS objects are destroyed
       }
     } catch (const std::exception &e) {
       throw Napi::Error::New(env, e.what());
@@ -271,14 +243,10 @@ private:
     Napi::Env env = info.Env();
 
     CheckArgLength<ARGS...>(env, info.Length());
-    if constexpr (sizeof...(ARGS) > 0) {
-      // Call the FromJS constructors
-      std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
-      // Convert and call
-      self = new CLASS(std::get<I>(args).Get()...);
-    } else {
-      self = new CLASS;
-    }
+    // Call the FromJS constructors
+    std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+    // Convert and call
+    self = new CLASS(std::get<I>(args).Get()...);
   }
 
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...)>
@@ -297,37 +265,21 @@ private:
     CheckArgLength<ARGS...>(env, info.Length());
     try {
       auto thisObj = Nobind::FromJS<CLASS &>(info.This());
-      if constexpr (sizeof...(ARGS) > 0) {
-        // Call the FromJS constructors
-        std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
-        if constexpr (std::is_void_v<RETURN>) {
-          // Convert and call
-          FUNC(thisObj.Get(), std::get<I>(args).Get()...);
-          return env.Undefined();
-          // FromJS objects are destroyed
-        } else {
-          // Convert and call
-          RETURN result = FUNC(*thisObj, *std::get<I>(args)...);
-          // Call the ToJS constructor
-          auto output = ToJS_t<RETURN, RETATTR>(env, result);
-          // Convert
-          return output.Get();
-          // FromJS/ToJS objects are destroyed
-        }
+      // Call the FromJS constructors
+      std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+      if constexpr (std::is_void_v<RETURN>) {
+        // Convert and call
+        FUNC(thisObj.Get(), std::get<I>(args).Get()...);
+        return env.Undefined();
+        // FromJS objects are destroyed
       } else {
-        if constexpr (std::is_void_v<RETURN>) {
-          // Call
-          FUNC(thisObj.Get());
-          return env.Undefined();
-        } else {
-          // Call
-          RETURN result = FUNC(thisObj.Get());
-          // Call the ToJS constructor
-          auto output = ToJS_t<RETURN, RETATTR>(env, result);
-          // Convert
-          return output.Get();
-          // ToJS object is destroyed
-        }
+        // Convert and call
+        RETURN result = FUNC(thisObj.Get(), *std::get<I>(args)...);
+        // Call the ToJS constructor
+        auto output = ToJS_t<RETURN, RETATTR>(env, result);
+        // Convert
+        return output.Get();
+        // FromJS/ToJS objects are destroyed
       }
     } catch (const std::exception &e) {
       throw Napi::Error::New(env, e.what());
