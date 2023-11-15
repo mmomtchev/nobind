@@ -82,10 +82,11 @@ template <typename T> using never_void_t = typename never_void<T>::type;
 // adapted from https://benjaminbrock.net/blog/detection_idiom.php
 // Detects if the Typemap has declared Inputs
 
-template <typename T> struct FromJSArgIncrementer {
-  template <typename U> static constexpr decltype(std::declval<U &>().Inputs) inc(const U &tm) { return tm.Inputs; }
-
-  static constexpr size_t inc(...) { return 1; }
+template <typename T> class FromJSTypemapHasInputs {
+  template <typename U> static constexpr decltype(std::declval<U &>().Inputs, bool()) test(int) { return true; }
+  template <typename U> static constexpr inline bool test(...) { return false; }
+public:
+  static constexpr bool value = test<T>(int());
 };
 
 // Main entry point when processing a Napi::Value
@@ -100,7 +101,11 @@ template <typename T> auto inline FromJSValue(const Napi::Value &val) {
 // Main entry point when processing a value from arguments
 template <typename T> auto inline FromJSArgs(const Napi::CallbackInfo &info, size_t &idx) {
   auto r = FromJSValue<std::remove_cv_t<T>>(info[idx]);
-  idx += FromJSArgIncrementer<decltype(r)>::inc(r);
+  if constexpr (FromJSTypemapHasInputs<decltype(r)>::value) {
+    idx += r.Inputs;
+  } else {
+    idx++;
+  }
   return r;
 }
 
