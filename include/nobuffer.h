@@ -19,7 +19,7 @@ template <> class FromJS<Buffer> {
 public:
   inline explicit FromJS(Napi::Value val) {
     if (!val.IsBuffer()) {
-      throw Napi::TypeError::New(val.Env(), "Not a Buffer");
+      throw Napi::TypeError::New(val.Env(), "Expected a Buffer");
     }
     Napi::Buffer buf = val.As<Napi::Buffer<uint8_t>>();
     val_ = {new uint8_t[buf.ByteLength()], buf.ByteLength()};

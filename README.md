@@ -47,8 +47,8 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind`, `embind` and `pybind` is planned in theory |
 | Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support | Yes, but no downcasting support and `instanceof` requires a small kludge in the JavaScript wrapper (see [here](https://github.com/mmomtchev/nobind/blob/main/test/tests/inheritance.js)) |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
-| Optional arguments | Yes | No, must include a manual wrapper
-| Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | No, must include a manual wrapper |
+| Optional arguments | Yes, automatic | Yes, manual
+| Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `n`:`1` transformations of input arguments |
 | Custom type casters | Yes | Planned for 1.0 |
 | Interfacing between multiple modules | Yes | No |
 
@@ -234,15 +234,18 @@ public:
   // It must import the value and store it so that it can
   // be accessed without V8
   // It must check if the JS argument is of the correct type
-  inline explicit FromJS(Napi::Value val) {
+  inline explicit FromJS(Napi::Value val): Inputs(1) {
     if (!val.IsString()) {
-      throw Napi::TypeError::New(val.Env(), "Not a string");
+      throw Napi::TypeError::New(val.Env(), "Expected a string");
     }
     val_ = std::atoi(val.ToString().Utf8Value().c_str());
   }
   // The second part may be called from a background thread
-  // It should not access V8
+  // It should Expected access V8
   inline int Get() { return val_; }
+  // An optional public member may specify the number
+  // of consumed JS arguments (considered 1 if not present)
+  int Inputs;
 };
 
 // This typemap will be used when C++ returns an int

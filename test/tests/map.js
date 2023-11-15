@@ -30,10 +30,10 @@ describe('std::map', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.put_ptr_map('comrade', 'invalid');
-    }, /Not an object/);
+    }, /Expected an object/);
 
     assert.throws(() => {
       dll.put_ptr_map('comrade', { key: { field: 'value' } });
-    }, /Not a Hello/);
+    }, /Expected a Hello/);
   });
 });

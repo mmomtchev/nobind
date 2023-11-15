@@ -13,14 +13,14 @@ namespace Typemap {
     std::remove_cv_t<std::remove_reference_t<VECTOR>> val_;                                                            \
                                                                                                                        \
   public:                                                                                                              \
-    inline explicit FromJS(Napi::Value val) {                                                                          \
+    inline explicit FromJS(const Napi::Value &val) {                                                                   \
       if (!val.IsArray()) {                                                                                            \
-        throw Napi::TypeError::New(val.Env(), "Not an array");                                                         \
+        throw Napi::TypeError::New(val.Env(), "Expected an array");                                                         \
       }                                                                                                                \
       Napi::Array array = val.As<Napi::Array>();                                                                       \
       val_.reserve(array.Length());                                                                                    \
       for (size_t i = 0; i < array.Length(); i++) {                                                                    \
-        val_.push_back(FromJS<T>(array.Get(i)).Get());                                                                 \
+        val_.push_back(FromJSValue<T>(array.Get(i)).Get());                                                            \
       }                                                                                                                \
     }                                                                                                                  \
                                                                                                                        \
@@ -47,13 +47,13 @@ namespace Typemap {
     std::remove_cv_t<std::remove_reference_t<MAP>> val_;                                                               \
                                                                                                                        \
   public:                                                                                                              \
-    inline explicit FromJS(Napi::Value val) {                                                                          \
+    inline explicit FromJS(const Napi::Value &val) {                                                                   \
       if (!val.IsObject()) {                                                                                           \
-        throw Napi::TypeError::New(val.Env(), "Not an object");                                                        \
+        throw Napi::TypeError::New(val.Env(), "Expected an object");                                                        \
       }                                                                                                                \
       Napi::Object object = val.ToObject();                                                                            \
       for (auto prop : object) {                                                                                       \
-        val_.insert({prop.first.ToString().Utf8Value(), FromJS<T>(prop.second).Get()});                                \
+        val_.insert({prop.first.ToString().Utf8Value(), FromJSValue<T>(prop.second).Get()});                           \
       }                                                                                                                \
     }                                                                                                                  \
                                                                                                                        \

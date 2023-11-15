@@ -11,10 +11,12 @@ inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral
                                    std::index_sequence<I...>) {
   Napi::Env env = info.Env();
 
-  CheckArgLength<ARGS...>(env, info.Length());
   try {
     // Call the FromJS constructors
-    std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+    //
+    size_t idx = 0;
+    std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
+    CheckArgLength(env, idx, info.Length());
     if constexpr (std::is_void_v<RETURN>) {
       // Convert and call
       FUNC(std::get<I>(args).Get()...);
@@ -79,18 +81,22 @@ public:
   virtual void OnError(const Napi::Error &e) override { deferred_.Reject(e.Value()); }
 };
 
-template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
+template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
 inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (*)(ARGS...), FUNC>, std::index_sequence<I...>) {
+                                        std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
   Napi::Env env = info.Env();
 
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
   try {
-    CheckArgLength<ARGS...>(env, info.Length());
+    size_t idx = 0;
+    // Alas, std::forward_as_tuple does not guarantee
+    // the evaluation order of its arguments, only *braced-init-list* lists do
+    // https://en.cppreference.com/w/cpp/language/list_initialization
+    auto tasklet =
+        new FunctionWrapperTasklet<RETATTR, FUNC, RETURN, ARGS...>(env, deferred, {FromJSArgs<ARGS>(info, idx)...});
 
-    auto tasklet = new FunctionWrapperTasklet<RETATTR, FUNC, RETURN, ARGS...>(
-        env, deferred, std::forward_as_tuple(Nobind::FromJS<ARGS>(info[I])...));
+    CheckArgLength(env, idx, info.Length());
 
     tasklet->Queue();
   } catch (const std::exception &e) {
@@ -112,13 +118,6 @@ Napi::Value FunctionWrapper(const Napi::CallbackInfo &info) {
   return FunctionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{});
 }
 
-template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
-inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
-  return FunctionWrapperAsync<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
-                                       std::index_sequence_for<ARGS...>{});
-}
-
 // This is the async function that gets instantiated to create a wrapper (by getting a pointer)
 // and gets will be called by JavaScript
 template <const ReturnAttribute &RETATTR = ReturnDefault, auto *FUNC>
@@ -134,7 +133,7 @@ template <typename T, T *OBJECT> static Napi::Value GetterWrapper(const Napi::Ca
 
 // Global or class static setter wrapper
 template <typename T, T *OBJECT> static void SetterWrapper(const Napi::CallbackInfo &info) {
-  *OBJECT = FromJS<T>(info[0]).Get();
+  *OBJECT = FromJSValue<T>(info[0]).Get();
 }
 
 } // namespace Nobind

@@ -10,13 +10,13 @@ namespace Typemap {
     std::remove_cv_t<std::remove_reference_t<TYPE>> val_;                                                              \
                                                                                                                        \
   public:                                                                                                              \
-    inline explicit FromJS(Napi::Value val) {                                                                          \
+    inline explicit FromJS(const Napi::Value &val) {                                                                   \
       if (!val.IsString()) {                                                                                           \
-        throw Napi::TypeError::New(val.Env(), "Not a string");                                                         \
+        throw Napi::TypeError::New(val.Env(), "Expected a string");                                                         \
       }                                                                                                                \
       val_ = val.ToString().Utf8Value();                                                                               \
     }                                                                                                                  \
-    inline TYPE Get() { return val_; }                                                                           \
+    inline TYPE Get() { return val_; }                                                                                 \
   };                                                                                                                   \
                                                                                                                        \
   template <const ReturnAttribute &RETATTR> class ToJS<TYPE, RETATTR> {                                                \
@@ -25,7 +25,7 @@ namespace Typemap {
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
-    inline Napi::Value Get() { return Napi::String::New(env_, val_); }                                           \
+    inline Napi::Value Get() { return Napi::String::New(env_, val_); }                                                 \
   };
 
 // The const versions are needed to ensure that we
@@ -40,9 +40,9 @@ TYPEMAPS_FOR_STD_STRING(const std::string &);
     char *val_;                                                                                                        \
                                                                                                                        \
   public:                                                                                                              \
-    inline explicit FromJS(Napi::Value val) {                                                                          \
+    inline explicit FromJS(const Napi::Value &val) {                                                                   \
       if (!val.IsString()) {                                                                                           \
-        throw Napi::TypeError::New(val.Env(), "Not a string");                                                         \
+        throw Napi::TypeError::New(val.Env(), "Expected a string");                                                         \
       }                                                                                                                \
       std::string s = val.ToString().Utf8Value();                                                                      \
       val_ = new char[s.size() + 1];                                                                                   \
@@ -50,7 +50,7 @@ TYPEMAPS_FOR_STD_STRING(const std::string &);
       val_[s.size()] = 0;                                                                                              \
     }                                                                                                                  \
                                                                                                                        \
-    inline TYPE Get() { return val_; }                                                                           \
+    inline TYPE Get() { return val_; }                                                                                 \
                                                                                                                        \
     ~FromJS() { delete val_; }                                                                                         \
   };                                                                                                                   \
@@ -61,7 +61,7 @@ TYPEMAPS_FOR_STD_STRING(const std::string &);
                                                                                                                        \
   public:                                                                                                              \
     inline explicit ToJS(Napi::Env env, TYPE val) : env_(env), val_(val) {}                                            \
-    inline Napi::Value Get() { return Napi::String::New(env_, val_); }                                           \
+    inline Napi::Value Get() { return Napi::String::New(env_, val_); }                                                 \
   };
 
 // Same explanation as above:

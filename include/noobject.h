@@ -113,12 +113,12 @@ public:
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    self->*MEMBER = FromJS<T>(val).Get();
+    self->*MEMBER = FromJSValue<T>(val).Get();
   }
 
   template <typename T, T *MEMBER>
   static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    *MEMBER = FromJS<T>(val).Get();
+    *MEMBER = FromJSValue<T>(val).Get();
   }
 
   static void
@@ -167,10 +167,11 @@ private:
   inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
-    CheckArgLength<ARGS...>(env, info.Length());
+    size_t idx = 0;
     try {
       // Call the FromJS constructors
-      std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+      std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
+      CheckArgLength(env, idx, info.Length());
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
         (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
@@ -225,10 +226,13 @@ private:
     Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
     try {
-      CheckArgLength<ARGS...>(env, info.Length());
-
+      size_t idx = 0;
+      // Alas, std::forward_as_tuple does not guarantee
+      // the evaluation order of its arguments, only *braced-init-list* lists do
+      // https://en.cppreference.com/w/cpp/language/list_initialization
       auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(
-          env, deferred, self, std::forward_as_tuple(Nobind::FromJS<ARGS>(info[I])...));
+          env, deferred, self, {FromJSArgs<ARGS>(info, idx)...});
+      CheckArgLength(env, idx, info.Length());
 
       tasklet->Queue();
     } catch (const std::exception &e) {
@@ -242,9 +246,11 @@ private:
   inline void ConsWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
-    CheckArgLength<ARGS...>(env, info.Length());
     // Call the FromJS constructors
-    std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+    size_t idx = 0;
+    std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
+    CheckArgLength(env, idx, info.Length());
+
     // Convert and call
     self = new CLASS(std::get<I>(args).Get()...);
   }
@@ -254,7 +260,8 @@ private:
                                       std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
-  } // The extension wrapper, it adds an additional first argument by converting info.This()
+  }
+  // The extension wrapper, it adds an additional first argument by converting info.This()
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...),
             std::size_t... I>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
@@ -262,11 +269,12 @@ private:
                                       std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
-    CheckArgLength<ARGS...>(env, info.Length());
     try {
-      auto thisObj = Nobind::FromJS<CLASS &>(info.This());
+      auto thisObj = FromJSValue<CLASS &>(info.This());
       // Call the FromJS constructors
-      std::tuple<FromJS_t<ARGS>...> args{Nobind::FromJS<ARGS>(info[I])...};
+      size_t idx = 0;
+      std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
+      CheckArgLength(env, idx, info.Length());
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
         FUNC(thisObj.Get(), std::get<I>(args).Get()...);
@@ -364,12 +372,12 @@ inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
 template <typename CLASS> inline CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::Value val) {
   Napi::Env env(val.Env());
   if (!val.IsObject()) {
-    throw Napi::TypeError::New(env, "Not an object");
+    throw Napi::TypeError::New(env, "Expected an object");
   }
   Napi::Object obj = val.ToObject();
   auto instance = env.GetInstanceData<EnvInstanceData>();
   if (!obj.InstanceOf(instance->cons[class_idx].Value())) {
-    throw Napi::TypeError::New(env, "Not a " + name);
+    throw Napi::TypeError::New(env, "Expected a " + name);
   }
   return NoObjectWrap<CLASS>::Unwrap(obj)->self;
 }
@@ -482,10 +490,9 @@ template <typename T> class FromJS<T &> {
   T *val_;
 
 public:
-  inline explicit FromJS(Napi::Value val) {
+  inline explicit FromJS(const Napi::Value &val) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
-      Napi::Env env = val.Env();
       val_ = OBJCLASS::CheckUnwrap(val);
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
@@ -517,10 +524,9 @@ template <typename T> class FromJS<T *> {
   T *val_;
 
 public:
-  inline explicit FromJS(Napi::Value val) {
+  inline explicit FromJS(const Napi::Value &val) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
-      Napi::Env env = val.Env();
       val_ = OBJCLASS::CheckUnwrap(val);
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
@@ -562,7 +568,7 @@ template <typename T> class FromJS {
   T *object;
 
 public:
-  inline explicit FromJS(Napi::Value val) {
+  inline explicit FromJS(const Napi::Value &val) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       // C++ asks for a regular stack-allocated object
       object = NoObjectWrap<T>::CheckUnwrap(val);
@@ -572,6 +578,8 @@ public:
   }
   // will return a copy by value
   inline T Get() { return *object; }
+
+  static const size_t Inputs = 1;
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS {

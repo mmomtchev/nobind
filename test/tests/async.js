@@ -11,8 +11,8 @@ describe('int, int -> int', () => {
   );
 
   it('exception', () =>
-    assert.isRejected(dll.add('2', 1), /Not a number/)
-      .then(() => assert.isRejected(dll.add(2), /Expected 2 arguments, got 1/))
+    assert.isRejected(dll.add('2', 1), /Expected a number/)
+      .then(() => assert.isRejected(dll.add(2), /Expected a number/))
   );
 });
 
@@ -22,8 +22,8 @@ describe('int, int -> bool', () => {
   );
 
   it('exception', () =>
-    assert.isRejected(dll.gte('2', 1), /Not a number/)
-      .then(() => assert.isRejected(dll.gte(2), /Expected 2 arguments, got 1/))
+    assert.isRejected(dll.gte('2', 1), /Expected a number/)
+      .then(() => assert.isRejected(dll.gte(2), /Expected a number/))
   );
 });
 
@@ -33,8 +33,8 @@ describe('double, double -> double', () => {
   );
 
   it('exception', () =>
-    assert.isRejected(dll.pow('2', 1), /Not a number/)
-      .then(() => assert.isRejected(dll.pow(2)), /Expected 2 arguments, got 1/)
+    assert.isRejected(dll.pow('2', 1), /Expected a number/)
+      .then(() => assert.isRejected(dll.pow(2)), /Expected a number/)
   );
 });
 
@@ -45,7 +45,7 @@ describe('string -> string', () => {
   );
 
   it('exception', () =>
-    assert.isRejected(dll.hello(1), /Not a string/)
+    assert.isRejected(dll.hello(1), /Expected a string/)
       .then(() => assert.isRejected(dll.hello('test', 1)), /Expected 1 arguments, got 2/)
   );
 });
@@ -78,6 +78,6 @@ describe('class method', () => {
     const o = new dll.Hello('Garga');
 
     return assert.isRejected(o.get_id(2), /Expected 0 arguments, got 1/)
-      .then(() => assert.isRejected(o.greet(2), /Not a string/));
+      .then(() => assert.isRejected(o.greet(2), /Expected a string/));
   });
 });
