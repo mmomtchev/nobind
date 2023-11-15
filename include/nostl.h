@@ -15,7 +15,7 @@ namespace Typemap {
   public:                                                                                                              \
     inline explicit FromJS(const Napi::Value &val) {                                                                   \
       if (!val.IsArray()) {                                                                                            \
-        throw Napi::TypeError::New(val.Env(), "Expected an array");                                                         \
+        throw Napi::TypeError::New(val.Env(), "Expected an array");                                                    \
       }                                                                                                                \
       Napi::Array array = val.As<Napi::Array>();                                                                       \
       val_.reserve(array.Length());                                                                                    \
@@ -49,7 +49,7 @@ namespace Typemap {
   public:                                                                                                              \
     inline explicit FromJS(const Napi::Value &val) {                                                                   \
       if (!val.IsObject()) {                                                                                           \
-        throw Napi::TypeError::New(val.Env(), "Expected an object");                                                        \
+        throw Napi::TypeError::New(val.Env(), "Expected an object");                                                   \
       }                                                                                                                \
       Napi::Object object = val.ToObject();                                                                            \
       for (auto prop : object) {                                                                                       \

@@ -12,7 +12,7 @@ namespace Typemap {
   public:                                                                                                              \
     inline explicit FromJS(const Napi::Value &val) {                                                                   \
       if (!val.IsString()) {                                                                                           \
-        throw Napi::TypeError::New(val.Env(), "Expected a string");                                                         \
+        throw Napi::TypeError::New(val.Env(), "Expected a string");                                                    \
       }                                                                                                                \
       val_ = val.ToString().Utf8Value();                                                                               \
     }                                                                                                                  \
@@ -42,7 +42,7 @@ TYPEMAPS_FOR_STD_STRING(const std::string &);
   public:                                                                                                              \
     inline explicit FromJS(const Napi::Value &val) {                                                                   \
       if (!val.IsString()) {                                                                                           \
-        throw Napi::TypeError::New(val.Env(), "Expected a string");                                                         \
+        throw Napi::TypeError::New(val.Env(), "Expected a string");                                                    \
       }                                                                                                                \
       std::string s = val.ToString().Utf8Value();                                                                      \
       val_ = new char[s.size() + 1];                                                                                   \
