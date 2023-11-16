@@ -34,7 +34,7 @@ describe('methods', () => {
     }, /Expected 0 arguments, got 1/);
     assert.throws(() => {
       o.greet(2);
-    }, /Not a string/);
+    }, /Expected a string/);
   });
 });
 
@@ -64,7 +64,7 @@ describe('setters', () => {
 
     assert.throws(() => {
       o.var = 'invalid';
-    }, /Not a number/);
+    }, /Expected a number/);
   });
 });
 

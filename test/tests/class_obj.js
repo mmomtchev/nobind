@@ -12,29 +12,29 @@ describe('reference', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.hello_ref(2);
-    }, /Not an object/);
+    }, /Expected an object/);
 
     assert.throws(() => {
       dll.hello_ref(new dll.TwoCons());
-    }, /Not a Hello/);
+    }, /Expected a Hello/);
 
     assert.throws(() => {
       dll.hello_ref({ a: 0 });
-    }, /Not a Hello/);
+    }, /Expected a Hello/);
 
     assert.throws(() => {
       dll.hello_ref();
-    }, /Expected 1 arguments, got 0/);
+    }, /Expected an object/);
   });
 
   describe('null', () => {
-    it('null argument when not allowed', () => {
+    it('null argument when Expected allowed', () => {
       assert.throws(() => {
         new dll.Hello(null);
       }, /No constructor with the given 1 arguments found/);
       assert.throws(() => {
         assert.isNumber(dll.hello_ref(null));
-      }, /Not an object/);
+      }, /Expected an object/);
     });
 
     it('null allowed as return value', () => {
@@ -59,7 +59,7 @@ describe('reference', () => {
     }, /No constructor with the given 1 arguments found/);
     assert.throws(() => {
       assert.isNumber(dll.hello_ref(undefined));
-    }, /Not an object/);
+    }, /Expected an object/);
   });
 });
 
@@ -74,31 +74,31 @@ describe('pointer', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.hello_ptr(2);
-    }, /Not an object/);
+    }, /Expected an object/);
 
     assert.throws(() => {
       dll.hello_ptr(new dll.TwoCons());
-    }, /Not a Hello/);
+    }, /Expected a Hello/);
 
     assert.throws(() => {
       dll.hello_ptr({ a: 0 });
-    }, /Not a Hello/);
+    }, /Expected a Hello/);
 
     assert.throws(() => {
       dll.hello_ptr();
-    }, /Expected 1 arguments, got 0/);
+    }, /Expected an object/);
   });
 
   it('null', () => {
     assert.throws(() => {
       assert.isNumber(dll.hello_ptr(null));
-    }, /Not an object/);
+    }, /Expected an object/);
   });
 
   it('undefined', () => {
     assert.throws(() => {
       assert.isNumber(dll.hello_ptr(undefined));
-    }, /Not an object/);
+    }, /Expected an object/);
   });
 });
 
@@ -111,11 +111,11 @@ describe('const reference', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.hello_const_ref(2);
-    }, /Not an object/);
+    }, /Expected an object/);
 
     assert.throws(() => {
       dll.hello_const_ref();
-    }, /Expected 1 arguments, got 0/);
+    }, /Expected an object/);
   });
 });
 
@@ -128,10 +128,10 @@ describe('const pointer', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.hello_const_ptr(2);
-    }, /Not an object/);
+    }, /Expected an object/);
 
     assert.throws(() => {
       dll.hello_const_ptr();
-    }, /Expected 1 arguments, got 0/);
+    }, /Expected an object/);
   });
 });

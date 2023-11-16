@@ -9,6 +9,20 @@ describe('add with strings', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.add(2, 3);
-    }, /Not a string/);
+    }, /Expected a string/);
+  });
+});
+
+describe('hidden string arguments', () => {
+  it('nominal', () => {
+    const r = dll.hello();
+    assert.isString(r);
+    assert.strictEqual(r, 'hello Static string');
+  });
+
+  it('exception', () => {
+    assert.throws(() => {
+      dll.hello('invalid');
+    }, /Expected 0 arguments, got 1/);
   });
 });

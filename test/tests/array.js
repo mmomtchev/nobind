@@ -28,10 +28,10 @@ describe('std::vector', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.put_ptr_array('comrade', 'invalid');
-    }, /Not an array/);
+    }, /Expected an array/);
 
     assert.throws(() => {
       dll.put_ptr_array('comrade', [{ field: 'value' }]);
-    }, /Not a Hello/);
+    }, /Expected a Hello/);
   });
 });

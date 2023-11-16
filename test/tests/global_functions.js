@@ -8,11 +8,11 @@ describe('int, int -> int', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.add('2', 1);
-    }, /Not a number/);
+    }, /Expected a number/);
 
     assert.throws(() => {
       dll.add(2);
-    }, /Expected 2 arguments, got 1/);
+    }, /Expected a number/);
   });
 });
 
@@ -24,11 +24,11 @@ describe('int, int -> bool', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.gte('2', 1);
-    }, /Not a number/);
+    }, /Expected a number/);
 
     assert.throws(() => {
       dll.gte(2);
-    }, /Expected 2 arguments, got 1/);
+    }, /Expected a number/);
   });
 });
 
@@ -40,11 +40,11 @@ describe('bool -> int', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.test('2');
-    }, /Not a boolean/);
+    }, /Expected a boolean/);
 
     assert.throws(() => {
       dll.test();
-    }, /Expected 1 arguments, got 0/);
+    }, /Expected a boolean/);
   });
 });
 
@@ -56,11 +56,11 @@ describe('double, double -> double', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.pow('2', 1);
-    }, /Not a number/);
+    }, /Expected a number/);
 
     assert.throws(() => {
       dll.pow(2);
-    }, /Expected 2 arguments, got 1/);
+    }, /Expected a number/);
   });
 });
 
@@ -72,7 +72,7 @@ describe('string -> string', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.hello(1);
-    }, /Not a string/);
+    }, /Expected a string/);
 
     assert.throws(() => {
       dll.hello('test', 1);

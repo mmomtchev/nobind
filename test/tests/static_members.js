@@ -46,7 +46,7 @@ describe('StaticMembers', () => {
     it('exception', () => {
       assert.throws(() => {
         dll.StaticMembers.static_member = 'invalid';
-      }, /Not a number/);
+      }, /Expected a number/);
     });
   });
 });
