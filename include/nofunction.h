@@ -44,7 +44,7 @@ class FunctionWrapperTasklet : public Napi::AsyncWorker {
   std::tuple<FromJS_t<ARGS>...> args_;
 
 public:
-  FunctionWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, const std::tuple<FromJS_t<ARGS>...> &&args)
+  FunctionWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, std::tuple<FromJS_t<ARGS>...> &&args)
       : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)) {}
 
   template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {

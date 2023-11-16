@@ -246,6 +246,10 @@ public:
   // An optional public member may specify the number
   // of consumed JS arguments (considered 1 if not present)
   int Inputs;
+  // Optionally, if the typemap has a costly state, only move
+  // semantics may be specified, nobind can work with this type
+  FromJS(const FromJS &) = delete;
+  FromJS(FromJS &&) = default;
 };
 
 // This typemap will be used when C++ returns an int
@@ -261,6 +265,10 @@ public:
   // The second part will be called on the main V8 thread
   // It should produce a JS value
   inline Napi::Value Get() { return Napi::String::New(env_, std::to_string(val_)); }
+  // Optionally, if the typemap has a costly state, only move
+  // semantics may be specified, nobind can work with this type
+  ToJS(const ToJS &) = delete;
+  ToJS(ToJS &&) = default;
 };
 } // namespace TypemapOverrides
 

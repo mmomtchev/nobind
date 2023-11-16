@@ -30,7 +30,7 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
 
   public:
     MethodWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, CLASS *self,
-                         const std::tuple<FromJS_t<ARGS>...> &&args)
+                         std::tuple<FromJS_t<ARGS>...> &&args)
         : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)),
           self_(static_cast<BASE *>(self)) {}
 
@@ -230,8 +230,8 @@ private:
       // Alas, std::forward_as_tuple does not guarantee
       // the evaluation order of its arguments, only *braced-init-list* lists do
       // https://en.cppreference.com/w/cpp/language/list_initialization
-      auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(
-          env, deferred, self, {FromJSArgs<ARGS>(info, idx)...});
+      auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(env, deferred, self,
+                                                                                    {FromJSArgs<ARGS>(info, idx)...});
       CheckArgLength(env, idx, info.Length());
 
       tasklet->Queue();
