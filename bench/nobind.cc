@@ -7,4 +7,5 @@ NOBIND_MODULE(bench_nobind_string, m) {
     .cons<std::string &>()
     .def<&String::Len>("length");
   m.def<&Strlen>("strlen");
+  m.def<&Strlen, Nobind::ReturnAsync>("strlenAsync");
 }

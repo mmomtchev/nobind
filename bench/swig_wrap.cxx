@@ -858,6 +858,74 @@ Napi::Object Init(Napi::Env env, Napi::Object exports);
 #include <string>
 
 
+// This class is essentially a functor with multiple entry points
+// Its main purpose is to keep the context - the wrapper local variables -
+// as class members between those calls in different threads
+// Init() is called on the main thread with V8 access and deals with in typemaps
+// Execute() is called on a worker thread without V8 access and does the work
+// OnOK()/Cleanup() are called on the main thread with V8 access and deal with
+//   the out typemaps
+class SWIG_NAPI_AsyncContext {
+protected:
+  Napi::Env env;
+  Napi::Promise::Deferred SWIG_NAPI_deferred;
+  bool SWIG_NAPI_deferred_finalized;
+public:
+  enum Status { OK, REJECT, THROW };
+  SWIG_NAPI_AsyncContext(Napi::Env);
+  virtual ~SWIG_NAPI_AsyncContext();
+  // All methods are prefixed to avoid symbol pollution
+  // Alternatively, inheriting through a template
+  // allows to not import any member definitions from the base class
+  // https://stackoverflow.com/questions/76703197/unshadow-global-identifier-in-a-class
+  virtual Status SWIG_NAPI_Init(const Napi::CallbackInfo &) = 0;
+  virtual void SWIG_NAPI_Execute() = 0;
+  virtual void SWIG_NAPI_Resolve() = 0;
+  virtual bool SWIG_NAPI_Cleanup() = 0;
+#ifdef NAPI_CPP_EXCEPTIONS
+  virtual void SWIG_NAPI_Fail(const Napi::Error &);
+  virtual void SWIG_NAPI_Rethrow(const std::exception_ptr &) = 0;
+#endif
+  inline Napi::Promise SWIG_NAPI_Promise() { return SWIG_NAPI_deferred.Promise(); }
+};
+
+// This is the async worker, this class deletes itself (NAPI does this)
+// as well as its context when the async operation completes
+class SWIG_NAPI_AsyncWorker : public Napi::AsyncWorker {
+  SWIG_NAPI_AsyncContext *context;
+  // This vector holds persistent references to all JS objects
+  // involved in the asynchronous operation - it protects them
+  // from being garbage-collected
+  std::vector<Napi::ObjectReference *> persistent;
+  std::exception_ptr saved_exception;
+
+public:
+  SWIG_NAPI_AsyncWorker(Napi::Env, const char *, SWIG_NAPI_AsyncContext *);
+  virtual ~SWIG_NAPI_AsyncWorker();
+
+  virtual void OnOK() override;
+  virtual void OnError(const Napi::Error &error) override;
+  virtual void Execute() override;
+  Napi::Value Run(const Napi::CallbackInfo &info);
+
+  inline void Persist(const Napi::Value &v) {
+    if (v.IsObject()) {
+      Napi::Object obj;
+      NAPI_CHECK_RESULT(v.ToObject(), obj);
+      Napi::ObjectReference *ref = new Napi::ObjectReference();
+      *ref = Napi::Persistent(obj);
+      persistent.push_back(ref);
+    }
+    return;
+#ifndef NAPI_CPP_EXCEPTIONS
+    goto fail;
+  fail:
+    return;
+#endif
+  }
+};
+
+
 SWIGINTERNINLINE swig_type_info*
 SWIG_pchar_descriptor(void)
 {
@@ -932,6 +1000,8 @@ SWIG_From_size_t  SWIG_NAPI_FROM_DECL_ARGS(size_t value)
 #define SWIG_NAPI_INIT swig_initialize
 
 
+// js_global_declaration
+Napi::Value _wrap_strlenAsync(const Napi::CallbackInfo &info);
 // js_global_declaration
 Napi::Value _wrap_strlen(const Napi::CallbackInfo &info);
 // jsnapi_class_prologue_template
@@ -1854,6 +1924,123 @@ Napi::Value SWIG_NAPI_AppendOutput(Napi::Env env, Napi::Value result, Napi::Valu
 }
 
 
+
+SWIG_NAPI_AsyncContext::SWIG_NAPI_AsyncContext(Napi::Env _env) : 
+    env(_env),
+    SWIG_NAPI_deferred(Napi::Promise::Deferred(_env)),
+    SWIG_NAPI_deferred_finalized(false) {}
+
+SWIG_NAPI_AsyncContext::~SWIG_NAPI_AsyncContext() {
+  if (!SWIG_NAPI_deferred_finalized) {
+    // This fixes a very vicious leak
+    // Once a Deferred has been created, it won't be destroyed
+    // unless it is resolved or rejected - its destructor is a no-op
+    // This code is triggered when synchronously throwing while parsing the args
+    SWIG_NAPI_deferred.Resolve(env.Undefined());
+    SWIG_NAPI_deferred_finalized = true;
+  }
+}
+
+#ifdef NAPI_CPP_EXCEPTIONS
+void SWIG_NAPI_AsyncContext::SWIG_NAPI_Fail(const Napi::Error &error) {
+  if (!SWIG_NAPI_Cleanup()) goto fail;
+  SWIG_NAPI_deferred_finalized = true;
+  SWIG_NAPI_deferred.Reject(error.Value());
+  goto fail;
+fail:
+  return;
+}
+#endif
+
+SWIG_NAPI_AsyncWorker::SWIG_NAPI_AsyncWorker(
+      Napi::Env _env,
+      const char *name,
+      SWIG_NAPI_AsyncContext *_context) :
+    Napi::AsyncWorker(_env, name),
+    context(_context),
+    persistent(),
+    saved_exception(nullptr) {}
+
+SWIG_NAPI_AsyncWorker::~SWIG_NAPI_AsyncWorker() {
+  // Release the persistent references
+  for (Napi::ObjectReference *ref : persistent) {
+    delete ref;
+  }
+  persistent.clear();
+}
+
+void SWIG_NAPI_AsyncWorker::OnOK() {
+  Napi::Env env(Env());
+  Napi::HandleScope scope(env);
+#ifdef NAPI_CPP_EXCEPTIONS
+  try {
+    context->SWIG_NAPI_Rethrow(saved_exception);
+  } catch (Napi::Error &error) {
+    context->SWIG_NAPI_Fail(error);
+    delete context;
+    return;
+  } catch (std::exception &ex) {
+    Napi::Error error = Napi::Error::New(env, ex.what());
+    context->SWIG_NAPI_Fail(error);
+    delete context;
+    return;
+  }
+#endif
+  context->SWIG_NAPI_Resolve();
+  delete context;
+}
+
+void SWIG_NAPI_AsyncWorker::OnError(const Napi::Error &error) {
+  // This should never happen, we catch all errors now
+  abort();
+}
+
+void SWIG_NAPI_AsyncWorker::Execute() {
+#ifdef NAPI_CPP_EXCEPTIONS
+  try {
+    context->SWIG_NAPI_Execute();
+  } catch (...) {
+    saved_exception = std::current_exception();
+  }
+#else
+  context->SWIG_NAPI_Execute();
+#endif
+}
+
+Napi::Value SWIG_NAPI_AsyncWorker::Run(const Napi::CallbackInfo &info) {
+  SWIG_NAPI_AsyncContext::Status rc;
+
+#ifdef NAPI_CPP_EXCEPTIONS
+  try {
+    rc = context->SWIG_NAPI_Init(info);
+  } catch (...) {
+    delete context;
+    delete this;
+    throw;
+  }
+#else
+  rc = context->SWIG_NAPI_Init(info);
+#endif
+  if (rc == SWIG_NAPI_AsyncContext::Status::REJECT) {
+    Napi::Value r = context->SWIG_NAPI_Promise();
+    context->SWIG_NAPI_Cleanup();
+    delete context;
+    delete this;
+    return r;
+  } else if (rc == SWIG_NAPI_AsyncContext::Status::THROW) {
+    context->SWIG_NAPI_Cleanup();
+    delete context;
+    delete this;
+    return Napi::Value();
+  }
+
+  Persist(info.This());
+  for (size_t i = 0; i < info.Length(); i++) Persist(info[i]);
+  Queue();
+  return context->SWIG_NAPI_Promise();
+}
+
+
 SWIGINTERN int
 SWIG_AsCharPtrAndSize(Napi::Value valRef, char** cptr, size_t* psize, int *alloc)
 {
@@ -1948,6 +2135,110 @@ SWIGINTERN swig_cast_info *swig_cast_initial[] = {
 
 SWIGINTERN swig_type_info *swig_types[3];
 SWIGINTERN swig_module_info swig_module = {swig_types, 2, 0, 0, 0, 0};
+
+
+// js_global_function_async
+Napi::Value _wrap_strlenAsync(const Napi::CallbackInfo &info) {
+  // js_async_worker_local_class
+  class __wrap_strlenAsync_Tasklet : public SWIG_NAPI_AsyncContext {
+    Napi::Env env;
+    std::string *arg1 = 0 ;
+    int res1 = SWIG_OLDOBJ ;
+    size_t result;
+    
+  public:
+    __wrap_strlenAsync_Tasklet(Napi::Env _env)
+    :SWIG_NAPI_AsyncContext(_env), env(_env) {
+      
+    }
+    
+    virtual void SWIG_NAPI_Execute() override {
+      // This runs the action code in a worker thread and V8 is not accessible
+      Napi::Env env(SWIG_NULLPTR);
+      
+      
+      
+      result = Strlen((std::string const &)*arg1);
+      
+      goto fail;
+    fail:
+      return;
+    }
+    
+#ifdef NAPI_CPP_EXCEPTIONS
+    virtual void SWIG_NAPI_Rethrow(const std::exception_ptr &saved) override {
+      // Back in the main thread with V8 access, caller has HandleScope
+      
+      if (saved) std::rethrow_exception(saved);
+      
+      
+    }
+#endif
+    
+    virtual void SWIG_NAPI_Resolve() override {
+      // Back in the main thread with V8 access, caller has HandleScope
+      Napi::Value jsresult;
+      jsresult = SWIG_From_size_t  SWIG_NAPI_FROM_CALL_ARGS(static_cast< size_t >(result));
+      
+      if (!SWIG_NAPI_Cleanup()) goto fail;
+      SWIG_NAPI_deferred_finalized = true;
+      SWIG_NAPI_deferred.Resolve(jsresult);
+      goto fail;
+    fail:
+      return;
+    }
+    
+    virtual bool SWIG_NAPI_Cleanup() override {
+      if (SWIG_IsNewObj(res1)) delete arg1;
+      
+      return true;
+      goto fail;
+    fail:
+      return false;
+    }
+    
+    virtual Status SWIG_NAPI_Init(const Napi::CallbackInfo &info) override {
+      {
+        {
+          std::string *ptr = (std::string *)0;
+          res1 = SWIG_AsPtr_std_string(info[0], &ptr);
+          if (!SWIG_IsOK(res1)) {
+            SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "strlen" "', argument " "1"" of type '" "std::string const &""'"); 
+          }
+          if (!ptr) {
+            SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "strlen" "', argument " "1"" of type '" "std::string const &""'"); 
+          }
+          arg1 = ptr;
+        }
+      }
+      
+#define SWIG_NAPI_Raise SWIG_NAPI_Reject
+      
+#undef SWIG_NAPI_Raise
+      return Status::OK;
+      goto fail;
+    fail:
+      return Status::THROW;
+    }
+  };
+  
+  Napi::Env env = info.Env();
+  __wrap_strlenAsync_Tasklet *context = SWIG_NULLPTR;
+  SWIG_NAPI_AsyncWorker *worker = SWIG_NULLPTR;
+  if(static_cast<int>(info.Length()) < 1 || static_cast<int>(info.Length()) > 1) {
+    SWIG_Error(SWIG_ERROR, "Illegal number of arguments for _wrap_strlenAsync.");
+  }
+  context = new __wrap_strlenAsync_Tasklet(env);
+  worker = new SWIG_NAPI_AsyncWorker(
+    env, "SWIG__wrap_strlenAsync_Async_Worker", context);
+  return worker->Run(info);
+#ifndef NAPI_CPP_EXCEPTIONS
+  goto fail;
+fail:
+#endif
+  return Napi::Value();
+}
+
 
 
 // js_global_function
@@ -2374,6 +2665,12 @@ do {
 
   /* create and register namespace objects */
   // jsnapi_register_global_function
+do {
+  Napi::PropertyDescriptor pd = Napi::PropertyDescriptor::Function("strlenAsync", _wrap_strlenAsync,
+    static_cast<napi_property_attributes>(napi_writable | napi_enumerable | napi_configurable));
+  NAPI_CHECK_MAYBE(exports.DefineProperty(pd));
+} while (0);
+// jsnapi_register_global_function
 do {
   Napi::PropertyDescriptor pd = Napi::PropertyDescriptor::Function("strlen", _wrap_strlen,
     static_cast<napi_property_attributes>(napi_writable | napi_enumerable | napi_configurable));

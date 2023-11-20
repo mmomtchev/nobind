@@ -5,6 +5,8 @@
 %rename Strlen strlen;
 %rename Len length;
 
+%feature("async", "Async") Strlen;
+
 %include "string.h"
 
 %{

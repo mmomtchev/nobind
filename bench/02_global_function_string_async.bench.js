@@ -12,19 +12,16 @@ const Data = crypto.randomBytes(len / 2).toString('hex');
 
 module.exports = function () {
   return b.suite(
-    `Class method strlen`,
+    `Global function strlenAsync`,
 
-    b.add('nobind', () => {
-      const object = new nobind.String(Data);
-      assert(object.length() === len, 'Data error');
+    b.add('nobind', async () => {
+      assert(await nobind.strlenAsync(Data) === len, 'Data error');
     }),
-    b.add('napi', () => {
-      const object = new napi.String(Data);
-      assert(object.length() === len, 'Data error');
+    b.add('napi', async () => {
+      assert(await napi.strlenAsync(Data) === len, 'Data error');
     }),
-    b.add('swig', () => {
-      const object = new swig.String(Data);
-      assert(object.length() === len, 'Data error');
+    b.add('swig', async () => {
+      assert(await swig.strlenAsync(Data) === len, 'Data error');
     }),
     b.cycle(),
     b.complete()
