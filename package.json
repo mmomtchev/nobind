@@ -13,6 +13,7 @@
   },
   "gypfile": true,
   "devDependencies": {
+    "benny": "^3.7.1",
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "mocha": "^10.2.0"
