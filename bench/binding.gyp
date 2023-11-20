@@ -9,7 +9,11 @@
     },
     {
       'target_name': 'napi',
-      'sources': [ 'napi.cc' ],
+      'sources': [ 'napi.cc' ]
+    },
+    {
+      'target_name': 'swig',
+      'sources': [ 'swig_wrap.cxx' ]
     }
   ],
   'target_defaults': {
