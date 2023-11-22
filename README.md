@@ -62,6 +62,8 @@ It (**will be**) published as an npm package that will also install `node-addon-
 
 The following tutorial should be enough to get you started with your C++ project.
 
+You can also check [node-ffmpeg](https://github.com/mmomtchev/node-ffmpeg) as an example for a large project using `nobind17`.
+
 ### The environment
 
 Create a a `binding.gyp`, then create a `package.json` for your project and install `nobind17`:
