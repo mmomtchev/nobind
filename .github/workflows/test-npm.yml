@@ -26,7 +26,8 @@ jobs:
       - run: |
           cd example
           npm install nobind17@${{ github.event.inputs.version }}
+          npm install node-gyp
           cp node_modules/node-addon-api/except.gypi .
-          node-gyp configure build
+          npx node-gyp configure build
           node -p "require('./build/Release/hello.node').hello('Garga')"
         shell: bash
