@@ -25,7 +25,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: |
           cd test/package
-          npm install --force nobind@${{ github.event.inputs.version }}
+          npm install nobind@${{ github.event.inputs.version }}
           cp node_modules/node-addon-api/except.gypi .
           node-gyp configure build
         shell: bash
