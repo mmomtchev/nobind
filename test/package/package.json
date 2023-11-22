@@ -1,0 +1,7 @@
+{
+  "name": "test_package",
+  "version": "1.0.0",
+  "description": "nobind test package",
+  "author": "Momtchil Momtchev <momtchil@momtchev.com>",
+  "license": "ISC"
+}

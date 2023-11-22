@@ -64,13 +64,7 @@ The following tutorial should be enough to get you started with your C++ project
 
 ### The environment
 
-Create a `package.json` for your project, install `nobind` and then create a `binding.gyp`:
-
-```shell
-npm init # ... answer questions
-npm install nobind
-cp node_modules/node-addon-api/except.gypi .
-```
+Create a a `binding.gyp`, then create a `package.json` for your project and install `nobind`:
 
 `binding.gyp`
 ```python
@@ -101,6 +95,12 @@ cp node_modules/node-addon-api/except.gypi .
     }
   ]
 }
+```
+
+```shell
+npm init # ... answer questions
+npm install nobind
+cp node_modules/node-addon-api/except.gypi .
 ```
 
 You will be building your project with `node-gyp configure build`. `node-gyp` is usually installed globally.

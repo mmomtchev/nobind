@@ -1,0 +1,31 @@
+name: QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version to test'
+        required: true
+
+jobs:
+  unit-tests:
+    runs-on: ${{ matrix.platform }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-20.04, ubuntu-22.04, windows-2019, macos-11, macos-12]
+        node-version: [18.x, 20.x]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: |
+          cd test/package
+          npm install --force nobind@${{ github.event.inputs.version }}
+          cp node_modules/node-addon-api/except.gypi .
+          node-gyp configure build
+        shell: bash

@@ -1,10 +1,11 @@
 {
   "name": "nobind",
   "version": "1.0.0",
-  "description": "Early experiments with a next-gen binding framework for Node.js / Node-API",
+  "description": "Next-gen binding framework for Node.js / Node-API",
   "main": "index.js",
   "scripts": {
-    "test": "npx mocha"
+    "test": "npx mocha",
+    "postpublish": "gh workflow run test-npm.yml -F version=$npm_package_version"
   },
   "author": "Momtchil Momtchev <momthchil@momtchev.com>",
   "license": "ISC",
