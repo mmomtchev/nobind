@@ -1,4 +1,4 @@
-# nobind
+# nobind17
 
 Experimental next-gen binding framework for Node.js / Node-API inspired by `pybind11`
 
@@ -21,13 +21,13 @@ Complex projects should continue to use SWIG which is cross-platform and cross-l
 
 **Currently, the project should be considered of beta quality.**
 
-A future compatible layer should allow to target both `embind` and `nobind` with shared declarations.
+A future compatible layer should allow to target both `embind` and `nobind17` with shared declarations.
 
 Full `pybind11` compatibility is also a very long term goal - allowing a module to support both Node.js and Python.
 
 ## Comparison vs SWIG Node-API
 
-| Feature | SWIG Node-API | `nobind` |
+| Feature | SWIG Node-API | `nobind17` |
 | --- | --- | --- |
 | Design goal | Create bindings for (*almost*) any C++ code with (*almost*) native feel | Easy to use, easy to learn |
 | Target use | Commercial-grade bindings for large C++ libraries | Very fast porting of C++ code with few methods/classes |
@@ -44,8 +44,8 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | TypeScript support | Automatic | No, must write the typings |
 | WASM/Browser support | Yes | Not for 1.0, but planned through `embind` compatibility |
 | Cross-platform | Yes | Yes |
-| Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind`, `embind` and `pybind` is planned in theory |
-| Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support | Yes, but no downcasting support and `instanceof` requires a small kludge in the JavaScript wrapper (see [here](https://github.com/mmomtchev/nobind/blob/main/test/tests/inheritance.js)) |
+| Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind` is planned in theory |
+| Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support | Yes, but no downcasting support and `instanceof` requires a small kludge in the JavaScript wrapper (see [here](https://github.com/mmomtchev/nobind17/blob/main/test/tests/inheritance.js)) |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes, automatic | Yes, manual
 | Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `n`:`1` transformations of input arguments |
@@ -54,17 +54,17 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 
 ## Usage
 
-`nobind` is a set of C++17 templates that must be included directly in the user project.
+`nobind17` is a set of C++17 templates that must be included directly in the user project.
 
 It (**will be**) published as an npm package that will also install `node-addon-api`.
 
-`nobind` is designed to be very easy to use - there is no learning curve at all - while allowing to deal with the most common situations that arise when creating bindings for C++ libraries to be used from Node.js.
+`nobind17` is designed to be very easy to use - there is no learning curve at all - while allowing to deal with the most common situations that arise when creating bindings for C++ libraries to be used from Node.js.
 
 The following tutorial should be enough to get you started with your C++ project.
 
 ### The environment
 
-Create a a `binding.gyp`, then create a `package.json` for your project and install `nobind`:
+Create a a `binding.gyp`, then create a `package.json` for your project and install `nobind17`:
 
 `binding.gyp`
 ```python
@@ -90,7 +90,7 @@ Create a a `binding.gyp`, then create a `package.json` for your project and inst
       ],
       'include_dirs': [
         '<!@(node -p "require(\'node-addon-api\').include")',
-        '<!@(node -p "require(\'nobind\').include")'
+        '<!@(node -p "require(\'nobind17\').include")'
       ]
     }
   ]
@@ -99,7 +99,7 @@ Create a a `binding.gyp`, then create a `package.json` for your project and inst
 
 ```shell
 npm init # ... answer questions
-npm install nobind
+npm install nobind17
 cp node_modules/node-addon-api/except.gypi .
 ```
 
@@ -125,7 +125,7 @@ public:
 Start by creating a module:
 
 ```cpp
-#include <nobind.h>
+#include <nobind17.h>
 
 // Define a new module
 NOBIND_MODULE(my_cpp_bindings, m) {
@@ -138,7 +138,7 @@ NOBIND_MODULE(my_cpp_bindings, m) {
 
 ### Adding methods
 
-`nobind` supports global methods and instance and static class methods. All of them are declared by using `.def()`:
+`nobind17` supports global methods and instance and static class methods. All of them are declared by using `.def()`:
 
 ```cpp
 // Expose a global function global_fn
@@ -149,7 +149,7 @@ m.def<MyClass>("Hello")
   .def(&Hello::Greet, "greet");
 ```
 
-`nobind` will identify the type of the class method, static methods will be available through the class itself and instance methods will be available through the object instance.
+`nobind17` will identify the type of the class method, static methods will be available through the class itself and instance methods will be available through the object instance.
 
 A class can have multiple constructors, including a default one (use `<>` for its arguments). The number of arguments on the JavaScript side determine which one will be used. If there a multiple constructors expecting the same number of arguments, they will be tried in the order of their declaration - the first one which is able to convert its arguments will win.
 
@@ -164,7 +164,7 @@ Arguments will be automatically converted. The C++ type of the wrapped function 
 | `boolean` | `bool` |
 | `object` | `std::map<string, T>` (*all properties must have the same type*) |
 | `Array` | `std::vector<T>` (*all items must have the same type*) |
-| instances of class registered to `nobind` | class object, pointers and references |
+| instances of class registered to `nobind17` | class object, pointers and references |
 | `Buffer` | `std::pair<uint8_t *, size_t>` |
 | A raw V8 `Napi::Value` | `Napi::Value` |
 
@@ -183,11 +183,11 @@ m.def<MyClass>("Hello")
   .def(&Hello::name, "name");
 ```
 
-`nobind` will automatically determine if the object is a static or an instance one.
+`nobind17` will automatically determine if the object is a static or an instance one.
 
 ### Creating wrappers and using STLs
 
-Using STLs usually requires creating a wrapper function unless the original C++ function has been designed from the ground up to work with `nobind`:
+Using STLs usually requires creating a wrapper function unless the original C++ function has been designed from the ground up to work with `nobind17`:
 
 ```cpp
 // A function that receives a JS array of Hello objects
@@ -223,7 +223,7 @@ const output = dll.greetAll('Mr', [
 typeof output[0] === 'string'
 ```
 
-`std::vector` can be of any supported type - including known registered object types, pointers or references to them, primitives types or any other additional custom type. `nobind` will take care to transform the pointers and the references to JS objects.
+`std::vector` can be of any supported type - including known registered object types, pointers or references to them, primitives types or any other additional custom type. `nobind17` will take care to transform the pointers and the references to JS objects.
 
 ### C++ exceptions
 
@@ -246,7 +246,7 @@ Enabling async mode will allow the JS user to potentially call the C++ method wh
 
 ### `nullptr`
 
-By default, when a C++ method returns a `nullptr`, `nobind` will convert it to `null` in JavaScript. This behavior can be overridden by specifying `Nobind::ReturnNullThrow` as a return attribute - in this case the method will throw. If the method is asynchronous, it will reject.
+By default, when a C++ method returns a `nullptr`, `nobind17` will convert it to `null` in JavaScript. This behavior can be overridden by specifying `Nobind::ReturnNullThrow` as a return attribute - in this case the method will throw. If the method is asynchronous, it will reject.
 
 ### Combining attributes
 
@@ -277,7 +277,7 @@ namespace TypemapOverrides {
 
 // They consist of two simple classes templated on the C++ type
 // (the C++ type is the determning type)
-// This one will be called whenever nobind needs to convert
+// This one will be called whenever nobind17 needs to convert
 // a JS argument to C++ int
 template <> class FromJS<int> {
   int val_;
@@ -300,7 +300,7 @@ public:
   // of consumed JS arguments (considered 1 if not present)
   int Inputs;
   // Optionally, if the typemap has a costly state, only move
-  // semantics may be specified, nobind can work with this type
+  // semantics may be specified, nobind17 can work with this type
   FromJS(const FromJS &) = delete;
   FromJS(FromJS &&) = default;
 };
@@ -319,7 +319,7 @@ public:
   // It should produce a JS value
   inline Napi::Value Get() { return Napi::String::New(env_, std::to_string(val_)); }
   // Optionally, if the typemap has a costly state, only move
-  // semantics may be specified, nobind can work with this type
+  // semantics may be specified, nobind17 can work with this type
   ToJS(const ToJS &) = delete;
   ToJS(ToJS &&) = default;
 };
@@ -327,7 +327,7 @@ public:
 
 } // namespace Nobind
 
-#include <nobind.h>
+#include <nobind17.h>
 
 int add(int a, int b) {
   return a + b;
@@ -340,7 +340,7 @@ NOBIND_MODULE(override_tmaps, m) {
 
 ### Using `Buffer`s
 
-Unless the C++ code has been designed for `nobind`, using a `Buffer` will likely require creating custom wrappers to convert from and to `std::pair<uint8_t*, size_t>`:
+Unless the C++ code has been designed for `nobind17`, using a `Buffer` will likely require creating custom wrappers to convert from and to `std::pair<uint8_t*, size_t>`:
 
 ```cpp
 #include <fixtures/buffer.h>
@@ -348,14 +348,14 @@ Unless the C++ code has been designed for `nobind`, using a `Buffer` will likely
 // Nobind::Buffer is defined as follows:
 // using Buffer = std::pair<uint8_t *, size_t>;
 
-#include <nobind.h>
+#include <nobind17.h>
 
 // These are the underlying C++ functions that use buffers
 // We want to call them from JS
 void get_buffer(uint8_t *&, size_t &);
 void put_buffer(uint8_t *, size_t);
 
-// These wrappers are what makes them nobind-compatible
+// These wrappers are what makes them nobind17-compatible
 Nobind::Typemap::Buffer nobind_get_buffer() {
   Nobind::Typemap::Buffer buf;
   get_buffer(buf.first, buf.second);
@@ -381,7 +381,7 @@ Each C++ object is created with `new` and destroyed with `delete` in the C++ hea
 
 This means that functions that return C++ objects need to be compatible with the GC rules in JavaScript. For every function, other than a constructor, that returns an object, there must be clear rules on who frees the C++ object.
 
-By default, `nobind` will consider that it owns objects returned as pointers and that it does not own objects returned as references. This behavior can be modified with an attribute:
+By default, `nobind17` will consider that it owns objects returned as pointers and that it does not own objects returned as references. This behavior can be modified with an attribute:
 
 ```cpp
 class Chained {
@@ -407,15 +407,15 @@ const o = new Chained;
 o.do().do().do();
 ```
 
-The `Nobind::ReturnShared` signals `nobind` that C++ objects returned by this method should not be considered new objects and should not be freed when the JS proxy is collected by the GC.
+The `Nobind::ReturnShared` signals `nobind17` that C++ objects returned by this method should not be considered new objects and should not be freed when the JS proxy is collected by the GC.
 
-`.create()` is a method that creates new objects. The `Nobind::ReturnOwned` signals `nobind` that C++ objects returned by this method should be considered new objects and should be freed when the GC destroys the JS proxy.
+`.create()` is a method that creates new objects. The `Nobind::ReturnOwned` signals `nobind17` that C++ objects returned by this method should be considered new objects and should be freed when the GC destroys the JS proxy.
 
-Also, be sure to check [#1](https://github.com/mmomtchev/nobind/issues/1) for a very important warning about shared references.
+Also, be sure to check [#1](https://github.com/mmomtchev/nobind17/issues/1) for a very important warning about shared references.
 
 ### Extending classes
 
-Sometimes it is very handy to be able to add an additional class method in JavaScript that does not directly correspond to a C++ method. For example, the standard way of providing a method returning a readable string representation of an object is to overload the global `operator<<`. In JavaScript, the standard method is to replace the `Object.toString()`. This cannot be achieved with a simple helper function, because it will have to be a member of the binded class. In this case `nobind` allows to define a special function of the form `RETTYPE Method(CLASS &, ARGS...)` and to register it as a class extension:
+Sometimes it is very handy to be able to add an additional class method in JavaScript that does not directly correspond to a C++ method. For example, the standard way of providing a method returning a readable string representation of an object is to overload the global `operator<<`. In JavaScript, the standard method is to replace the `Object.toString()`. This cannot be achieved with a simple helper function, because it will have to be a member of the binded class. In this case `nobind17` allows to define a special function of the form `RETTYPE Method(CLASS &, ARGS...)` and to register it as a class extension:
 
 ```cpp
 std::string HelloToString(const Hello &);
@@ -457,7 +457,7 @@ NOBIND_MODULE(native, m) {
 
 ### Troubleshooting
 
-Most of the work that `nobind` does happens during the C++ compilation of the project. It is at that moment that the templates will be instantiated.
+Most of the work that `nobind17` does happens during the C++ compilation of the project. It is at that moment that the templates will be instantiated.
 
 As it is often the case with C++ compilation, the errors may be hard to read.
 
@@ -465,7 +465,7 @@ When encountering compilation errors, start with this quick checklist:
 
 * Does the error message mention missing typemaps such as `FromJS`/`ToJS`?
 
-  *You are trying to expose types that `nobind` does not know how to convert, you need a custom typemap.*
+  *You are trying to expose types that `nobind17` does not know how to convert, you need a custom typemap.*
 
 * Is the method that does not compile an overloaded method?
 
@@ -477,7 +477,7 @@ When encountering compilation errors, start with this quick checklist:
 
 * Is the custom typemap not being picked up?
 
-  *Custom typemaps must be included before `nobind.h` but after `nooverrides.h`.*
+  *Custom typemaps must be included before `nobind17.h` but after `nooverrides.h`.*
 
   *When overriding the builtin typemaps, you must use the special `Nobind::TypemapOverrides` namespace.*
 
