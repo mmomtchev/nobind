@@ -19,7 +19,7 @@ It is meant as an easy to use entry-level light-weight binding framework for sim
 
 Complex projects should continue to use SWIG which is cross-platform and cross-language.
 
-`nobind` is still not finished, but it may be usable.
+**Currently, the project should be considered of beta quality.**
 
 A future compatible layer should allow to target both `embind` and `nobind` with shared declarations.
 
@@ -38,7 +38,7 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Limited, but will evolve; Supports direct use of C++ STL containers from JavaScript without copying | Limited, all passing of STL arguments is by copying |
-| Async | Out-of-the-box | Out-of-the-box |
+| Async | Automatic | Automatic |
 | Async locking | Yes with automatic dead-lock prevention | Not for 1.0 |
 | Smart pointers | Yes | Possible but not for 1.0 |
 | TypeScript support | Automatic | No, must write the typings |
@@ -49,11 +49,61 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes, automatic | Yes, manual
 | Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `n`:`1` transformations of input arguments |
-| Custom type casters | Yes | Planned for 1.0 |
+| Custom type casters | Yes | Yes |
 | Interfacing between multiple modules | Yes | No |
 
 ## Usage
+
 `nobind` is a set of C++17 templates that must be included directly in the user project.
+
+It (**will be**) published as an npm package that will also install `node-addon-api`.
+
+`nobind` is designed to be very easy to use - there is no learning curve at all - while allowing to deal with the most common situations that arise when creating bindings for C++ libraries to be used from Node.js.
+
+The following tutorial should be enough to get you started with your C++ project.
+
+### The environment
+
+Create a `package.json` for your project, install `nobind` and then create a `binding.gyp`:
+
+```shell
+npm init # ... answer questions
+npm install nobind
+cp node_modules/node-addon-api/except.gypi .
+```
+
+`binding.gyp`
+```python
+{
+  'target_defaults': {
+    'includes': [
+      # These are the correct compiler options
+      # to enable C++ exceptions with node-gyp
+      'except.gypi'
+    ]
+  },
+  'targets': [
+    {
+      'target_name': 'my-shiny-cpp-bindings',
+      'sources': [
+        # This is the file that contains your bindings
+        # (from the tutorial below)
+        'src/my-shiny-cpp-bindings.cc'
+        # List your C++ files here
+        # If you have a large library, check
+        # https://github.com/mmomtchev/node-ffmpeg
+        # for inspiration, it builds ffmpeg with conan
+      ],
+      'include_dirs': [
+        '<!@(node -p "require(\'node-addon-api\').include")',
+        '<!@(node -p "require(\'nobind\').include")'
+      ]
+    }
+  ]
+}
+```
+
+You will be building your project with `node-gyp configure build`. `node-gyp` is usually installed globally.
 
 ### Module definition
 
@@ -61,10 +111,10 @@ Let's try to wrap a simple C++ class:
 
 ```cpp
 class Hello {
-  public:
-std::string name;
-Hello(const std::string &s) : name(s) {}
-std::string Greet(const std::string &s) {
+public:
+  std::string name;
+  Hello(const std::string &s) : name(s) {}
+  std::string Greet(const std::string &s) {
     std::stringstream r;
     r << "hello " << s << " " << name_;
     return r.str();
@@ -78,11 +128,11 @@ Start by creating a module:
 #include <nobind.h>
 
 // Define a new module
-NOBIND_MODULE(basic_class, m) {
-  // Expose a C++ class called MyClass
-  m.def<MyClass>("Hello")
-    // Include a constructor with a single std::string & argument
-    .cons<std::string &>();
+NOBIND_MODULE(my_cpp_bindings, m) {
+  // Expose a C++ class called Hello
+  m.def<Hello>("Hello")
+    // Include a constructor with a single const std::string & argument
+    .cons<const std::string &>();
 }
 ```
 
@@ -179,12 +229,14 @@ typeof output[0] === 'string'
 
 Methods that raise a C++ exception will result in a normal JavaScript exception in the JavaScript code.
 
+Building with C++ exceptions enabled is mandatory.
+
 ### Async methods
 
 Methods can be made to run in a background thread from the `libuv` thread pool and to return a `Promise` to be resolved with the returned value:
 
 ```js
-m.def<MyClass>("Hello")
+m.def<Hello>("Hello")
   .def<&Hello::Greet, Nobind::ReturnAsync>("greetAsync");
 ```
 
@@ -218,8 +270,9 @@ Custom type converters can be declared as follows:
 #include <nooverrides.h>
 
 namespace Nobind {
-// Custom typemaps must live in this namespace to override
-// the default typemaps
+// Typemaps that will be overriding built-ins must live
+// in this namespace to override
+// (typemaps for new types must be in Nobind::Typemap)
 namespace TypemapOverrides {
 
 // They consist of two simple classes templated on the C++ type
@@ -318,6 +371,8 @@ NOBIND_MODULE(buffer, m) {
 }
 ```
 
+Also, the default `Buffer` typemaps copy the data - which is not the most efficient way to transfer it. Sharing the memory between C++ and JavaScript is possible in many cases - but must be carefully implemented in a custom typemap.
+
 ### Returning objects and factory functions
 
 Before continuing with this section, we should explain the notion of a JS proxy.
@@ -399,6 +454,36 @@ NOBIND_MODULE(native, m) {
     .def<&False, Nobind::ReadOnly>(Napi::Symbol::WellKnown(m.Env(), "isConcatSpreadable"));
 }
 ```
+
+### Troubleshooting
+
+Most of the work that `nobind` does happens during the C++ compilation of the project. It is at that moment that the templates will be instantiated.
+
+As it is often the case with C++ compilation, the errors may be hard to read.
+
+When encountering compilation errors, start with this quick checklist:
+
+* Does the error message mention missing typemaps such as `FromJS`/`ToJS`?
+
+  *You are trying to expose types that `nobind` does not know how to convert, you need a custom typemap.*
+
+* Is the method that does not compile an overloaded method?
+
+  *You need to use `static_cast` to manually resolve the overloading.*
+
+* Is the method that does not compile inherited from a base class?
+
+  *You need to use the base class name.*
+
+* Is the custom typemap not being picked up?
+
+  *Custom typemaps must be included before `nobind.h` but after `nooverrides.h`.*
+
+  *When overriding the builtin typemaps, you must use the special `Nobind::TypemapOverrides` namespace.*
+
+  *Other typemaps must be in `Nobind::Typemap`.*
+
+  *Depending on your types, you may need to also include pointer, reference or `const` typemaps - check the built-in implementation of `std::string` for an example.*
 
 ## Developer info
 
