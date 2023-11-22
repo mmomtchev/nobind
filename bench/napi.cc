@@ -81,6 +81,7 @@ Napi::Value NapiStrlenAsync(const Napi::CallbackInfo &info) {
   return worker->GetPromise();
 }
 
+// init
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("String", NapiString::GetClass(env));
   exports.Set("strlen", Napi::Function::New(env, NapiStrlen));
