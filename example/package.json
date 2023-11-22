@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "description": "nobind test package",
   "author": "Momtchil Momtchev <momtchil@momtchev.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  }
 }
