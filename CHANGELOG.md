@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [1.0.1]
 
 -   Fix [#3](https://github.com/mmomtchev/nobind/issues/3), compilation error when using `.ext()` class extension with arguments
+-   Fix the module name in `binding.gyp` in the example
 
 # [1.0.0] 2023-11-22
 
