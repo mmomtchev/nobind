@@ -282,7 +282,7 @@ private:
         // FromJS objects are destroyed
       } else {
         // Convert and call
-        RETURN result = FUNC(thisObj.Get(), *std::get<I>(args)...);
+        RETURN result = FUNC(thisObj.Get(), std::get<I>(args).Get()...);
         // Call the ToJS constructor
         auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert
