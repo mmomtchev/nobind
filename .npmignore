@@ -1,0 +1,12 @@
+.git
+.github
+.vscode
+.mocharc.json
+
+package-lock.json
+
+node_modules
+build
+
+test
+bench
