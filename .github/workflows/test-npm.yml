@@ -28,4 +28,5 @@ jobs:
           npm install nobind@${{ github.event.inputs.version }}
           cp node_modules/node-addon-api/except.gypi .
           node-gyp configure build
+          node -e "require('./build/Release/test_package.node')"
         shell: bash
