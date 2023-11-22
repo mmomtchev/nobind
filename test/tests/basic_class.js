@@ -87,6 +87,25 @@ describe('extension', () => {
   });
 });
 
+describe('extension w/args', () => {
+  it('nominal', () => {
+    const o = new dll.Hello('Garga');
+    assert.isString(o.toStringWithArg(2));
+  });
+
+  it('exception', () => {
+    const o = new dll.Hello('Garga');
+
+    assert.throws(() => {
+      o.toStringWithArg();
+    }, /Expected a number/);
+
+    assert.throws(() => {
+      dll.Hello.prototype.toStringWithArg();
+    }, /Illegal invocation/);
+  });
+});
+
 describe('Factory', () => {
   it('nominal', () => {
     const o = new dll.Hello.factory('Garga');
