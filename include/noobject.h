@@ -488,12 +488,14 @@ namespace Typemap {
 // Generic object reference typemap
 template <typename T> class FromJS<T &> {
   T *val_;
+  Napi::ObjectReference persistent;
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
       val_ = OBJCLASS::CheckUnwrap(val);
+      persistent = Napi::Persistent(val.ToObject());
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
     }
@@ -522,12 +524,14 @@ public:
 // Generic object pointer typemap
 template <typename T> class FromJS<T *> {
   T *val_;
+  Napi::ObjectReference persistent;
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
       val_ = OBJCLASS::CheckUnwrap(val);
+      persistent = Napi::Persistent(val.ToObject());
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
     }
@@ -566,12 +570,14 @@ public:
 // Generic stack-allocated object typemaps
 template <typename T> class FromJS {
   T *object;
+  Napi::ObjectReference persistent;
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
       // C++ asks for a regular stack-allocated object
       object = NoObjectWrap<T>::CheckUnwrap(val);
+      persistent = Napi::Persistent(val.ToObject());
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
     }
