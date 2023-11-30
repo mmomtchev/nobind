@@ -1,6 +1,7 @@
 class Base {
 protected:
   int b;
+
 public:
   Base(int);
   virtual ~Base();
@@ -11,6 +12,7 @@ public:
 class Derived : public Base {
 protected:
   int d;
+
 public:
   Derived(int);
   virtual ~Derived();

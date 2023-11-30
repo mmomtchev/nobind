@@ -15,6 +15,4 @@ Chained &Chained::Inc100() {
   return *this;
 }
 
-int Chained::Get() {
-  return var;
-}
+int Chained::Get() { return var; }

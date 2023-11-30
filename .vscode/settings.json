@@ -61,5 +61,6 @@
     "map": "cpp",
     "typeindex": "cpp",
     "set": "cpp"
-  }
+  },
+  "editor.formatOnSave": true
 }

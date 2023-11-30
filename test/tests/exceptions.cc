@@ -4,8 +4,5 @@
 #include <nobind.h>
 
 NOBIND_MODULE(exceptions, m) {
-  m.def<&throws>("throws")
-    .def<Hello>("Hello")
-      .cons<const std::string &>()
-      .def<&Hello::throws>("throws");
+  m.def<&throws>("throws").def<Hello>("Hello").cons<const std::string &>().def<&Hello::throws>("throws");
 }

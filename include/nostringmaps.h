@@ -64,9 +64,7 @@ public:
 };
 
 #define TYPEMAPS_FOR_STRING(TYPE, CLASS)                                                                               \
-  template <> struct FromJS<TYPE> : public FromJS##CLASS<TYPE> {                                                       \
-    using FromJS##CLASS<TYPE>::FromJS##CLASS;                                                                          \
-  };                                                                                                                   \
+  template <> struct FromJS<TYPE> : public FromJS##CLASS<TYPE> { using FromJS##CLASS<TYPE>::FromJS##CLASS; };          \
   template <const ReturnAttribute &RETATTR> struct ToJS<TYPE, RETATTR> : public ToJS##CLASS<TYPE, RETATTR> {           \
     using ToJS##CLASS<TYPE, RETATTR>::ToJS##CLASS;                                                                     \
   };

@@ -61,13 +61,9 @@ public:
     return ClassDefinition<CLASS>(name, env_, exports_, class_idx_++);
   }
 
-  Napi::Env Env() {
-    return env_;
-  }
+  Napi::Env Env() { return env_; }
 
-  Napi::Object Exports() {
-    return exports_;
-  }
+  Napi::Object Exports() { return exports_; }
 };
 
 } // namespace Nobind

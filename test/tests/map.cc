@@ -38,10 +38,7 @@ std::map<std::string, std::string> put_obj_map(const std::string &title, const s
 #include <nobind.h>
 
 NOBIND_MODULE(map, m) {
-  m.def<Hello>("Hello")
-    .cons<std::string &>()
-    .def<&Hello::Id>("get_id")
-    .def<&Hello::id, Nobind::ReadOnly>("id");
+  m.def<Hello>("Hello").cons<std::string &>().def<&Hello::Id>("get_id").def<&Hello::id, Nobind::ReadOnly>("id");
   m.def<&get_ptr_map>("get_ptr_map");
   m.def<&put_ptr_map>("put_ptr_map");
   m.def<&get_obj_map>("get_obj_map");

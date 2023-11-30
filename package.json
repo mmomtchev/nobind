@@ -1,10 +1,12 @@
 {
   "name": "nobind17",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Next-gen binding framework for Node.js / Node-API",
   "main": "index.js",
   "scripts": {
     "test": "npx mocha",
+    "preversion": "npm run test",
+    "postversion": "git push && git push --tags",
     "postpublish": "gh workflow run test-npm.yml -F version=$npm_package_version"
   },
   "author": "Momtchil Momtchev <momthchil@momtchev.com>",

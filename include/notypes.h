@@ -70,12 +70,8 @@ public:
 
 // never_void is a helper that allows to declare function arguments
 // that can potentially be a void type
-template <typename T> struct never_void {
-  typedef T type;
-};
-template <> struct never_void<void> {
-  typedef int type;
-};
+template <typename T> struct never_void { typedef T type; };
+template <> struct never_void<void> { typedef int type; };
 template <typename T> using never_void_t = typename never_void<T>::type;
 
 // Standard C++ detection idiom (SFINAE version)
@@ -85,6 +81,7 @@ template <typename T> using never_void_t = typename never_void<T>::type;
 template <typename T> class FromJSTypemapHasInputs {
   template <typename U> static constexpr decltype(std::declval<U &>().Inputs, bool()) test(int) { return true; }
   template <typename U> static constexpr inline bool test(...) { return false; }
+
 public:
   static constexpr bool value = test<T>(int());
 };

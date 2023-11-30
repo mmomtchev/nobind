@@ -12,9 +12,7 @@ std::string Hello::Greet(const std::string &title) {
 
 void Hello::nothing() const {}
 
-void Hello::throws() {
-  throw std::runtime_error("Hello error");
-}
+void Hello::throws() { throw std::runtime_error("Hello error"); }
 
 Hello *Hello::Factory(const std::string &name) {
   if (name.size() == 0)
@@ -23,8 +21,6 @@ Hello *Hello::Factory(const std::string &name) {
 }
 
 Hello staticHello{"Forever young"};
-const Hello &Hello::StaticHello() {
-  return staticHello;
-}
+const Hello &Hello::StaticHello() { return staticHello; }
 
 int Hello::id_ = 0;

@@ -8,4 +8,3 @@ public:
   TwoCons(const std::string &s);
   TwoCons();
 };
-
