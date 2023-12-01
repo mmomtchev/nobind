@@ -56,7 +56,9 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 
 `nobind17` is a set of C++17 templates that must be included directly in the user project.
 
-It (**will be**) published as an npm package that will also install `node-addon-api`.
+It is published as an npm package that will also install `node-addon-api`.
+
+Starting from Node.js 18, C++17 is the default build mode for both Node.js itself and for addons. Unless you set manually `NAPI_VERSION` in your project, `nobind17` will default to `NAPI_VERSION=6` which will allow backward compatibility starting from Node.js 14 - even when Node.js 18 is the build platform.
 
 `nobind17` is designed to be very easy to use - there is no learning curve at all - while allowing to deal with the most common situations that arise when creating bindings for C++ libraries to be used from Node.js.
 
@@ -106,6 +108,8 @@ cp node_modules/node-addon-api/except.gypi .
 ```
 
 You will be building your project with `node-gyp configure build`. `node-gyp` is usually installed globally.
+
+C++17 is the default build mode starting from Node.js 18.x. If you 
 
 ### Module definition
 
