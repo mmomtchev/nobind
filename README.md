@@ -491,6 +491,10 @@ When encountering compilation errors, start with this quick checklist:
 
   *Depending on your types, you may need to also include pointer, reference or `const` typemaps - check the built-in implementation of `std::string` for an example.*
 
+* Are you using MSVC?
+
+  *MSVC has a number of problems with template argument deduction in its default compilation mode. The `/permissive-` and `/Zc` flags can help in some cases, or you can also use a `static_cast` to explicitly type your function pointer. `node-ffmpeg` includes a few cases of this type.*
+
 ## Developer info
 
 Running single unit tests (in a debugger) is possible by doing:
