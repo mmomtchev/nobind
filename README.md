@@ -10,10 +10,13 @@ It has one defining characteristic that sets it apart from `pybind11` and `embin
 
 This allows for both a (slightly) better performance and code simplicity.
 
-It is tested with:
-  * g++ 11.4 on Linux
+It is unit-tested with:
+  * g++ 9.4 on Linux
+    - This is the default compiler on Ubuntu 20.04 - however g++ 10.5 - the alternative choice on Ubuntu 20.04 - is recommended for some template argument deduction cases
   * clang 13 on macOS
-  * MSVC 19.36 (from MSVS 2022) on Windows
+    - This is the default compiler on macOS 11
+  * MSVC 16.11 on Windows
+    - This is part of Visual Studio 2019 - however for some template argument deduction cases, `/permissive-` or a `static_cast` might be need
 
 It is meant as an easy to use entry-level light-weight binding framework for simple projects.
 
