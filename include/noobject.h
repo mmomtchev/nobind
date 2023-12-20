@@ -223,6 +223,11 @@ private:
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
+#if _MSC_VER && !__INTEL_COMPILER
+// MSVC doesn't appreciate the initialization sequence of Napi::Promise::Deferred
+#pragma warning(push)
+#pragma warning(disable : 6001)
+#endif
     Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
     try {
@@ -239,6 +244,9 @@ private:
       deferred.Reject(Napi::Error::New(env, e.what()).Value());
     }
     return deferred.Promise();
+#if _MSC_VER && !__INTEL_COMPILER
+#pragma warning(pop)
+#endif
   }
 
   // The constructor wrapper implementation
