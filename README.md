@@ -10,13 +10,15 @@ It has one defining characteristic that sets it apart from `pybind11` and `embin
 
 This allows for both a (slightly) better performance and code simplicity.
 
-It is unit-tested with:
-  * g++ 9.4 on Linux
-    - This is the default compiler on Ubuntu 20.04 - however g++ 10.5 - the alternative choice on Ubuntu 20.04 - is recommended for some template argument deduction cases
-  * clang 13 on macOS
-    - This is the default compiler on macOS 11
-  * MSVC 16.11 on Windows
-    - This is part of Visual Studio 2019 - however for some template argument deduction cases, `/permissive-` or an explicit `static_cast` might be need
+The unit tests run on:
+  * g++ 9.4 on Linux (the default compiler on Ubuntu 20.04)
+  * clang 13 on macOS (the default compiler on macOS 11)
+  * MSVC 19.29 on Windows (Visual Studio 16.11 *aka* 2019)
+
+However because of edge cases when it comes to C++17 support, the recommended compiler versions are:
+  * g++ 10.5 on Linux (the alternative choice on Ubuntu 20.04)
+  * clang 13 on macOS (the default compiler on macOS 11)
+  * MSVC 19.37 on Windows (Visual Studio 17.7 *aka* 2022) on Windows
 
 It is meant as an easy to use entry-level light-weight binding framework for simple projects.
 
@@ -267,7 +269,7 @@ Attributes can be combined with `operator|`, however if compiling in C++17 mode 
 static constexpr auto myAttrs = Nobind::ReturnAsync | Nobind::ReturnOwned | Nobind::ReturnNullThrow;
 ```
 
-In later standards this requirement has been relaxed.
+In later standards this requirement has been relaxed. Also, MSVC 2019 chokes on `static constexpr` local function variables used as non-type template arguments with an *C1001: Internal Compiler Error* - use global variables if you have to support it.
 
 ### Custom type converters
 
@@ -501,6 +503,8 @@ When encountering compilation errors, start with this quick checklist:
 * Are you using MSVC?
 
   *MSVC has a number of problems with template argument deduction in its default compilation mode. The `/permissive-` and `/Zc` flags can help in some cases, or you can also use a `static_cast` to explicitly type your function pointer. `node-ffmpeg` includes a few cases of this type.*
+  
+  *Also, MSVC 2019 has a number of problems such as *C1001: Internal Compiler Error* on `static constexpr` local function variables used as non-type template arguments and some complex SFINAE constructs such as this one: [MSVC fails to specialize template with `std::enable_if` and a non-type argument](https://stackoverflow.com/questions/77698129/msvc-fails-to-specialize-template-with-stdenable-if-and-a-non-type-argument).*
 
 ## Developer info
 
