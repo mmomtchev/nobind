@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### []
 
--   Specify the freeing semantics for `Buffer`
+-   Specify the memory ownership rules for `Buffer`
 -   Fix a minor memory leak when calling method with incorrect number of arguments
 
 ### [1.1.1] 2023-12-01
