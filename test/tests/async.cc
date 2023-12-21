@@ -3,10 +3,11 @@
 
 #include <nobind.h>
 
+// In C++17, only static constexpr variables can be template parameters
+// (this is relaxed in later standards)
+constexpr auto factoryAttrs = Nobind::ReturnAsync | Nobind::ReturnOwned;
+
 NOBIND_MODULE(async, m) {
-  // In C++17, only static constexpr variables can be template parameters
-  // (this is relaxed in later standards)
-  static constexpr auto factoryAttrs = Nobind::ReturnAsync | Nobind::ReturnOwned;
 
   m.def<&add, Nobind::ReturnAsync>("add");
   m.def<&gte, Nobind::ReturnAsync>("gte");
