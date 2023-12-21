@@ -16,13 +16,15 @@ It is unit-tested with:
   * clang 13 on macOS
     - This is the default compiler on macOS 11
   * MSVC 16.11 on Windows
-    - This is part of Visual Studio 2019 - however for some template argument deduction cases, `/permissive-` or a `static_cast` might be need
+    - This is part of Visual Studio 2019 - however for some template argument deduction cases, `/permissive-` or an explicit `static_cast` might be need
 
 It is meant as an easy to use entry-level light-weight binding framework for simple projects.
 
 Complex projects should continue to use SWIG which is cross-platform and cross-language.
 
-**Currently, the project should be considered of beta quality.**
+**Currently, the project should be considered of a new release quality.**
+
+The first `npm` module to use it is [`@mmomtchev/ffmpeg`](https://github.com/mmomtchev/ffmpeg), you can check it for advanced usage examples.
 
 A future compatible layer should allow to target both `embind` and `nobind17` with shared declarations.
 
@@ -61,7 +63,7 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 
 It is published as an npm package that will also install `node-addon-api`.
 
-Starting from Node.js 18, C++17 is the default build mode for both Node.js itself and for addons. Unless you set manually `NAPI_VERSION` in your project, `nobind17` will default to `NAPI_VERSION=6` which will allow backward compatibility starting from Node.js 14 - even when Node.js 18 is the build platform.
+Starting from Node.js 18, C++17 is the default build mode for both Node.js itself and for addons. Unless you set manually `NAPI_VERSION` in your project, `nobind17` will default to `NAPI_VERSION=6` which will allow backward compatibility of the generated binary addon with Node.js 14 and later - even when using Node.js 18 as the build platform.
 
 `nobind17` is designed to be very easy to use - there is no learning curve at all - while allowing to deal with the most common situations that arise when creating bindings for C++ libraries to be used from Node.js.
 
