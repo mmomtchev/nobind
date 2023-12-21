@@ -17,6 +17,8 @@ NOBIND_MODULE(inheritance, m) {
       // invocation happens through a Derived object
       .def<&Base::get>("virtual_base_get")
       .def<&Derived::base_get>("base_get")
+#else
+      .def<&Derived::get>("virtual_base_get")
 #endif
       .def<&Derived::derived_get>("derived_get");
 }
