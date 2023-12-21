@@ -15,18 +15,11 @@ function list() {
 }
 
 function clean(test, stdio) {
-  try {
-    execFileSync(npx, [
-      'node-gyp',
-      'clean',
-      `--test=${test}`
-    ], { stdio: stdio || 'pipe', cwd: __dirname, env });
-  } catch (e) {
-    if (e.stdout) {
-      console.error(e.stdout);
-    }
-    throw e;
-  }
+  execFileSync(npx, [
+    'node-gyp',
+    'clean',
+    `--test=${test}`
+  ], { stdio: stdio || 'pipe', cwd: __dirname, env });
 }
 
 function configure(test, stdio, opts) {
