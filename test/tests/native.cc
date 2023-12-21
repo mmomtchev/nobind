@@ -11,6 +11,15 @@ Napi::Value global_native(Napi::Value val) {
   return Napi::String::New(env, r);
 }
 
+struct PerIsolateData {
+  Napi::ObjectReference exports;
+};
+
+Napi::Value get_exports(const Napi::CallbackInfo &info) {
+  Napi::Env env{info.Env()};
+  return env.GetInstanceData<Nobind::EnvInstanceData<PerIsolateData>>()->exports.Value();
+}
+
 class WithNative {
 public:
   WithNative() {}
@@ -23,9 +32,13 @@ public:
   }
 };
 
-NOBIND_MODULE(native, m) {
+NOBIND_MODULE(native, m, PerIsolateData) {
   m.def<WithNative>("WithNative").cons<>().def<&WithNative::method_native>("method_native");
   m.def<&global_native>("global_native");
+
+  m.Env().GetInstanceData<Nobind::EnvInstanceData<PerIsolateData>>()->exports =
+      Napi::Persistent<Napi::Object>(m.Exports());
+  m.Exports().Set("get_exports", Napi::Function::New(m.Env(), get_exports));
 
   m.Exports().Set("debug_build", Napi::Boolean::New(m.Env(),
 #ifdef DEBUG

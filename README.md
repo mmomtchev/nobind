@@ -461,12 +461,26 @@ In this case only the first argument will contain the raw V8 value.
 
 It is also possible to access the `exports` and `env` objects when initializing the module:
 ```cpp
+constexpr bool False = false;
 NOBIND_MODULE(native, m) {
-  static constexpr bool False = false;
-
   m.Exports().Set("debug_build", Napi::Boolean::New(m.Env(), true));
   m.def<Hello>("Hello")
     .def<&False, Nobind::ReadOnly>(Napi::Symbol::WellKnown(m.Env(), "isConcatSpreadable"));
+}
+```
+
+### Storing custom per-isolate data
+
+Sometimes a module needs to store *"global"* data. With `node-addon-api` the proper way to store this data is in a per-isolate data structure - since Node.js is allowed to call the same instance from multiple independent isolates. To access the per-isolate storage with `nobind17`, declare the module specific structure and then use the standard `node-addon-api` calls to access it:
+
+```cpp
+struct PerIsolateData {
+  Napi::ObjectReference exports;
+};
+
+NOBIND_MODULE(native, m, PerIsolateData) {
+  m.Env().GetInstanceData<Nobind::EnvInstanceData<PerIsolateData>>()->exports =
+      Napi::Persistent<Napi::Object>(m.Exports());
 }
 ```
 
