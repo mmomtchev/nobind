@@ -19,6 +19,7 @@ NOBIND_MODULE(inheritance, m) {
       .def<&Derived::base_get>("base_get")
 #else
       .def<&Derived::get>("virtual_base_get")
+      .def<&Base::get>("base_get")
 #endif
       .def<&Derived::derived_get>("derived_get");
 }
