@@ -407,7 +407,7 @@ template <class CLASS> class ClassDefinition {
 public:
   // Instance class method
   template <auto MEMBER, const ReturnAttribute &RET = ReturnDefault, typename NAME = const char *,
-            std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>, bool> = true>
+            typename std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>, bool> = true>
   ClassDefinition &def(NAME name) {
     typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper;
 
@@ -423,7 +423,7 @@ public:
 
   // Instance class getter/setter
   template <auto CLASS::*MEMBER, const PropertyAttribute &PROP = ReadWrite, typename NAME = const char *,
-            std::enable_if_t<std::is_member_object_pointer_v<decltype(MEMBER)>, bool> = true>
+            typename std::enable_if_t<std::is_member_object_pointer_v<decltype(MEMBER)>, bool> = true>
   ClassDefinition &def(NAME name) {
     typename NoObjectWrap<CLASS>::InstanceGetterCallback getter =
         &NoObjectWrap<CLASS>::template GetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
@@ -437,7 +437,7 @@ public:
 
   // Static class method
   template <auto *MEMBER, const ReturnAttribute &RET = ReturnDefault, typename NAME = const char *,
-            std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, bool> = true>
+            typename std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, bool> = true>
   ClassDefinition &def(NAME name) {
     Napi::Function::Callback wrapper;
     if constexpr (RET.isAsync()) {
@@ -451,7 +451,7 @@ public:
 
   // Static class getter/setter
   template <auto *MEMBER, const PropertyAttribute &PROP = ReadWrite, typename NAME = const char *,
-            std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, bool> = true>
+            typename std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, bool> = true>
   ClassDefinition &def(NAME name) {
     typename NoObjectWrap<CLASS>::StaticGetterCallback getter =
         &GetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
