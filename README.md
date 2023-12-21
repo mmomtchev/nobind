@@ -377,7 +377,9 @@ NOBIND_MODULE(buffer, m) {
 }
 ```
 
-Also, the default `Buffer` typemaps copy the data - which is not the most efficient way to transfer it. Sharing the memory between C++ and JavaScript is possible in many cases - but must be carefully implemented in a custom typemap.
+When C++ returns a `Buffer` object, that buffer is considered owned and it will be freed upon the destruction of the Node.js `Buffer` object by the garbage-collector.
+
+When JavaScript passes a `Buffer` to a C++ method, data is copied - which is the safest but not the most efficient way to transfer it. Sharing the memory between C++ and JavaScript is possible in many cases - but must be carefully implemented in a custom typemap - especially when using async.
 
 ### Returning objects and factory functions
 

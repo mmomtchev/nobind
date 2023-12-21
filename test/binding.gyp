@@ -1,4 +1,7 @@
 {
+  'variables': {
+    'enable_asan%': 'false'
+  },
   'targets': [
     {
       'target_name': '<(test)',
@@ -27,6 +30,18 @@
         '-fvisibility=hidden',
         '-std=c++17'
       ]
-    }
+    },
+    'conditions': [
+      ['enable_asan == "true"', {
+        'cflags': [
+          '-fsanitize=address'
+        ],
+        'xcode_settings': {
+          'OTHER_CPLUSPLUSFLAGS': [
+            '-fsanitize=address'
+          ]
+        }        
+      }]
+    ]
   }
 }

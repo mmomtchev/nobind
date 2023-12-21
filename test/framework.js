@@ -4,11 +4,29 @@ const { execFileSync } = require('child_process');
 const os = require('os');
 
 const npx = os.platform() === 'win32' ? 'npx.cmd' : 'npx';
+const env = { ...process.env };
+// Do not pass asan when spawning processes
+delete env.LD_PRELOAD;
 
 function list() {
   return fs.readdirSync(path.resolve(__dirname, 'tests'))
     .filter((t) => t.endsWith('.cc'))
     .map((t) => t.split('.')[0]);
+}
+
+function clean(test, stdio) {
+  try {
+    execFileSync(npx, [
+      'node-gyp',
+      'clean',
+      `--test=${test}`
+    ], { stdio: stdio || 'pipe', cwd: __dirname, env });
+  } catch (e) {
+    if (e.stdout) {
+      console.error(e.stdout);
+    }
+    throw e;
+  }
 }
 
 function configure(test, stdio, opts) {
@@ -26,7 +44,7 @@ function configure(test, stdio, opts) {
       ...(opts || []),
       `--test=${test}`,
       `--fixtures=${fixtures.map((f) => `fixtures/${f}.cc`).join(' ')}`
-    ], { stdio: stdio || 'pipe', cwd: __dirname });
+    ], { stdio: stdio || 'pipe', cwd: __dirname, env });
   } catch (e) {
     if (e.stdout) {
       console.error(e.stdout);
@@ -39,11 +57,11 @@ function build(stdio) {
   execFileSync(npx, [
     'node-gyp',
     'build'
-  ], { stdio: stdio || 'pipe', cwd: __dirname });
+  ], { stdio: stdio || 'pipe', cwd: __dirname, env });
 }
 
-function load(test) {
-  globalThis.dll = require(path.resolve(__dirname, 'build', 'Release', `${test.split('.')[0]}.node`));
+function load(test, build) {
+  globalThis.dll = require(path.resolve(__dirname, 'build', build || 'Release', `${test.split('.')[0]}.node`));
 }
 
 function register(test) {
@@ -52,6 +70,7 @@ function register(test) {
 
 module.exports = {
   list,
+  clean,
   configure,
   build,
   load,
