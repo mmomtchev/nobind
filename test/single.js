@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const framework = require('./framework');
+const Mocha = require('mocha');
 
 function usage() {
   console.log('Usage: node single.js <configure|build|run> <test>');
@@ -22,20 +23,27 @@ if (!test) {
 }
 
 switch (process.argv[2]) {
+  case 'clean':
+    framework.clean(test, 'inherit');
+    break;
   case 'configure':
     framework.configure(test, 'inherit', ['--debug']);
+    break;
+  case 'configure-asan':
+    framework.configure(test, 'inherit', ['--debug', '--enable_asan']);
     break;
   case 'build':
     framework.build('inherit');
     break;
   case 'run':
     globalThis.dll = require(path.resolve(__dirname, 'build', 'Debug', `${test.split('.')[0]}.node`));
-    globalThis.describe = (name, fn) => {
-      console.log(name);
-      fn();
-    };
-    globalThis.it = globalThis.describe;
-    framework.register(test);
+    const mocha = new Mocha({ ui: 'bdd' });
+    mocha.addFile(path.resolve(__dirname, 'tests', test));
+    mocha.run(function (failures) {
+      process.on('exit', function () {
+        process.exit(failures);
+      });
+    });
     break;
   default:
     usage();

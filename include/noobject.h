@@ -237,7 +237,12 @@ private:
       // https://en.cppreference.com/w/cpp/language/list_initialization
       auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(env, deferred, self,
                                                                                     {FromJSArgs<ARGS>(info, idx)...});
-      CheckArgLength(env, idx, info.Length());
+      try {
+        CheckArgLength(env, idx, info.Length());
+      } catch (...) {
+        delete tasklet;
+        std::rethrow_exception(std::current_exception());
+      }
 
       tasklet->Queue();
     } catch (const std::exception &e) {

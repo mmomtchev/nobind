@@ -96,7 +96,12 @@ inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
     auto tasklet =
         new FunctionWrapperTasklet<RETATTR, FUNC, RETURN, ARGS...>(env, deferred, {FromJSArgs<ARGS>(info, idx)...});
 
-    CheckArgLength(env, idx, info.Length());
+    try {
+      CheckArgLength(env, idx, info.Length());
+    } catch (...) {
+      delete tasklet;
+      std::rethrow_exception(std::current_exception());
+    }
 
     tasklet->Queue();
   } catch (const std::exception &e) {
