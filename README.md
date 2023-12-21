@@ -24,7 +24,7 @@ It is meant as an easy to use entry-level light-weight binding framework for sim
 
 Complex projects should continue to use SWIG which is cross-platform and cross-language.
 
-**Currently, the project should be considered of a new release quality.**
+**Currently, the project should be considered of a recent release quality.**
 
 The first `npm` module to use it is [`@mmomtchev/ffmpeg`](https://github.com/mmomtchev/ffmpeg), you can check it for advanced usage examples.
 
