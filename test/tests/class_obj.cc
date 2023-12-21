@@ -11,8 +11,9 @@ int hello_const_ptr(const Hello *h) { return h->id; }
 
 #include <nobind.h>
 
+constexpr auto strictAsync = Nobind::ReturnAsync | Nobind::ReturnNullThrow;
+
 NOBIND_MODULE(class_obj, m) {
-  static constexpr auto strictAsync = Nobind::ReturnAsync | Nobind::ReturnNullThrow;
   m.def<Hello>("Hello")
       .cons<std::string &>()
       .def<&Hello::Factory, Nobind::ReturnNullAccept>("factory_tolerant")

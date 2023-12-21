@@ -10,16 +10,23 @@ It has one defining characteristic that sets it apart from `pybind11` and `embin
 
 This allows for both a (slightly) better performance and code simplicity.
 
-It is tested with:
-  * g++ 11.4 on Linux
-  * clang 13 on macOS
-  * MSVC 19.36 (from MSVS 2022) on Windows
+The unit tests run on:
+  * g++ 9.4 on Linux (the default compiler on Ubuntu 20.04)
+  * clang 13 on macOS (the default compiler on macOS 11)
+  * MSVC 19.29 on Windows (Visual Studio 16.11 *aka* 2019)
+
+However because of edge cases when it comes to C++17 support, the recommended compiler versions are:
+  * g++ 10.5 on Linux (the alternative choice on Ubuntu 20.04)
+  * clang 13 on macOS (the default compiler on macOS 11)
+  * MSVC 19.37 on Windows (Visual Studio 17.7 *aka* 2022) on Windows
 
 It is meant as an easy to use entry-level light-weight binding framework for simple projects.
 
 Complex projects should continue to use SWIG which is cross-platform and cross-language.
 
-**Currently, the project should be considered of beta quality.**
+**Currently, the project should be considered of a recent release quality.**
+
+The first `npm` module to use it is [`@mmomtchev/ffmpeg`](https://github.com/mmomtchev/ffmpeg), you can check it for advanced usage examples.
 
 A future compatible layer should allow to target both `embind` and `nobind17` with shared declarations.
 
@@ -58,7 +65,7 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 
 It is published as an npm package that will also install `node-addon-api`.
 
-Starting from Node.js 18, C++17 is the default build mode for both Node.js itself and for addons. Unless you set manually `NAPI_VERSION` in your project, `nobind17` will default to `NAPI_VERSION=6` which will allow backward compatibility starting from Node.js 14 - even when Node.js 18 is the build platform.
+Starting from Node.js 18, C++17 is the default build mode for both Node.js itself and for addons. Unless you set manually `NAPI_VERSION` in your project, `nobind17` will default to `NAPI_VERSION=6` which will allow backward compatibility of the generated binary addon with Node.js 14 and later - even when using Node.js 18 as the build platform.
 
 `nobind17` is designed to be very easy to use - there is no learning curve at all - while allowing to deal with the most common situations that arise when creating bindings for C++ libraries to be used from Node.js.
 
@@ -262,7 +269,7 @@ Attributes can be combined with `operator|`, however if compiling in C++17 mode 
 static constexpr auto myAttrs = Nobind::ReturnAsync | Nobind::ReturnOwned | Nobind::ReturnNullThrow;
 ```
 
-In later standards this requirement has been relaxed.
+In later standards this requirement has been relaxed. Also, MSVC 2019 chokes on `static constexpr` local function variables used as non-type template arguments with an *C1001: Internal Compiler Error* - use global variables if you have to support it.
 
 ### Custom type converters
 
@@ -496,6 +503,8 @@ When encountering compilation errors, start with this quick checklist:
 * Are you using MSVC?
 
   *MSVC has a number of problems with template argument deduction in its default compilation mode. The `/permissive-` and `/Zc` flags can help in some cases, or you can also use a `static_cast` to explicitly type your function pointer. `node-ffmpeg` includes a few cases of this type.*
+  
+  *Also, MSVC 2019 has a number of problems such as *C1001: Internal Compiler Error* on `static constexpr` local function variables used as non-type template arguments and some complex SFINAE constructs such as this one: [MSVC fails to specialize template with `std::enable_if` and a non-type argument](https://stackoverflow.com/questions/77698129/msvc-fails-to-specialize-template-with-stdenable-if-and-a-non-type-argument).*
 
 ## Developer info
 

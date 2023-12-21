@@ -39,18 +39,25 @@ function configure(test, stdio, opts) {
       `--fixtures=${fixtures.map((f) => `fixtures/${f}.cc`).join(' ')}`
     ], { stdio: stdio || 'pipe', cwd: __dirname, env });
   } catch (e) {
-    if (e.stdout) {
-      console.error(e.stdout);
+    if (e.stdout && !stdio) {
+      console.error(e.stdout.toString());
     }
     throw e;
   }
 }
 
 function build(stdio) {
-  execFileSync(npx, [
-    'node-gyp',
-    'build'
-  ], { stdio: stdio || 'pipe', cwd: __dirname, env });
+  try {
+    execFileSync(npx, [
+      'node-gyp',
+      'build'
+    ], { stdio: stdio || 'pipe', cwd: __dirname, env });
+  } catch (e) {
+    if (e.stdout && !stdio) {
+      console.error(e.stdout.toString());
+    }
+    throw e;
+  }
 }
 
 function load(test, build) {
