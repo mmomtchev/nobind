@@ -478,7 +478,7 @@ struct PerIsolateData {
   Napi::ObjectReference exports;
 };
 
-NOBIND_MODULE(native, m, PerIsolateData) {
+NOBIND_MODULE_DATA(native, m, PerIsolateData) {
   m.Env().GetInstanceData<Nobind::EnvInstanceData<PerIsolateData>>()->exports =
       Napi::Persistent<Napi::Object>(m.Exports());
 }

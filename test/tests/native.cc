@@ -32,7 +32,7 @@ public:
   }
 };
 
-NOBIND_MODULE(native, m, PerIsolateData) {
+NOBIND_MODULE_DATA(native, m, PerIsolateData) {
   m.def<WithNative>("WithNative").cons<>().def<&WithNative::method_native>("method_native");
   m.def<&global_native>("global_native");
 
