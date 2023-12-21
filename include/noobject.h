@@ -461,7 +461,7 @@ public:
 
   // Class extension
   template <auto *FUNC, const ReturnAttribute &RET = ReturnDefault, typename NAME = const char *>
-  std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(FUNC)>>, ClassDefinition &> ext(NAME name) {
+  ClassDefinition &ext(NAME name) {
     typename NoObjectWrap<CLASS>::InstanceMethodCallback wrapper;
     static_assert(!RET.isAsync(), "Asynchronous class extensions are not supported, use a global function helper");
 
