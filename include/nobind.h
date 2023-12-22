@@ -67,15 +67,20 @@ public:
 
 } // namespace Nobind
 
-#define NOBIND_MODULE(MODULE_NAME, MODULE_ARG)                                                                         \
-  char const Nobind_##MODULE##_name[] = #MODULE_NAME;                                                                  \
-  void Nobind_##MODULE##_Init_Wrapper(Nobind::Module<Nobind_##MODULE##_name> &);                                       \
-  Napi::Object Nobind_##MODULE##_Init_Wrapper(Napi::Env, Napi::Object);                                                \
-  NODE_API_MODULE(MODULE_NAME, Nobind_##MODULE##_Init_Wrapper)                                                         \
-  Napi::Object Nobind_##MODULE##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                                   \
-    env.SetInstanceData(new Nobind::EnvInstanceData);                                                                  \
-    Nobind::Module<Nobind_##MODULE##_name> m(env, exports);                                                            \
-    Nobind_##MODULE##_Init_Wrapper(m);                                                                                 \
+#define NOBIND_MODULE_DATA(MODULE_NAME, MODULE_ARG, INSTANCE_DATA_TYPE)                                                \
+  /* We make this assumption that is not guaranteed by the C++ specs but it seems to be true on all compilers */       \
+  static_assert(&Nobind::BaseEnvInstanceData::_Nobind_cons ==                                                          \
+                &Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>::_Nobind_cons);                                           \
+  char const Nobind_##MODULE_NAME##_name[] = #MODULE_NAME;                                                             \
+  void Nobind_##MODULE_NAME##_Init_Wrapper(Nobind::Module<Nobind_##MODULE_NAME##_name> &);                             \
+  Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env, Napi::Object);                                           \
+  NODE_API_MODULE(MODULE_NAME, Nobind_##MODULE_NAME##_Init_Wrapper)                                                    \
+  Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                              \
+    env.SetInstanceData(new Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>);                                              \
+    Nobind::Module<Nobind_##MODULE_NAME##_name> m(env, exports);                                                       \
+    Nobind_##MODULE_NAME##_Init_Wrapper(m);                                                                            \
     return exports;                                                                                                    \
   }                                                                                                                    \
-  void Nobind_##MODULE##_Init_Wrapper(Nobind::Module<Nobind_##MODULE##_name> &MODULE_ARG)
+  void Nobind_##MODULE_NAME##_Init_Wrapper(Nobind::Module<Nobind_##MODULE_NAME##_name> &MODULE_ARG)
+
+#define NOBIND_MODULE(MODULE_NAME, MODULE_ARG) NOBIND_MODULE_DATA(MODULE_NAME, MODULE_ARG, Nobind::EmptyEnvInstanceData)

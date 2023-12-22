@@ -30,6 +30,13 @@ describe('global method', () => {
   });
 });
 
+describe('per isolate data', () => {
+  it('retrieve stored data', () => {
+    assert.isBoolean(dll.get_exports().debug_build);
+    assert.strictEqual(dll.get_exports(), dll);
+  });
+});
+
 it('manually set constant', () => {
   assert.isBoolean(dll.debug_build);
 });
