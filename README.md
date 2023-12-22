@@ -477,14 +477,14 @@ Consider the following C++ code:
 class Time {
   unsigned long timestamp;
 public:
-  Time(unsigned long v);
+  Time(unsigned long v): timestamp(v) {};
 };
 
 class DateTime {
   Time time;
 public:
-  DateTime(Time v);
-  operator Time &();
+  DateTime(Time v): time(v) {};
+  Time &get() { return time; };
 };
 ```
 
