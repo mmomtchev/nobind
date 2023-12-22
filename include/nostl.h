@@ -72,7 +72,7 @@ public:
   inline explicit ToJSMap(Napi::Env env, M val) : env_(env), val_(val) {}
   inline Napi::Value Get() {
     Napi::Object object = Napi::Object::New(env_);
-    for (auto const &prop : val_) {
+    for (auto &prop : val_) {
       object.Set(Napi::String::New(env_, prop.first), ToJS<T, RETATTR>(env_, prop.second).Get());
     }
     return object;

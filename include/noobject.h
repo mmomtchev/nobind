@@ -624,10 +624,16 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS {
   T *object;
 
 public:
-  inline explicit ToJS(Napi::Env env, T val) : env_(env) {
+  inline explicit ToJS(Napi::Env env, T &val) : env_(env) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      // C++ returned regular stack-allocated object, import to JS by copying to the heap
-      object = new T(val);
+      // C++ returned regular object
+      if constexpr (RETATTR.isNested()) {
+        // This is a nested object from a getter (for a class member object), return a nested reference
+        object = &val;
+      } else {
+        // This is a stack-allocated object, copy it to the heap
+        object = new T(val);
+      }
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
     }
