@@ -69,7 +69,8 @@ public:
 
 #define NOBIND_MODULE_DATA(MODULE_NAME, MODULE_ARG, INSTANCE_DATA_TYPE)                                                \
   /* We make this assumption that is not guaranteed by the C++ specs but it seems to be true on all compilers */       \
-  static_assert(&Nobind::BaseEnvInstanceData::cons == &Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>::cons);             \
+  static_assert(&Nobind::BaseEnvInstanceData::_Nobind_cons ==                                                          \
+                &Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>::_Nobind_cons);                                           \
   char const Nobind_##MODULE_NAME##_name[] = #MODULE_NAME;                                                             \
   void Nobind_##MODULE_NAME##_Init_Wrapper(Nobind::Module<Nobind_##MODULE_NAME##_name> &);                             \
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env, Napi::Object);                                           \

@@ -14,7 +14,7 @@ struct EmptyEnvInstanceData {};
 
 struct BaseEnvInstanceData {
   // Per-environment constructors for all proxied types
-  std::vector<Napi::FunctionReference> cons;
+  std::vector<Napi::FunctionReference> _Nobind_cons;
 };
 
 template <typename T> struct EnvInstanceData : BaseEnvInstanceData, public T {};
@@ -371,7 +371,7 @@ template <typename CLASS> template <bool OWNED> inline Napi::Value NoObjectWrap<
   napi_value ext = Napi::External<CLASS>::New(env, obj);
   napi_value own = Napi::Boolean::New(env, OWNED);
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  Napi::Value r = instance->cons[class_idx].New({ext, own});
+  Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
   return r;
 }
 
@@ -382,7 +382,7 @@ inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
   napi_value ext = Napi::External<CLASS>::New(env, const_cast<CLASS *>(obj));
   napi_value own = Napi::Boolean::New(env, false);
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  Napi::Value r = instance->cons[class_idx].New({ext, own});
+  Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
   return r;
 }
 
@@ -393,7 +393,7 @@ template <typename CLASS> inline CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::V
   }
   Napi::Object obj = val.ToObject();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  if (!obj.InstanceOf(instance->cons[class_idx].Value())) {
+  if (!obj.InstanceOf(instance->_Nobind_cons[class_idx].Value())) {
     throw Napi::TypeError::New(env, "Expected a " + name);
   }
   return NoObjectWrap<CLASS>::Unwrap(obj)->self;
@@ -491,7 +491,7 @@ public:
     Napi::Function ctor = NoObjectWrap<CLASS>::GetClass(env_, name_, properties);
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
     NoObjectWrap<CLASS>::Configure(constructors, class_idx_, name_);
-    instance->cons.emplace(instance->cons.begin() + class_idx_, Napi::Persistent(ctor));
+    instance->_Nobind_cons.emplace(instance->_Nobind_cons.begin() + class_idx_, Napi::Persistent(ctor));
     exports_.Set(name_, ctor);
   }
 };

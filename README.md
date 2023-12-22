@@ -484,6 +484,8 @@ NOBIND_MODULE_DATA(native, m, PerIsolateData) {
 }
 ```
 
+`nobind17` / `node-addon-api` will take care of creating and freeing this structure when new isolates are created and destroyed.
+
 ### Troubleshooting
 
 Most of the work that `nobind17` does happens during the C++ compilation of the project. It is at that moment that the templates will be instantiated.
