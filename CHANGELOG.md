@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Support storing of a custom per-isolate data structure (`Napi::Env::GetInstanceData` and `Napi::Env::SetInstanceData`)
 -   Specify the memory ownership rules for `Buffer`
+-   Support returning references to nested objects
 -   Fix a minor memory leak when calling method with incorrect number of arguments
 
 ### [1.1.1] 2023-12-01

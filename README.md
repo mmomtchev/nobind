@@ -426,7 +426,7 @@ The `Nobind::ReturnShared` signals `nobind17` that C++ objects returned by this 
 
 `.create()` is a method that creates new objects. The `Nobind::ReturnOwned` signals `nobind17` that C++ objects returned by this method should be considered new objects and should be freed when the GC destroys the JS proxy.
 
-Also, be sure to check [#1](https://github.com/mmomtchev/nobind17/issues/1) for a very important warning about shared references.
+Also, be sure to check [#1](https://github.com/mmomtchev/nobind17/issues/1) for a very important warning about shared references and also read the section on nested references below.
 
 ### Extending classes
 
@@ -468,6 +468,27 @@ NOBIND_MODULE(native, m) {
     .def<&False, Nobind::ReadOnly>(Napi::Symbol::WellKnown(m.Env(), "isConcatSpreadable"));
 }
 ```
+
+### Nested references
+
+Consider the following C++ code:
+
+```cpp
+class Time {
+  unsigned long timestamp;
+public:
+  Time(unsigned long v);
+};
+
+class DateTime {
+  Time time;
+public:
+  DateTime(Time v);
+  operator Time &();
+};
+```
+
+`DateTime` can returned a (non-`const`) reference to its member object `Time`. This reference should obviously use shared semantics as the newly created JS proxy object won't own the underlying C++ object. However, what will happen if the GC collects the parent object while JavaScript is still holding a reference to the returned nested object? This special case, which is somewhat common in the C++ world, requires special handling that can be enabled by using the `Nobind::ReturnNested` return attribute. In this case the returned reference will be bound the parent object which will be protected from the GC until the nested reference exists. This return attribute has a meaning only for class members and it is applied by default for class getters.
 
 ### Storing custom per-isolate data
 
