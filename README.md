@@ -386,7 +386,7 @@ NOBIND_MODULE(buffer, m) {
 
 When C++ returns a `Buffer` object, that buffer is considered owned and it will be freed upon the destruction of the Node.js `Buffer` object by the garbage-collector.
 
-When JavaScript passes a `Buffer` to a C++ method, data is copied - which is the safest but not the most efficient way to transfer it. Sharing the memory between C++ and JavaScript is possible in many cases - but must be carefully implemented in a custom typemap - especially when using async.
+When JavaScript passes a `Buffer` to a C++ method, C++ receives a pointer to the underlying data region of the JS `Buffer` which is protected from the GC for duration of the call - including in async mode.
 
 ### Returning objects and factory functions
 

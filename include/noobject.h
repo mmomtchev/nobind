@@ -8,6 +8,8 @@
 #include <nofunction.h>
 #include <notypes.h>
 
+using namespace std::literals::string_literals;
+
 namespace Nobind {
 
 struct EmptyEnvInstanceData {};
@@ -375,7 +377,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
     }
   }
   throw Napi::TypeError::New(info.Env(),
-                             "No constructor with the given " + std::to_string(info.Length()) + " arguments found");
+                             "No constructor with the given "s + std::to_string(info.Length()) + " arguments found"s);
 }
 
 template <typename CLASS>
@@ -412,7 +414,7 @@ template <typename CLASS> inline CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::V
   Napi::Object obj = val.ToObject();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   if (!obj.InstanceOf(instance->_Nobind_cons[class_idx].Value())) {
-    throw Napi::TypeError::New(env, "Expected a " + name);
+    throw Napi::TypeError::New(env, "Expected a "s + (name.size() > 0 ? name : "<unknown to nobind17 class>"s));
   }
   return NoObjectWrap<CLASS>::Unwrap(obj)->self;
 }
