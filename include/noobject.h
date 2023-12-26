@@ -26,19 +26,25 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
   template <typename T> friend class Typemap::FromJS;
   template <typename T, const ReturnAttribute &RETATTR> friend class Typemap::ToJS;
 
+  // Async worker for async class methods, the wrapper is a private method below
   template <const ReturnAttribute &RETATTR, typename BASE, auto FUNC, typename RETURN, typename... ARGS>
   class MethodWrapperTasklet : public Napi::AsyncWorker {
     Napi::Env env_;
     Napi::Promise::Deferred deferred_;
     std::unique_ptr<ToJS_t<RETURN, RETATTR>> output;
+    // FromJS wrappers also contain persistent references to their underlying JS values
     std::tuple<FromJS_t<ARGS>...> args_;
+    // This is the This persistent
+    Napi::ObjectReference this_ref;
+    // This is the This wrapper
+    NoObjectWrap<CLASS> *wrapper_;
     BASE *self_;
 
   public:
-    MethodWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, CLASS *self,
+    MethodWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, CLASS *self, NoObjectWrap<CLASS> *wrapper,
                          std::tuple<FromJS_t<ARGS>...> &&args)
         : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)),
-          self_(static_cast<BASE *>(self)) {}
+          this_ref(Napi::Persistent(wrapper->Value())), wrapper_(wrapper), self_(static_cast<BASE *>(self)) {}
 
     template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
       try {
@@ -63,8 +69,7 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
         deferred_.Resolve(env_.Undefined());
       } else {
         try {
-          auto result = output->Get();
-          deferred_.Resolve(result);
+          deferred_.Resolve(wrapper_->SetupNested<RETATTR>(output->Get()));
         } catch (const std::exception &e) {
           deferred_.Reject(Napi::String::New(env_, e.what()));
         }
@@ -115,7 +120,7 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return ToJS<T, ReturnDefault>(env, self->*MEMBER).Get();
+    return SetupNested<ReturnNested>(ToJS<T, ReturnNested>(env, self->*MEMBER).Get());
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
@@ -189,7 +194,7 @@ private:
         // Call the ToJS constructor
         auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert
-        return output.Get();
+        return SetupNested<RETATTR>(output.Get());
         // FromJS/ToJS objects are destroyed
       }
     } catch (const std::exception &e) {
@@ -224,6 +229,7 @@ private:
     return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
+  // The actual wrapper for async class methods
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS,
             std::size_t... I>
   inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
@@ -241,7 +247,7 @@ private:
       // Alas, std::forward_as_tuple does not guarantee
       // the evaluation order of its arguments, only *braced-init-list* lists do
       // https://en.cppreference.com/w/cpp/language/list_initialization
-      auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(env, deferred, self,
+      auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(env, deferred, self, this,
                                                                                     {FromJSArgs<ARGS>(info, idx)...});
       try {
         CheckArgLength(env, idx, info.Length());
@@ -305,12 +311,24 @@ private:
         // Call the ToJS constructor
         auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert
-        return output.Get();
+        return SetupNested<RETATTR>(output.Get());
         // FromJS/ToJS objects are destroyed
       }
     } catch (const std::exception &e) {
       throw Napi::Error::New(env, e.what());
     }
+  }
+
+  // Setup nested objects
+  template <const ReturnAttribute &RETATTR> inline Napi::Value SetupNested(Napi::Value returned) {
+    if constexpr (RETATTR.isNested()) {
+      if (returned.IsObject()) {
+        // We simply attach the parent (this) as a hidden property in the nested object
+        // This way the parent cannot be GCed until the nested objects is GCed
+        returned.ToObject().DefineProperty(Napi::PropertyDescriptor::Value("__nobind_parent_reference", this->Value()));
+      }
+    }
+    return returned;
   }
 
   // To look up the class constructor in the per-instance data
@@ -608,10 +626,16 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS {
   T *object;
 
 public:
-  inline explicit ToJS(Napi::Env env, T val) : env_(env) {
+  inline explicit ToJS(Napi::Env env, T &val) : env_(env) {
     if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      // C++ returned regular stack-allocated object, import to JS by copying to the heap
-      object = new T(val);
+      // C++ returned regular object
+      if constexpr (RETATTR.isNested()) {
+        // This is a nested object from a getter (for a class member object), return a nested reference
+        object = &val;
+      } else {
+        // This is a stack-allocated object, copy it to the heap
+        object = new T(val);
+      }
     } else {
       static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
     }

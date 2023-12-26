@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### [1.2.0]
+## [1.2.0]
 
 -   Support storing of a custom per-isolate data structure (`Napi::Env::GetInstanceData` and `Napi::Env::SetInstanceData`)
--   Specify the memory ownership rules for `Buffer` and implement zero-copy transfers
--   Fix a minor memory leak when calling method with incorrect number of arguments
+-   Specify the memory ownership rules for `Buffer`
+-   Support returning references to nested objects
+-   Fix a minor memory leak when calling a method with incorrect number of arguments
 
 ### [1.1.1] 2023-12-01
 

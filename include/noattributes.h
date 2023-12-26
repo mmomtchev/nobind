@@ -40,7 +40,7 @@ constexpr PropertyAttribute ReadWrite = PropertyAttribute();
 
 class ReturnAttribute : public Attribute {
 public:
-  enum Return { Shared = 0x1, Owned = 0x2 };
+  enum Return { Shared = 0x1, Owned = 0x2, Nested = 0x40 };
   enum Execution { Sync = 0x4, Async = 0x8 };
   enum Null { Allowed = 0x10, Forbidden = 0x20 };
 
@@ -53,6 +53,7 @@ public:
   }
   constexpr bool isShared() const { return (flags & Shared) == Shared; }
   constexpr bool isOwned() const { return (flags & Owned) == Owned; }
+  constexpr bool isNested() const { return (flags & Nested) == Nested; }
   constexpr bool isReturnNullAccept() const { return (flags & Allowed) == Allowed; }
   constexpr bool isReturnNullThrow() const { return (flags & Forbidden) == Forbidden; }
   constexpr bool isAsync() const { return (flags & Async) == Async; }
@@ -61,6 +62,8 @@ public:
       return false;
     if (isOwned())
       return true;
+    if (isNested())
+      return false;
     return DEFAULT;
   }
 
@@ -78,6 +81,12 @@ constexpr ReturnAttribute ReturnOwned = ReturnAttribute(ReturnAttribute::Owned);
  * The returned object won't be freed when the GC destroys the JS proxy object
  */
 constexpr ReturnAttribute ReturnShared = ReturnAttribute(ReturnAttribute::Shared);
+
+/**
+ * Returned objects will be bound the to the lifespan of the parent, valid
+ * only for class methods
+ */
+constexpr ReturnAttribute ReturnNested = ReturnAttribute(ReturnAttribute::Nested);
 
 /**
  * Returned pointers will be freed and returned references won't be freed (this is the default)
