@@ -6,9 +6,9 @@ namespace Nobind {
 
 // This is a 3-stage version of a trick using std::integral_constant which is proposed here:
 // https://stackoverflow.com/questions/77404330/function-template-with-variable-argument-function-as-template-argument
-template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...), std::size_t... I>
-inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>,
-                                   std::index_sequence<I...>) {
+// (this is the 3rd stage)
+template <const ReturnAttribute &RETATTR, auto *FUNC, typename RETURN, typename... ARGS, std::size_t... I>
+inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
   Napi::Env env = info.Env();
 
   try {
@@ -81,6 +81,7 @@ public:
   virtual void OnError(const Napi::Error &e) override { deferred_.Reject(e.Value()); }
 };
 
+// Second stage, async, w/except (async has 2 stages + tasklet)
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
 inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
                                         std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
@@ -110,21 +111,56 @@ inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
   return deferred.Promise();
 }
 
-template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
-inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
-  return FunctionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
-                                  std::index_sequence_for<ARGS...>{});
+// Second stage, async, noexcept (async has 2 stages + tasklet)
+template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...) noexcept>
+inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
+                                        std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
+  Napi::Env env = info.Env();
+
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+  try {
+    size_t idx = 0;
+    // Alas, std::forward_as_tuple does not guarantee
+    // the evaluation order of its arguments, only *braced-init-list* lists do
+    // https://en.cppreference.com/w/cpp/language/list_initialization
+    auto tasklet =
+        new FunctionWrapperTasklet<RETATTR, FUNC, RETURN, ARGS...>(env, deferred, {FromJSArgs<ARGS>(info, idx)...});
+
+    try {
+      CheckArgLength(env, idx, info.Length());
+    } catch (...) {
+      delete tasklet;
+      std::rethrow_exception(std::current_exception());
+    }
+
+    tasklet->Queue();
+  } catch (const std::exception &e) {
+    deferred.Reject(Napi::Error::New(env, e.what()).Value());
+  }
+  return deferred.Promise();
 }
 
-// This is the function that gets instantiated to create a wrapper (by getting a pointer)
-// and gets will be called by JavaScript
+// Second stage, sync, two variants (except and noexcept)
+template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
+inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+  return FunctionWrapper<RETATTR, FUNC, RETURN, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+}
+template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...) noexcept>
+inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info,
+                                   std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
+  return FunctionWrapper<RETATTR, FUNC, RETURN, ARGS...>(info, std::index_sequence_for<ARGS...>{});
+}
+
+// First stage - this is the function that gets instantiated to create a wrapper (by getting a pointer)
+// and that will be called by JavaScript - it has a Node-API compatible signature)
 template <const ReturnAttribute &RETATTR = ReturnDefault, auto *FUNC>
 Napi::Value FunctionWrapper(const Napi::CallbackInfo &info) {
   return FunctionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{});
 }
 
-// This is the async function that gets instantiated to create a wrapper (by getting a pointer)
-// and gets will be called by JavaScript
+// First stage - this is the async function that gets instantiated to create a wrapper (by getting a pointer)
+// and that will be called by JavaScript (ie it has a Node-API compatible signature)
 template <const ReturnAttribute &RETATTR = ReturnDefault, auto *FUNC>
 Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info) {
   return FunctionWrapperAsync<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{});
