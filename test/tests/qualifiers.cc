@@ -14,6 +14,6 @@ NOBIND_MODULE(qualifiers, m) {
       .def<&Qualified::get3, Nobind::ReturnAsync>("get3Async")
       .def<&Qualified::static_get4, Nobind::ReturnAsync>("get4Async");
 
-  m.def<GlobalQualified>("globalQualified");
-  m.def<GlobalQualified, Nobind::ReturnAsync>("globalQualifiedAsync");
+  m.def<&GlobalQualified>("globalQualified");
+  m.def<&GlobalQualified, Nobind::ReturnAsync>("globalQualifiedAsync");
 }
