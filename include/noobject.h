@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <functional>
 #include <napi.h>
+#include <numeric>
 #include <tuple>
 #include <type_traits>
 
@@ -358,7 +359,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 // * From C++ with a Napi::External<> pointer -> it must construct a proxy for this object
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info) {
-  // Napi::Env env = info.Env();
+  Napi::Env env{info.Env()};
   if (info.Length() == 2 && info[0].IsExternal()) {
     // From C++
     owned = info[1].ToBoolean().Value();
@@ -368,16 +369,35 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
   // From JS
   owned = true;
   if (cons.size() > info.Length() && cons[info.Length()].size() > 0) {
+    std::vector<std::string> errors;
     for (auto ctor : cons[info.Length()]) {
       try {
         (this->*ctor)(info);
         return;
-      } catch (...) {
+      } catch (const Napi::Error &e) {
+        // If there is only one constructor for the given number of arguments,
+        // throw the original construction error, instead of a generic error
+        // saying that all constructors with X arguments have been tried and none work
+        if (cons[info.Length()].size() == 1) {
+          std::rethrow_exception(std::current_exception());
+        }
+        // If not concatenate all the errors
+        errors.push_back(e.what());
+      } catch (const std::exception &e) {
+        // Same as above
+        if (cons[info.Length()].size() == 1) {
+          throw Napi::TypeError::New(env, e.what());
+        }
+        errors.push_back(e.what());
       }
     }
+    throw Napi::TypeError::New(
+        env, "All constructors with "s + std::to_string(info.Length()) + " arguments tried: ["s +
+                 std::accumulate(errors.begin() + 1, errors.end(), *errors.begin(),
+                                 [](const std::string s1, const std::string s2) { return s1 + ", " + s2; }) +
+                 "]"s);
   }
-  throw Napi::TypeError::New(info.Env(),
-                             "No constructor with the given "s + std::to_string(info.Length()) + " arguments found"s);
+  throw Napi::TypeError::New(env, "No constructor with "s + std::to_string(info.Length()) + " arguments found");
 }
 
 template <typename CLASS>

@@ -6,5 +6,6 @@ public:
 
   TwoCons(int a);
   TwoCons(const std::string &s);
+  TwoCons(bool);
   TwoCons();
 };

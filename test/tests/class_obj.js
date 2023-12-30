@@ -31,7 +31,7 @@ describe('reference', () => {
     it('null argument when Expected allowed', () => {
       assert.throws(() => {
         new dll.Hello(null);
-      }, /No constructor with the given 1 arguments found/);
+      }, /Expected a string/);
       assert.throws(() => {
         assert.isNumber(dll.hello_ref(null));
       }, /Expected an object/);
@@ -56,7 +56,7 @@ describe('reference', () => {
   it('undefined', () => {
     assert.throws(() => {
       new dll.Hello(null);
-    }, /No constructor with the given 1 arguments found/);
+    }, /Expected a string/);
     assert.throws(() => {
       assert.isNumber(dll.hello_ref(undefined));
     }, /Expected an object/);

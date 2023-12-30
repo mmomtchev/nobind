@@ -15,13 +15,19 @@ describe('overloaded constructor', () => {
     assert.strictEqual(o.x, 2);
   });
 
+  it('original C++ exception', () => {
+    assert.throws(() => {
+      new dll.TwoCons(false);
+    }, /wrong constructor/);
+  });
+
   it('exception', () => {
     assert.throws(() => {
       new dll.TwoCons(1, 2, 3);
-    }, /No constructor with the given 3 arguments found/);
+    }, /No constructor with 3 arguments found/);
 
     assert.throws(() => {
       new dll.TwoCons(null);
-    }, /No constructor with the given 1 arguments found/);
+    }, /All constructors with 1 arguments tried: \[Expected a string, Expected a number, Expected a boolean\]/);
   });
 });
