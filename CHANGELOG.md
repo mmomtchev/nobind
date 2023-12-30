@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Support returning references to nested objects
 -   Fix [#16](https://github.com/mmomtchev/nobind/issues/16), global and `static` members can be `noexcept`
 -   Fix a minor memory leak when calling a method with incorrect number of arguments
+-   More meaningful exceptions for constructors to aid debugging
 
 ### [1.1.1] 2023-12-01
 
