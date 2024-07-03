@@ -44,14 +44,15 @@ Full `pybind11` compatibility is also a very long term goal - allowing a module 
 | C++ types | No function pointers | No `enum` and functions pointers |
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
-| STL | Limited, but will evolve; Supports direct use of C++ STL containers from JavaScript without copying | Limited, all passing of STL arguments is by copying |
+| STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
-| Async locking | Yes with automatic dead-lock prevention | Not for 1.0 |
-| Smart pointers | Yes | Possible but not for 1.0 |
-| TypeScript support | Automatic | No, must write the typings |
-| WASM/Browser support | Yes | Not for 1.0, but planned through `embind` compatibility |
+| Async locking | Yes, with automatic dead-lock prevention | Not in 1.0 |
+| Smart pointers | Yes | Not in 1.0, but planned |
+| TypeScript support | Yes, automatic | No, must write the typings |
+| ES6 named exports for all C/C++ functions | Yes, automatic | No, must write it |
+| WASM/Browser support | Yes | Not in 1.0, but planned through `embind` compatibility |
 | Cross-platform | Yes | Yes |
-| Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind` is planned in theory |
+| Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind11` is planned in theory |
 | Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support | Yes, but no downcasting support and `instanceof` requires a small kludge in the JavaScript wrapper (see [here](https://github.com/mmomtchev/nobind17/blob/main/test/tests/inheritance.js)) |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes, automatic | Yes, manual
