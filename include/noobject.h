@@ -545,13 +545,10 @@ template <typename T> class FromJS<T &> {
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
-    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
-      val_ = OBJCLASS::CheckUnwrap(val);
-      persistent = Napi::Persistent(val.ToObject());
-    } else {
-      static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
-    }
+    static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
+    using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+    val_ = OBJCLASS::CheckUnwrap(val);
+    persistent = Napi::Persistent(val.ToObject());
   }
   inline T &Get() { return *val_; }
 };
@@ -563,11 +560,7 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS<T &, RETATTR> {
 
 public:
   inline explicit ToJS(Napi::Env env, T &val) : env_(env), val_(&val) {
-    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      return;
-    } else {
-      static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
-    }
+    static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a ToJS typemap");
   }
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
@@ -581,13 +574,10 @@ template <typename T> class FromJS<T *> {
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
-    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
-      val_ = OBJCLASS::CheckUnwrap(val);
-      persistent = Napi::Persistent(val.ToObject());
-    } else {
-      static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
-    }
+    static_assert(std::is_object_v<T> && !std::is_pod_v<T>, "Type does not have a FromJS typemap");
+    using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+    val_ = OBJCLASS::CheckUnwrap(val);
+    persistent = Napi::Persistent(val.ToObject());
   }
   inline T *Get() { return val_; }
 };
@@ -599,11 +589,7 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
 
 public:
   inline explicit ToJS(Napi::Env env, T *val) : env_(env), val_(val) {
-    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      return;
-    } else {
-      static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
-    }
+    static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a ToJS typemap");
   }
   // We consider this to be a factory function, it has returned a pointer
   // By default, the JS proxy will own this object
@@ -627,13 +613,10 @@ template <typename T> class FromJS {
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
-    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      // C++ asks for a regular stack-allocated object
-      object = NoObjectWrap<T>::CheckUnwrap(val);
-      persistent = Napi::Persistent(val.ToObject());
-    } else {
-      static_assert(!std::is_same<T, T>(), "Type does not have a FromJS typemap");
-    }
+    static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
+    // C++ asks for a regular stack-allocated object
+    object = NoObjectWrap<T>::CheckUnwrap(val);
+    persistent = Napi::Persistent(val.ToObject());
   }
   // will return a copy by value
   inline T Get() { return *object; }
@@ -647,17 +630,14 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS {
 
 public:
   inline explicit ToJS(Napi::Env env, T &val) : env_(env) {
-    if constexpr (std::is_object_v<T> && !std::is_pod_v<T>) {
-      // C++ returned regular object
-      if constexpr (RETATTR.isNested()) {
-        // This is a nested object from a getter (for a class member object), return a nested reference
-        object = &val;
-      } else {
-        // This is a stack-allocated object, copy it to the heap
-        object = new T(val);
-      }
+    static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a ToJS typemap");
+    // C++ returned regular object
+    if constexpr (RETATTR.isNested()) {
+      // This is a nested object from a getter (for a class member object), return a nested reference
+      object = &val;
     } else {
-      static_assert(!std::is_same<T, T>(), "Type does not have a ToJS typemap");
+      // This is a stack-allocated object, copy it to the heap
+      object = new T(val);
     }
   }
   // and wrapping it in a proxy, by default JS will own this new copy
