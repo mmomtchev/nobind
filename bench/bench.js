@@ -8,7 +8,7 @@ function build() {
     'node-gyp',
     'configure',
     'build'
-  ], { stdio: 'inherit', cwd: __dirname });
+  ], { stdio: 'inherit', cwd: __dirname, shell: true });
 }
 
 build();

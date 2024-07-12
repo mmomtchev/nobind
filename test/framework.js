@@ -19,7 +19,7 @@ function clean(test, stdio) {
     'node-gyp',
     'clean',
     `--test=${test}`
-  ], { stdio: stdio || 'pipe', cwd: __dirname, env });
+  ], { stdio: stdio || 'pipe', cwd: __dirname, env, shell: true });
 }
 
 function configure(test, stdio, opts) {
@@ -36,8 +36,8 @@ function configure(test, stdio, opts) {
       'configure',
       ...(opts || []),
       `--test=${test}`,
-      `--fixtures=${fixtures.map((f) => `fixtures/${f}.cc`).join(' ')}`
-    ], { stdio: stdio || 'pipe', cwd: __dirname, env });
+      `"--fixtures=${fixtures.map((f) => `fixtures/${f}.cc`).join(' ')}"`
+    ], { stdio: stdio || 'pipe', cwd: __dirname, env, shell: true });
   } catch (e) {
     if (e.stdout && !stdio) {
       console.error(e.stdout.toString());
@@ -51,7 +51,7 @@ function build(stdio) {
     execFileSync(npx, [
       'node-gyp',
       'build'
-    ], { stdio: stdio || 'pipe', cwd: __dirname, env });
+    ], { stdio: stdio || 'pipe', cwd: __dirname, env, shell: true });
   } catch (e) {
     if (e.stdout && !stdio) {
       console.error(e.stdout.toString());
