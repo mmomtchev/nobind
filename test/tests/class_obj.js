@@ -135,3 +135,10 @@ describe('const pointer', () => {
     }, /Expected an object/);
   });
 });
+
+describe('POD type', () => {
+  it('support', () => {
+    const i = new dll.IntObject(5);
+    assert.strictEqual(dll.hello_pod(i), 5);
+  });
+});
