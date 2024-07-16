@@ -20,7 +20,7 @@ However because of edge cases when it comes to C++17 support, the recommended co
   * clang 13 on macOS (the default compiler on macOS 11)
   * MSVC 19.37 on Windows (Visual Studio 17.7 *aka* 2022) on Windows
 
-It is meant as an easy to use entry-level light-weight binding framework for simple projects.
+It is meant as an easy to use entry-level light-weight binding framework for simple projects that target only Node.js.
 
 Complex projects should continue to use SWIG which is cross-platform and cross-language.
 
@@ -545,6 +545,10 @@ When encountering compilation errors, start with this quick checklist:
   *MSVC has a number of problems with template argument deduction in its default compilation mode. The `/permissive-` and `/Zc` flags can help in some cases, or you can also use a `static_cast` to explicitly type your function pointer. `node-ffmpeg` includes a few cases of this type.*
   
   *Also, MSVC 2019 has a number of problems such as *C1001: Internal Compiler Error* on `static constexpr` local function variables used as non-type template arguments and some complex SFINAE constructs such as this one: [MSVC fails to specialize template with `std::enable_if` and a non-type argument](https://stackoverflow.com/questions/77698129/msvc-fails-to-specialize-template-with-stdenable-if-and-a-non-type-argument).*
+
+## WASM compatbility
+
+Although building to WASM using `emnapi` should be possible, this is considered out of scope for this project and you should be using `embind` which implements the same functionality directly in the `emscripten` compiler without adding additional layers (C++/`nobind` to `node-addon-api`, then `node-addon-api`/`emnapi` to `embind`).
 
 ## Developer info
 
