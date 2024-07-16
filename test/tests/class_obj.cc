@@ -28,7 +28,7 @@ NOBIND_MODULE(class_obj, m) {
   m.def<&hello_const_ref>("hello_const_ref");
   m.def<&hello_const_ptr>("hello_const_ptr");
 
-  m.def<IntObject>("IntObject").cons<int>();
+  m.def<IntObject>("IntObject").cons<int>().cons<const IntObject &>();
   m.def<&hello_pod>("hello_pod");
   m.def<&hello_pod_ptr>("hello_pod_ptr");
 
