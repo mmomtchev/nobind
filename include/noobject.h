@@ -574,7 +574,7 @@ template <typename T> class FromJS<T *> {
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
-    static_assert(std::is_object_v<T> && !std::is_pod_v<T>, "Type does not have a FromJS typemap");
+    static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
     val_ = OBJCLASS::CheckUnwrap(val);
     persistent = Napi::Persistent(val.ToObject());

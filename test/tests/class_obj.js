@@ -140,5 +140,7 @@ describe('POD type', () => {
   it('support', () => {
     const i = new dll.IntObject(5);
     assert.strictEqual(dll.hello_pod(i), 5);
+    const j = new dll.IntObject(i);
+    assert.strictEqual(dll.hello_pod_ptr(j), 5);
   });
 });
