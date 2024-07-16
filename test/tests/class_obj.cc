@@ -11,6 +11,7 @@ int hello_const_ref(const Hello &h) { return h.id; }
 int hello_const_ptr(const Hello *h) { return h->id; }
 
 int hello_pod(IntObject v) { return v.value; }
+int hello_pod_ptr(IntObject *v) { return v->value; }
 
 #include <nobind.h>
 
@@ -29,6 +30,7 @@ NOBIND_MODULE(class_obj, m) {
 
   m.def<IntObject>("IntObject").cons<int>();
   m.def<&hello_pod>("hello_pod");
+  m.def<&hello_pod_ptr>("hello_pod_ptr");
 
   m.def<TwoCons>("TwoCons").cons<>();
 }
