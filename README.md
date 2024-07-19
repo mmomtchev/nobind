@@ -32,7 +32,7 @@ A future compatible layer should allow to target both `embind` and `nobind17` wi
 
 Full `pybind11` compatibility is also a very long term goal - allowing a module to support both Node.js and Python.
 
-You can use [nobind-example-project](https://github.com/mmomtchev/nobind-example-project) as a template for creating a new `nobind17` based project.
+You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-example-project) and [`hadron-nobind-example-project`](https://github.com/mmomtchev/hadron-nobind-example-project) as a template for creating a new `nobind17` based project using `node-gyp` or `hadron` as build system.
 
 ## Comparison vs SWIG Node-API
 
