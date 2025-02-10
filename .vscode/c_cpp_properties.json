@@ -6,17 +6,17 @@
       "NAPI_VERSION=6"
     ],
     "projectIncludes": [
-        "${workspaceFolder}/node_modules/node-addon-api",
-        "${workspaceFolder}/include",
-        "${workspaceFolder}/test",
-      ]
+      "${workspaceFolder}/node_modules/node-addon-api",
+      "${workspaceFolder}/include",
+      "${workspaceFolder}/test"
+    ]
   },
   "configurations": [
     {
       "name": "Linux",
       "includePath": [
         "${projectIncludes}",
-        "/usr/include/node",
+        "/usr/include/node"
       ],
       "defines": [
         "${projectDefines}"
@@ -29,12 +29,12 @@
       "name": "macOS",
       "includePath": [
         "${projectIncludes}",
-        "/usr/local/include/node",
+        "/usr/local/include/node"
       ],
       "defines": [
         "${projectDefines}"
       ],
-      "compilerPath": "/usr/bin/g++",
+      "compilerPath": "/usr/bin/clang++",
       "cStandard": "c17",
       "cppStandard": "c++17"
     },
@@ -42,7 +42,7 @@
       "name": "Windows",
       "includePath": [
         "${projectIncludes}",
-        "~/AppData/Local/node-gyp/Cache/18.13.0/include/node"
+        "/usr/local/include/node"
       ],
       "defines": [
         "${projectDefines}"
