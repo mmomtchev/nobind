@@ -11,7 +11,9 @@ describe('int, int -> int', () => {
   );
 
   it('exception', () =>
+    // @ts-expect-error
     assert.isRejected(dll.add('2', 1), /Expected a number/)
+      // @ts-expect-error
       .then(() => assert.isRejected(dll.add(2), /Expected a number/))
   );
 });
@@ -22,7 +24,9 @@ describe('int, int -> bool', () => {
   );
 
   it('exception', () =>
+    // @ts-expect-error
     assert.isRejected(dll.gte('2', 1), /Expected a number/)
+      // @ts-expect-error
       .then(() => assert.isRejected(dll.gte(2), /Expected a number/))
   );
 });
@@ -33,7 +37,9 @@ describe('double, double -> double', () => {
   );
 
   it('exception', () =>
+    // @ts-expect-error
     assert.isRejected(dll.pow('2', 1), /Expected a number/)
+      // @ts-expect-error
       .then(() => assert.isRejected(dll.pow(2)), /Expected a number/)
   );
 });
@@ -45,7 +51,9 @@ describe('string -> string', () => {
   );
 
   it('exception', () =>
+    // @ts-expect-error
     assert.isRejected(dll.hello(1), /Expected a string/)
+      // @ts-expect-error
       .then(() => assert.isRejected(dll.hello('test', 1)), /Expected 1 arguments, got 2/)
   );
 });
@@ -56,6 +64,7 @@ describe('void -> void', () => {
   );
 
   it('exception', () =>
+    // @ts-expect-error
     assert.isRejected(dll.nothing(1), /Expected 0 arguments, got 1/)
   );
 });
@@ -77,7 +86,9 @@ describe('class method', () => {
   it('exception', () => {
     const o = new dll.Hello('Garga');
 
+    // @ts-expect-error
     return assert.isRejected(o.get_id(2), /Expected 0 arguments, got 1/)
+      // @ts-expect-error
       .then(() => assert.isRejected(o.greet(2), /Expected a string/));
   });
 });

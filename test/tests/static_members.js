@@ -45,6 +45,7 @@ describe('StaticMembers', () => {
 
     it('exception', () => {
       assert.throws(() => {
+        // @ts-expect-error
         dll.StaticMembers.static_member = 'invalid';
       }, /Expected a number/);
     });

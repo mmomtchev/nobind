@@ -44,6 +44,8 @@ public:
     val_ = val.ToBoolean().Value();
   }
   inline bool Get() { return val_; }
+
+  static constexpr char TSType[] = "boolean";
 };
 
 // native specializations (does not support async)
@@ -70,8 +72,12 @@ public:
 
 // never_void is a helper that allows to declare function arguments
 // that can potentially be a void type
-template <typename T> struct never_void { typedef T type; };
-template <> struct never_void<void> { typedef int type; };
+template <typename T> struct never_void {
+  typedef T type;
+};
+template <> struct never_void<void> {
+  typedef int type;
+};
 template <typename T> using never_void_t = typename never_void<T>::type;
 
 // Standard C++ detection idiom (SFINAE version)

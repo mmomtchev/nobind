@@ -1,4 +1,5 @@
 #pragma once
+
 #include <napi.h>
 #include <tuple>
 #include <type_traits>
@@ -18,15 +19,36 @@
 #include <nostl.h>
 #include <nostringmaps.h>
 
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#include <notypescript.h>
+#endif
+
 namespace Nobind {
 
 template <char const MODULE[]> class Module {
   Napi::Env env_;
   Napi::Object exports_;
   size_t class_idx_;
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+  std::string typescript_types_;
+#endif
 
 public:
-  Module(Napi::Env env, Napi::Object exports) : env_(env), exports_(exports), class_idx_(0) {}
+  Module(Napi::Env env, Napi::Object exports)
+      : env_{env}, exports_{exports}, class_idx_{0}
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+        ,
+        typescript_types_{""}
+#endif
+  {
+  }
+
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+  ~Module() {
+    exports_.DefineProperty(Napi::PropertyDescriptor::Value(
+        "__typescript_types", Napi::String::New(env_, typescript_types_), napi_enumerable));
+  }
+#endif
 
   // Global function
   template <auto *OBJECT, const ReturnAttribute &RET = ReturnDefault>
@@ -39,6 +61,9 @@ public:
     }
     Napi::Function js = Napi::Function::New(env_, wrapper);
     exports_.Set(name, js);
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    typescript_types_ += FunctionSignature<RET, OBJECT>(name, "export function ");
+#endif
     return *this;
   }
 
@@ -57,7 +82,12 @@ public:
 
   // Class
   template <class CLASS> ClassDefinition<CLASS> def(const char *name) {
-    return ClassDefinition<CLASS>(name, env_, exports_, class_idx_++);
+    return ClassDefinition<CLASS>(name, env_, exports_, class_idx_++
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+                                  ,
+                                  typescript_types_
+#endif
+    );
   }
 
   Napi::Env Env() { return env_; }

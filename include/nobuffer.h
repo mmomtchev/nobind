@@ -32,6 +32,8 @@ public:
 
   FromJS(const FromJS &) = delete;
   inline FromJS(FromJS &&) = default;
+
+  static constexpr char TSType[] = "Buffer";
 };
 
 // When receiving a Buffer from C++ we consider that

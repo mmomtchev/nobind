@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const os = require('os');
+const assert = require('assert');
 
 const npx = os.platform() === 'win32' ? 'npx.cmd' : 'npx';
 const env = { ...process.env };
@@ -60,6 +61,26 @@ function build(stdio) {
   }
 }
 
+function gen_typescript() {
+  assert(globalThis.dll.__typescript_types !== undefined);
+  fs.writeFileSync(path.resolve(__dirname, 'build', 'dll.d.ts'), globalThis.dll.__typescript_types);
+}
+
+function check_typescript(test, stdio) {
+  try {
+    execFileSync(npx, [
+      'tsc',
+      '--types @types/mocha,./dll.d.ts',
+      '--checkJs', '--noEmit', `tests/${test}.js`
+    ], { stdio: stdio || 'pipe', cwd: __dirname, env, shell: true });
+  } catch (e) {
+    if (e.stdout && !stdio) {
+      console.error(e.stdout.toString());
+    }
+    throw e;
+  }
+}
+
 function load(test, build) {
   globalThis.dll = require(path.resolve(__dirname, 'build', build || 'Release', `${test.split('.')[0]}.node`));
 }
@@ -73,6 +94,8 @@ module.exports = {
   clean,
   configure,
   build,
+  gen_typescript,
+  check_typescript,
   load,
   register
 };

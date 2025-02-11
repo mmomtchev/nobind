@@ -4,7 +4,7 @@ int add(int a, int b) { return a + b; }
 
 bool gte(int a, int b) { return a >= b; }
 
-int test(bool a) { return a ? 1 : 0; }
+int testa(bool a) { return a ? 1 : 0; }
 
 double power(double a, double b) { return std::pow(a, b); }
 

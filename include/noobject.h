@@ -8,6 +8,7 @@
 
 #include <nofunction.h>
 #include <notypes.h>
+#include <notypescript.h>
 
 using namespace std::literals::string_literals;
 
@@ -447,6 +448,9 @@ template <class CLASS> class ClassDefinition {
   std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> properties;
   std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> constructors;
   size_t class_idx_;
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+  std::string class_typescript_types_, &global_typescript_types_;
+#endif
 
 public:
   // Instance class method
@@ -460,6 +464,12 @@ public:
       wrapper = &NoObjectWrap<CLASS>::template MethodWrapper<RET, MEMBER>;
     }
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
+
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    std::string typescript_types = MethodSignature<RET, MEMBER>(name, "  ");
+    global_typescript_types_ += typescript_types;
+    class_typescript_types_ += typescript_types;
+#endif
 
     return *this;
   }
@@ -487,6 +497,13 @@ public:
       wrapper = &FunctionWrapper<RET, MEMBER>;
     }
     properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
+
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    std::string typescript_types = FunctionSignature<RET, MEMBER>(name, "  static ");
+    global_typescript_types_ += typescript_types;
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
@@ -521,11 +538,30 @@ public:
     if (constructors.size() <= sizeof...(ARGS) + 1)
       constructors.resize(sizeof...(ARGS) + 1);
     constructors[sizeof...(ARGS)].push_back(wrapper);
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    std::string typescript_types = "  " + ConstructorSignature<ARGS...>();
+    global_typescript_types_ += typescript_types;
+    class_typescript_types_ += typescript_types;
+#endif
     return *this;
   }
 
-  ClassDefinition(const char *name, Napi::Env env, Napi::Object exports, size_t class_idx)
-      : name_(name), env_(env), exports_(exports), properties(), constructors(), class_idx_(class_idx) {}
+  explicit ClassDefinition(const char *name, Napi::Env env, Napi::Object exports, size_t class_idx
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+                           ,
+                           std::string &global_typescript_types
+#endif
+                           )
+      : name_(name), env_(env), exports_(exports), properties(), constructors(), class_idx_(class_idx)
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+        ,
+        class_typescript_types_(""), global_typescript_types_(global_typescript_types)
+#endif
+  {
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    global_typescript_types_ += "export class "s + name + " { \n"s;
+#endif
+  }
 
   ~ClassDefinition() {
     Napi::Function ctor = NoObjectWrap<CLASS>::GetClass(env_, name_, properties);
@@ -533,6 +569,10 @@ public:
     NoObjectWrap<CLASS>::Configure(constructors, class_idx_, name_);
     instance->_Nobind_cons.emplace(instance->_Nobind_cons.begin() + class_idx_, Napi::Persistent(ctor));
     exports_.Set(name_, ctor);
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    exports_.Get(name_).ToObject().Set("__typescript_types", Napi::String::New(env_, class_typescript_types_));
+    global_typescript_types_ += "}\n"s;
+#endif
   }
 };
 
@@ -622,6 +662,8 @@ public:
   inline T Get() { return *object; }
 
   static const size_t Inputs = 1;
+
+  static constexpr char TSType[] = "unknown";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS {

@@ -3,7 +3,8 @@
     "projectDefines": [
       "NAPI_EXPERIMENTAL",
       "NODE_ADDON_API_DISABLE_DEPRECATED",
-      "NAPI_VERSION=6"
+      "NAPI_VERSION=6",
+      "NOBIND_TYPESCRIPT_GENERATOR"
     ],
     "projectIncludes": [
       "${workspaceFolder}/node_modules/node-addon-api",

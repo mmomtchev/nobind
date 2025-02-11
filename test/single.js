@@ -2,9 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const framework = require('./framework');
 const Mocha = require('mocha');
+const assert = require('assert');
 
 function usage() {
-  console.log('Usage: node single.js <configure|build|run> <test>');
+  console.log('Usage: node single.js <configure|build|run|show-types|gen-types|check-types> <test>');
   process.exit(1);
 }
 
@@ -27,7 +28,7 @@ switch (process.argv[2]) {
     framework.clean(test, 'inherit');
     break;
   case 'configure':
-    framework.configure(test, 'inherit', ['--debug']);
+    framework.configure(test, 'inherit', ['--debug', '--enable_typescript']);
     break;
   case 'configure-asan':
     framework.configure(test, 'inherit', ['--debug', '--enable_asan']);
@@ -36,7 +37,7 @@ switch (process.argv[2]) {
     framework.build('inherit');
     break;
   case 'run':
-    globalThis.dll = require(path.resolve(__dirname, 'build', 'Debug', `${test.split('.')[0]}.node`));
+    framework.load(test, 'Debug');
     const mocha = new Mocha({ ui: 'bdd' });
     mocha.addFile(path.resolve(__dirname, 'tests', test));
     mocha.run(function (failures) {
@@ -44,6 +45,18 @@ switch (process.argv[2]) {
         process.exit(failures);
       });
     });
+    break;
+  case 'gen-types':
+    framework.load(test, 'Debug');
+    framework.gen_typescript('Debug');
+    break;
+  case 'show-types':
+    framework.load(test, 'Debug');
+    assert(globalThis.dll.__typescript_types !== undefined, 'No TypeScript generator');
+    console.log(globalThis.dll.__typescript_types);
+    break;
+  case 'check-types':
+    framework.check_typescript(test, 'inherit');
     break;
   default:
     usage();

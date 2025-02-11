@@ -27,6 +27,7 @@ describe('std::vector', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.put_ptr_array('comrade', 'invalid');
     }, /Expected an array/);
 

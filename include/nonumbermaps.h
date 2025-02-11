@@ -18,6 +18,8 @@ public:
   inline T Get() { return val_; }
   FromJSInt32(const FromJSInt32 &) = delete;
   FromJSInt32(FromJSInt32 &&) = default;
+
+  static constexpr char TSType[] = "number";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJSInt32 {
@@ -44,6 +46,8 @@ public:
   inline T Get() { return val_; }
   FromJSUint32(const FromJSUint32 &) = delete;
   FromJSUint32(FromJSUint32 &&) = default;
+
+  static constexpr char TSType[] = "number";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJSUint32 {
@@ -70,6 +74,8 @@ public:
   inline T Get() { return val_; }
   FromJSInt64(const FromJSInt64 &) = delete;
   FromJSInt64(FromJSInt64 &&) = default;
+
+  static constexpr char TSType[] = "number";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJSInt64 {
@@ -96,6 +102,8 @@ public:
   inline T Get() { return val_; }
   FromJSDouble(const FromJSDouble &) = delete;
   FromJSDouble(FromJSDouble &&) = default;
+
+  static constexpr char TSType[] = "number";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJSDouble {

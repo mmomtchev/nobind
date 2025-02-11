@@ -12,18 +12,22 @@ describe('reference', () => {
   it('exception', () => {
     assert.throws(() => {
       dll.hello_ref(2);
+      // @ts-expect-error
     }, /Expected an object/);
 
     assert.throws(() => {
       dll.hello_ref(new dll.TwoCons());
+      // @ts-expect-error
     }, /Expected a Hello/);
 
     assert.throws(() => {
       dll.hello_ref({ a: 0 });
+      // @ts-expect-error
     }, /Expected a Hello/);
 
     assert.throws(() => {
       dll.hello_ref();
+      // @ts-expect-error
     }, /Expected an object/);
   });
 
@@ -31,9 +35,11 @@ describe('reference', () => {
     it('null argument when Expected allowed', () => {
       assert.throws(() => {
         new dll.Hello(null);
+        // @ts-expect-error
       }, /Expected a string/);
       assert.throws(() => {
         assert.isNumber(dll.hello_ref(null));
+        // @ts-expect-error
       }, /Expected an object/);
     });
 
@@ -45,10 +51,12 @@ describe('reference', () => {
     it('null throws when returned', () => {
       assert.throws(() => {
         dll.Hello.factory_strict('');
+        // @ts-expect-error
       }, /Returned nullptr/);
     });
 
     it('null rejects when returned in async mode', () => {
+      // @ts-expect-error
       return assert.isRejected(dll.Hello.factoryAsync_strict(''), /Returned nullptr/);
     });
   });
@@ -56,9 +64,11 @@ describe('reference', () => {
   it('undefined', () => {
     assert.throws(() => {
       new dll.Hello(null);
+      // @ts-expect-error
     }, /Expected a string/);
     assert.throws(() => {
       assert.isNumber(dll.hello_ref(undefined));
+      // @ts-expect-error
     }, /Expected an object/);
   });
 });
@@ -73,30 +83,36 @@ describe('pointer', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ptr(2);
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ptr(new dll.TwoCons());
     }, /Expected a Hello/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ptr({ a: 0 });
     }, /Expected a Hello/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ptr();
     }, /Expected an object/);
   });
 
   it('null', () => {
     assert.throws(() => {
+      // @ts-expect-error
       assert.isNumber(dll.hello_ptr(null));
     }, /Expected an object/);
   });
 
   it('undefined', () => {
     assert.throws(() => {
+      // @ts-expect-error
       assert.isNumber(dll.hello_ptr(undefined));
     }, /Expected an object/);
   });
@@ -110,10 +126,12 @@ describe('const reference', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_const_ref(2);
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_const_ref();
     }, /Expected an object/);
   });
@@ -127,10 +145,12 @@ describe('const pointer', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_const_ptr(2);
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_const_ptr();
     }, /Expected an object/);
   });

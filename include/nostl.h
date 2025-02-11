@@ -26,6 +26,8 @@ public:
   inline V Get() { return val_; }
   FromJSVector(const FromJSVector &) = delete;
   FromJSVector(FromJSVector &&) = default;
+
+  static constexpr char TSType[] = "unknown[]";
 };
 
 template <typename V, typename T, const ReturnAttribute &RETATTR> class ToJSVector {
@@ -62,6 +64,8 @@ public:
   inline M Get() { return val_; }
   FromJSMap(const FromJSMap &) = delete;
   FromJSMap(FromJSMap &&) = default;
+
+  static constexpr char TSType[] = "Record<string, unknown>";
 };
 
 template <typename M, typename T, const ReturnAttribute &RETATTR> class ToJSMap {

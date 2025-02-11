@@ -18,6 +18,8 @@ public:
   inline T Get() { return val_; }
   FromJSString(const FromJSString &) = delete;
   FromJSString(FromJSString &&) = default;
+
+  static constexpr char TSType[] = "string";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJSString {
@@ -50,6 +52,8 @@ public:
   ~FromJSChar() { delete val_; }
   FromJSChar(const FromJSChar &) = delete;
   FromJSChar(FromJSChar &&) = default;
+
+  static constexpr char TSType[] = "string";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJSChar {
@@ -64,7 +68,9 @@ public:
 };
 
 #define TYPEMAPS_FOR_STRING(TYPE, CLASS)                                                                               \
-  template <> struct FromJS<TYPE> : public FromJS##CLASS<TYPE> { using FromJS##CLASS<TYPE>::FromJS##CLASS; };          \
+  template <> struct FromJS<TYPE> : public FromJS##CLASS<TYPE> {                                                       \
+    using FromJS##CLASS<TYPE>::FromJS##CLASS;                                                                          \
+  };                                                                                                                   \
   template <const ReturnAttribute &RETATTR> struct ToJS<TYPE, RETATTR> : public ToJS##CLASS<TYPE, RETATTR> {           \
     using ToJS##CLASS<TYPE, RETATTR>::ToJS##CLASS;                                                                     \
   };

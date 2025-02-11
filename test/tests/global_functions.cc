@@ -7,6 +7,6 @@ NOBIND_MODULE(global_functions, m) {
   m.def<&gte>("gte");
   m.def<&power>("pow");
   m.def<&hello>("hello");
-  m.def<&test>("test");
+  m.def<&testa>("testa");
   m.def<&nothing>("nothing");
 }

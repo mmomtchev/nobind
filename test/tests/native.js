@@ -11,6 +11,7 @@ describe('class method', () => {
   it('exception', () => {
     const o = new dll.WithNative;
     assert.throws(() => {
+      // @ts-expect-error
       o.method_native(1337);
     }, /Expected a string/);
   });
@@ -25,6 +26,7 @@ describe('global method', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.global_native(1337);
     }, /Expected a string/);
   });

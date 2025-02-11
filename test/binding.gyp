@@ -1,6 +1,7 @@
 {
   'variables': {
-    'enable_asan%': 'false'
+    'enable_asan%': 'false',
+    'enable_typescript%': 'false'
   },
   'targets': [
     {
@@ -41,6 +42,9 @@
             '-fsanitize=address'
           ]
         }        
+      }],
+      ['enable_typescript == "true"', {
+        'defines': [ 'NOBIND_TYPESCRIPT_GENERATOR' ]      
       }]
     ]
   }
