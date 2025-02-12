@@ -31,6 +31,8 @@ public:
   inline Napi::Value Get() { return Napi::String::New(env_, val_); }
   ToJSString(const ToJSString &) = delete;
   ToJSString(ToJSString &&) = default;
+
+  static constexpr char TSType[] = "string";
 };
 
 template <typename T> class FromJSChar {
@@ -65,6 +67,8 @@ public:
   inline Napi::Value Get() { return Napi::String::New(env_, val_); }
   ToJSChar(const ToJSChar &) = delete;
   ToJSChar(ToJSChar &&) = default;
+
+  static constexpr char TSType[] = "string";
 };
 
 #define TYPEMAPS_FOR_STRING(TYPE, CLASS)                                                                               \

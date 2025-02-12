@@ -18,6 +18,16 @@ public:
   static constexpr bool value = test<T>(int());
 };
 
+// Get the base type of a member pointer type
+// https://stackoverflow.com/questions/22213523/c11-14-how-to-remove-a-pointer-to-member-from-a-type
+template <class T> struct remove_member_pointer {
+  typedef T type;
+};
+
+template <class C, class T> struct remove_member_pointer<T C::*> {
+  typedef T type;
+};
+
 // Resolve a C++ argument type to TS argument type
 template <typename T> std::string inline FromJSType() {
   if constexpr (std::is_constructible_v<TypemapOverrides::FromJS<std::remove_cv_t<T>>, const Napi::Value &>) {
@@ -93,7 +103,7 @@ inline std::string FunctionSignature(const char *name, const char *prefix,
 }
 
 // First stage
-template <const ReturnAttribute &RETATTR = ReturnDefault, auto *FUNC>
+template <const ReturnAttribute &RETATTR, auto *FUNC>
 std::string FunctionSignature(const char *name, const char *prefix) {
   return FunctionSignature<RETATTR>(name, prefix, std::integral_constant<decltype(FUNC), FUNC>{});
 }
@@ -145,9 +155,26 @@ inline std::string MethodSignature(const char *name, const char *prefix,
 }
 
 // First stage
-template <const ReturnAttribute &RET = ReturnDefault, auto FUNC>
-std::string MethodSignature(const char *name, const char *prefix) {
+template <const ReturnAttribute &RET, auto FUNC> std::string MethodSignature(const char *name, const char *prefix) {
   return MethodSignature<RET>(name, prefix, std::integral_constant<decltype(FUNC), FUNC>{});
+}
+
+// Class property
+template <const PropertyAttribute &PROP, auto OBJECT, typename NAME = const char *>
+std::string PropertySignature(NAME name, const char *prefix) {
+  std::string resolved_name;
+  if constexpr (std::is_same_v<Napi::Symbol, NAME>) {
+    resolved_name = "["s + ((Napi::Symbol)name).ToObject().Get("description").ToString().Utf8Value() + "]"s;
+  } else {
+    resolved_name = std::string{name};
+  }
+  if constexpr (std::is_member_pointer_v<decltype(OBJECT)>) {
+    return std::string{prefix} + (PROP.isReadOnly() ? "readonly "s : ""s) + resolved_name + ": "s +
+           ToJSType<typename remove_member_pointer<decltype(OBJECT)>::type>() + ";\n";
+  } else {
+    return std::string{prefix} + (PROP.isReadOnly() ? "readonly "s : ""s) + resolved_name + ": "s +
+           ToJSType<decltype(OBJECT)>() + ";\n";
+  }
 }
 
 } // namespace Nobind

@@ -38,7 +38,7 @@
       "program": "/usr/local/bin/node",
       "args": [
         "single.js",
-        "types"
+        "show-types"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/test",

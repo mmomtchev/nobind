@@ -484,6 +484,13 @@ public:
       setter = &NoObjectWrap<CLASS>::template SetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
     }
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, setter));
+
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    std::string typescript_types = PropertySignature<PROP, MEMBER>(name, "  ");
+    global_typescript_types_ += typescript_types;
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
@@ -517,6 +524,13 @@ public:
       setter = &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
     }
     properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
+
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    std::string typescript_types = PropertySignature<PROP, MEMBER>(name, "  static ");
+    global_typescript_types_ += typescript_types;
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 

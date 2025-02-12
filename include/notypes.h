@@ -31,6 +31,8 @@ template <const ReturnAttribute &RETATTR> class ToJS<bool, RETATTR> {
 public:
   inline explicit ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
   inline Napi::Value Get() { return Napi::Boolean::New(env_, val_); }
+
+  static constexpr char TSType[] = "boolean";
 };
 
 template <> class FromJS<bool> {
