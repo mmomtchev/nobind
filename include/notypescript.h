@@ -108,6 +108,19 @@ std::string FunctionSignature(const char *name, const char *prefix) {
   return FunctionSignature<RETATTR>(name, prefix, std::integral_constant<decltype(FUNC), FUNC>{});
 }
 
+// Class extension, second stage, calls the FunctionSignature 3rd stage
+template <const ReturnAttribute &RETATTR, typename RETURN, typename CLASS, typename... ARGS,
+          RETURN (*FUNC)(CLASS &, ARGS...)>
+inline std::string ExtensionSignature(const char *name, const char *prefix,
+                                      std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
+  return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
+}
+// Class extension, first stage
+template <const ReturnAttribute &RETATTR, auto *FUNC>
+std::string ExtensionSignature(const char *name, const char *prefix) {
+  return ExtensionSignature<RETATTR>(name, prefix, std::integral_constant<decltype(FUNC), FUNC>{});
+}
+
 // Construct a TypeScript signature for a class constructor
 template <typename... ARGS> std::string ConstructorSignature() {
   std::string types_text = FromJSTypes<ARGS...>();

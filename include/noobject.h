@@ -543,6 +543,12 @@ public:
     wrapper = &NoObjectWrap<CLASS>::template ExtensionWrapper<RET, FUNC>;
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
 
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    std::string typescript_types = ExtensionSignature<RET, FUNC>(name, "  ");
+    global_typescript_types_ += typescript_types;
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
@@ -552,11 +558,13 @@ public:
     if (constructors.size() <= sizeof...(ARGS) + 1)
       constructors.resize(sizeof...(ARGS) + 1);
     constructors[sizeof...(ARGS)].push_back(wrapper);
+
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     std::string typescript_types = "  " + ConstructorSignature<ARGS...>();
     global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
+
     return *this;
   }
 
