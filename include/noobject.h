@@ -141,9 +141,11 @@ public:
     // (class_idx == idx) - subsequent initialization (worker_thread)
     assert(class_idx == 0 || class_idx == idx);
     class_idx = idx;
-    name = jsname;
+    name = std::string{jsname};
     cons = constructors;
   }
+
+  static const std::string &GetName() { return name; }
 
 private:
   // The two remaining functions of the member method wrapper trio
@@ -335,7 +337,7 @@ private:
 
   // To look up the class constructor in the per-instance data
   static size_t class_idx;
-  // Mainly for debug purposes
+  // For TypeScript
   static std::string name;
   // The class constructors
   static std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> cons;
@@ -486,7 +488,7 @@ public:
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, setter));
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
-    std::string typescript_types = PropertySignature<PROP, MEMBER>(name, "  ");
+    std::string typescript_types = PropertySignature<PROP, decltype(getMemberPointerType(MEMBER))>(name, "  ");
     global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
@@ -526,7 +528,7 @@ public:
     properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
-    std::string typescript_types = PropertySignature<PROP, MEMBER>(name, "  static ");
+    std::string typescript_types = PropertySignature<PROP, std::remove_pointer_t<decltype(MEMBER)>>(name, "  static ");
     global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
@@ -580,6 +582,7 @@ public:
         class_typescript_types_(""), global_typescript_types_(global_typescript_types)
 #endif
   {
+    NoObjectWrap<CLASS>::Configure(constructors, class_idx_, name_);
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     global_typescript_types_ += "export class "s + name + " { \n"s;
 #endif
@@ -591,6 +594,7 @@ public:
     NoObjectWrap<CLASS>::Configure(constructors, class_idx_, name_);
     instance->_Nobind_cons.emplace(instance->_Nobind_cons.begin() + class_idx_, Napi::Persistent(ctor));
     exports_.Set(name_, ctor);
+
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     exports_.Get(name_).ToObject().Set("__typescript_types", Napi::String::New(env_, class_typescript_types_));
     global_typescript_types_ += "}\n"s;
@@ -604,15 +608,17 @@ namespace Typemap {
 template <typename T> class FromJS<T &> {
   T *val_;
   Napi::ObjectReference persistent;
+  using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
-    using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
     val_ = OBJCLASS::CheckUnwrap(val);
     persistent = Napi::Persistent(val.ToObject());
   }
   inline T &Get() { return *val_; }
+
+  static constexpr const char *TSType() { return OBJCLASS::GetName().c_str(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS<T &, RETATTR> {
@@ -627,21 +633,25 @@ public:
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
   inline Napi::Value Get() { return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_); }
+
+  static constexpr const char *TSType() { return OBJCLASS::GetName().c_str(); };
 };
 
 // Generic object pointer typemap
 template <typename T> class FromJS<T *> {
   T *val_;
   Napi::ObjectReference persistent;
+  using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
-    using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
     val_ = OBJCLASS::CheckUnwrap(val);
     persistent = Napi::Persistent(val.ToObject());
   }
   inline T *Get() { return val_; }
+
+  static constexpr const char *TSType() { return OBJCLASS::GetName().c_str(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
@@ -657,8 +667,9 @@ public:
   // By default, the JS proxy will own this object
   inline Napi::Value Get() {
     if constexpr (!RETATTR.isReturnNullThrow()) {
-      if (val_ == nullptr)
+      if (val_ == nullptr) {
         return env_.Null();
+      }
     } else {
       if (val_ == nullptr) {
         throw Napi::Error::New(env_, "Returned nullptr");
@@ -666,6 +677,8 @@ public:
     }
     return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_);
   }
+
+  static constexpr const char *TSType() { return OBJCLASS::GetName().c_str(); };
 };
 
 // Generic stack-allocated object typemaps
@@ -685,7 +698,7 @@ public:
 
   static const size_t Inputs = 1;
 
-  static constexpr char TSType[] = "unknown";
+  static constexpr const char *TSType() { return NoObjectWrap<T>::GetName().c_str(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS {
@@ -706,6 +719,8 @@ public:
   }
   // and wrapping it in a proxy, by default JS will own this new copy
   inline Napi::Value Get() { return NoObjectWrap<T>::template New<RETATTR.ShouldOwn<true>()>(env_, object); }
+
+  static constexpr const char *TSType() { return NoObjectWrap<T>::GetName().c_str(); };
 };
 
 } // namespace Typemap

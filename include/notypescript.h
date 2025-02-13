@@ -9,7 +9,7 @@ namespace Nobind {
 
 using namespace std::string_literals;
 
-// Helper to determine if the typemap contains a TSType
+// Helpers to determine if the typemap contains a TSType / DynamicTSType
 template <typename T> class JSTypemapHasTSType {
   template <typename U> static constexpr decltype(std::declval<U &>().TSType, bool()) test(int) { return true; }
   template <typename U> static constexpr inline bool test(...) { return false; }
@@ -18,27 +18,27 @@ public:
   static constexpr bool value = test<T>(int());
 };
 
-// Get the base type of a member pointer type
-// https://stackoverflow.com/questions/22213523/c11-14-how-to-remove-a-pointer-to-member-from-a-type
-template <class T> struct remove_member_pointer {
-  typedef T type;
+template <typename T> class JSTypemapHasDynamicTSType {
+  template <typename U> static constexpr decltype(std::declval<U &>().DynamicTSType, bool()) test(int) { return true; }
+  template <typename U> static constexpr inline bool test(...) { return false; }
+
+public:
+  static constexpr bool value = test<T>(int());
 };
 
-template <class C, class T> struct remove_member_pointer<T C::*> {
-  typedef T type;
-};
+template <typename CLASS> class NoObjectWrap;
 
 // Resolve a C++ argument type to TS argument type
 template <typename T> std::string inline FromJSType() {
   if constexpr (std::is_constructible_v<TypemapOverrides::FromJS<std::remove_cv_t<T>>, const Napi::Value &>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::FromJS<std::remove_cv_t<T>>>::value) {
-      return TypemapOverrides::FromJS<std::remove_cv_t<T>>::TSType;
+      return TypemapOverrides::FromJS<std::remove_cv_t<T>>::TSType();
     } else {
       return "unknown"s;
     }
   } else {
     if constexpr (JSTypemapHasTSType<Typemap::FromJS<std::remove_cv_t<T>>>::value) {
-      return Typemap::FromJS<std::remove_cv_t<T>>::TSType;
+      return Typemap::FromJS<std::remove_cv_t<T>>::TSType();
     } else {
       return "unknown"s;
     }
@@ -51,13 +51,13 @@ template <typename T> std::string inline ToJSType() {
     return "void"s;
   } else if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>>, const Napi::Env &, T>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::ToJS<std::remove_cv_t<T>>>::value) {
-      return TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType;
+      return TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType();
     } else {
       return "unknown"s;
     }
   } else {
     if constexpr (JSTypemapHasTSType<Typemap::ToJS<std::remove_cv_t<T>>>::value) {
-      return Typemap::ToJS<std::remove_cv_t<T>>::TSType;
+      return Typemap::ToJS<std::remove_cv_t<T>>::TSType();
     } else {
       return "unknown"s;
     }
@@ -173,7 +173,7 @@ template <const ReturnAttribute &RET, auto FUNC> std::string MethodSignature(con
 }
 
 // Class property
-template <const PropertyAttribute &PROP, auto OBJECT, typename NAME = const char *>
+template <const PropertyAttribute &PROP, typename TYPE, typename NAME = const char *>
 std::string PropertySignature(NAME name, const char *prefix) {
   std::string resolved_name;
   if constexpr (std::is_same_v<Napi::Symbol, NAME>) {
@@ -181,13 +181,8 @@ std::string PropertySignature(NAME name, const char *prefix) {
   } else {
     resolved_name = std::string{name};
   }
-  if constexpr (std::is_member_pointer_v<decltype(OBJECT)>) {
-    return std::string{prefix} + (PROP.isReadOnly() ? "readonly "s : ""s) + resolved_name + ": "s +
-           ToJSType<typename remove_member_pointer<decltype(OBJECT)>::type>() + ";\n";
-  } else {
-    return std::string{prefix} + (PROP.isReadOnly() ? "readonly "s : ""s) + resolved_name + ": "s +
-           ToJSType<decltype(OBJECT)>() + ";\n";
-  }
+  return std::string{prefix} + (PROP.isReadOnly() ? "readonly "s : ""s) + resolved_name + ": "s + ToJSType<TYPE>() +
+         ";\n";
 }
 
 } // namespace Nobind

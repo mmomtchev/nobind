@@ -32,7 +32,7 @@ public:
   inline explicit ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
   inline Napi::Value Get() { return Napi::Boolean::New(env_, val_); }
 
-  static constexpr char TSType[] = "boolean";
+  static constexpr const char *TSType() { return "boolean"; };
 };
 
 template <> class FromJS<bool> {
@@ -47,7 +47,7 @@ public:
   }
   inline bool Get() { return val_; }
 
-  static constexpr char TSType[] = "boolean";
+  static constexpr const char *TSType() { return "boolean"; };
 };
 
 // native specializations (does not support async)

@@ -18,8 +18,6 @@ public:
   inline T Get() { return val_; }
   FromJSString(const FromJSString &) = delete;
   FromJSString(FromJSString &&) = default;
-
-  static constexpr char TSType[] = "string";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJSString {
@@ -31,8 +29,6 @@ public:
   inline Napi::Value Get() { return Napi::String::New(env_, val_); }
   ToJSString(const ToJSString &) = delete;
   ToJSString(ToJSString &&) = default;
-
-  static constexpr char TSType[] = "string";
 };
 
 template <typename T> class FromJSChar {
@@ -54,8 +50,6 @@ public:
   ~FromJSChar() { delete val_; }
   FromJSChar(const FromJSChar &) = delete;
   FromJSChar(FromJSChar &&) = default;
-
-  static constexpr char TSType[] = "string";
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJSChar {
@@ -67,16 +61,16 @@ public:
   inline Napi::Value Get() { return Napi::String::New(env_, val_); }
   ToJSChar(const ToJSChar &) = delete;
   ToJSChar(ToJSChar &&) = default;
-
-  static constexpr char TSType[] = "string";
 };
 
 #define TYPEMAPS_FOR_STRING(TYPE, CLASS)                                                                               \
   template <> struct FromJS<TYPE> : public FromJS##CLASS<TYPE> {                                                       \
     using FromJS##CLASS<TYPE>::FromJS##CLASS;                                                                          \
+    static constexpr const char *TSType() { return "string"; };                                                        \
   };                                                                                                                   \
   template <const ReturnAttribute &RETATTR> struct ToJS<TYPE, RETATTR> : public ToJS##CLASS<TYPE, RETATTR> {           \
     using ToJS##CLASS<TYPE, RETATTR>::ToJS##CLASS;                                                                     \
+    static constexpr const char *TSType() { return "string"; };                                                        \
   };
 
 // The const versions are needed to ensure that we
