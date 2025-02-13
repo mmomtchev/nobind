@@ -70,7 +70,7 @@ function check_typescript(test, stdio) {
   try {
     execFileSync(npx, [
       'tsc',
-      '--types @types/mocha,./dll.d.ts',
+      '--types @types/mocha,node,./dll.d.ts',
       '--checkJs', '--noEmit', '--lib es2015', `tests/${test}.js`
     ], { stdio: stdio || 'pipe', cwd: __dirname, env, shell: true });
   } catch (e) {

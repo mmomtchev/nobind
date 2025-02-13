@@ -60,6 +60,8 @@ public:
 
   ToJS(const ToJS &) = delete;
   ToJS(ToJS &&) = delete;
+
+  static constexpr const char *TSType() { return "Buffer"; }
 };
 
 } // namespace Typemap
