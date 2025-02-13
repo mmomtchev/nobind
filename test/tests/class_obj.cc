@@ -20,6 +20,7 @@ constexpr auto strictAsync = Nobind::ReturnAsync | Nobind::ReturnNullThrow;
 NOBIND_MODULE(class_obj, m) {
   m.def<Hello>("Hello")
       .cons<std::string &>()
+      .def<&Hello::Id>("id")
       .def<&Hello::Factory, Nobind::ReturnNullAccept>("factory_tolerant")
       .def<&Hello::Factory, Nobind::ReturnNullThrow>("factory_strict")
       .def<&Hello::Factory, strictAsync>("factoryAsync_strict");

@@ -11,35 +11,35 @@ describe('reference', () => {
 
   it('exception', () => {
     assert.throws(() => {
-      dll.hello_ref(2);
       // @ts-expect-error
+      dll.hello_ref(2);
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ref(new dll.TwoCons());
-      // @ts-expect-error
     }, /Expected a Hello/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ref({ a: 0 });
-      // @ts-expect-error
     }, /Expected a Hello/);
 
     assert.throws(() => {
-      dll.hello_ref();
       // @ts-expect-error
+      dll.hello_ref();
     }, /Expected an object/);
   });
 
   describe('null', () => {
     it('null argument when Expected allowed', () => {
       assert.throws(() => {
-        new dll.Hello(null);
         // @ts-expect-error
+        new dll.Hello(null);
       }, /Expected a string/);
       assert.throws(() => {
-        assert.isNumber(dll.hello_ref(null));
         // @ts-expect-error
+        assert.isNumber(dll.hello_ref(null));
       }, /Expected an object/);
     });
 
@@ -50,8 +50,8 @@ describe('reference', () => {
 
     it('null throws when returned', () => {
       assert.throws(() => {
-        dll.Hello.factory_strict('');
         // @ts-expect-error
+        dll.Hello.factory_strict('');
       }, /Returned nullptr/);
     });
 
@@ -63,12 +63,12 @@ describe('reference', () => {
 
   it('undefined', () => {
     assert.throws(() => {
-      new dll.Hello(null);
       // @ts-expect-error
+      new dll.Hello(null);
     }, /Expected a string/);
     assert.throws(() => {
-      assert.isNumber(dll.hello_ref(undefined));
       // @ts-expect-error
+      assert.isNumber(dll.hello_ref(undefined));
     }, /Expected an object/);
   });
 });
