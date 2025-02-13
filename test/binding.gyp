@@ -1,11 +1,12 @@
 {
   'variables': {
     'enable_asan%': 'false',
-    'enable_typescript%': 'false'
+    'enable_typescript%': 'false',
+    'test_output%': '<(test)'
   },
   'targets': [
     {
-      'target_name': '<(test)',
+      'target_name': '<(test_output)',
       'sources': [ 'tests/<(test).cc', '<@(fixtures)' ],
       # RTTI is only for easier debugging of the templates
       'cflags!': [ '-fno-rtti' ],

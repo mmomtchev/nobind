@@ -15,7 +15,7 @@ describe('nobind', function () {
     });
     describe(`${t} w/o TypeScript`, () => {
       before('clean', () => framework.clean());
-      before('configure', () => framework.configure(t, undefined, process.env.ENABLE_ASAN && ['--debug', '--enable_asan']));
+      before('configure', () => framework.configure(t, undefined, process.env.ENABLE_ASAN && ['--debug', '--enable_asan'], `${t}-notypescript`));
       it('build', () => framework.build());
     });
   }
