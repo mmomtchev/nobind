@@ -29,7 +29,7 @@ public:
 template <typename CLASS> class NoObjectWrap;
 
 // Resolve a C++ argument type to TS argument type
-template <typename T> std::string inline FromJSType() {
+template <typename T> std::string FromJSType() {
   if constexpr (std::is_constructible_v<TypemapOverrides::FromJS<std::remove_cv_t<T>>, const Napi::Value &>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::FromJS<std::remove_cv_t<T>>>::value) {
       return TypemapOverrides::FromJS<std::remove_cv_t<T>>::TSType();
@@ -46,7 +46,7 @@ template <typename T> std::string inline FromJSType() {
 }
 
 // Resolve a C++ return type to a TS return type
-template <typename T> std::string inline ToJSType() {
+template <typename T> std::string ToJSType() {
   if constexpr (std::is_void_v<T>) {
     return "void"s;
   } else if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>>, const Napi::Env &, T>) {
@@ -185,4 +185,9 @@ std::string PropertySignature(NAME name, const char *prefix) {
          ";\n";
 }
 
+template <typename T, typename U> std::string createTSRecord() {
+  return "Record<"s + FromJSType<T>() + ", "s + FromJSType<U>() + ">"s;
+}
+
+template <typename T> std::string createTSArray() { return FromJSType<T>() + "[]"s; }
 } // namespace Nobind

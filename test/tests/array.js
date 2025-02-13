@@ -32,6 +32,7 @@ describe('std::vector', () => {
     }, /Expected an array/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.put_ptr_array('comrade', [{ field: 'value' }]);
     }, /Expected a Hello/);
   });

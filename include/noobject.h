@@ -618,7 +618,7 @@ public:
   }
   inline T &Get() { return *val_; }
 
-  static constexpr const char *TSType() { return OBJCLASS::GetName().c_str(); };
+  static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS<T &, RETATTR> {
@@ -634,7 +634,7 @@ public:
   // By default, the JS proxy will not own this object
   inline Napi::Value Get() { return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_); }
 
-  static constexpr const char *TSType() { return OBJCLASS::GetName().c_str(); };
+  static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
 
 // Generic object pointer typemap
@@ -651,7 +651,7 @@ public:
   }
   inline T *Get() { return val_; }
 
-  static constexpr const char *TSType() { return OBJCLASS::GetName().c_str(); };
+  static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
@@ -678,7 +678,7 @@ public:
     return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_);
   }
 
-  static constexpr const char *TSType() { return OBJCLASS::GetName().c_str(); };
+  static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
 
 // Generic stack-allocated object typemaps
@@ -698,7 +698,7 @@ public:
 
   static const size_t Inputs = 1;
 
-  static constexpr const char *TSType() { return NoObjectWrap<T>::GetName().c_str(); };
+  static const std::string &TSType() { return NoObjectWrap<T>::GetName(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS {
@@ -720,7 +720,7 @@ public:
   // and wrapping it in a proxy, by default JS will own this new copy
   inline Napi::Value Get() { return NoObjectWrap<T>::template New<RETATTR.ShouldOwn<true>()>(env_, object); }
 
-  static constexpr const char *TSType() { return NoObjectWrap<T>::GetName().c_str(); };
+  static const std::string &TSType() { return NoObjectWrap<T>::GetName(); };
 };
 
 } // namespace Typemap

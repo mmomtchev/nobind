@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <notypes.h>
+#include <notypescript.h>
 #include <string>
 #include <vector>
 
@@ -27,7 +28,7 @@ public:
   FromJSVector(const FromJSVector &) = delete;
   FromJSVector(FromJSVector &&) = default;
 
-  static constexpr const char *TSType() { return "unknown[]"; };
+  static std::string TSType() { return createTSArray<T>(); };
 };
 
 template <typename V, typename T, const ReturnAttribute &RETATTR> class ToJSVector {
@@ -45,6 +46,8 @@ public:
   }
   ToJSVector(const ToJSVector &) = delete;
   ToJSVector(ToJSVector &&) = default;
+
+  static std::string TSType() { return createTSArray<T>(); };
 };
 
 template <typename M, typename T> class FromJSMap {
@@ -65,7 +68,7 @@ public:
   FromJSMap(const FromJSMap &) = delete;
   FromJSMap(FromJSMap &&) = default;
 
-  static constexpr const char *TSType() { return "Record<string, unknown>"; };
+  static std::string TSType() { return createTSRecord<std::string, T>(); };
 };
 
 template <typename M, typename T, const ReturnAttribute &RETATTR> class ToJSMap {
@@ -83,6 +86,8 @@ public:
   }
   ToJSMap(const ToJSMap &) = delete;
   ToJSMap(ToJSMap &&) = default;
+
+  static std::string TSType() { return createTSRecord<std::string, T>(); };
 };
 
 #define TYPEMAPS_FOR_STL(CONTAINER, CLASS)                                                                             \

@@ -63,14 +63,16 @@ public:
   ToJSChar(ToJSChar &&) = default;
 };
 
+const std::string string_tstype = "string"s;
+
 #define TYPEMAPS_FOR_STRING(TYPE, CLASS)                                                                               \
   template <> struct FromJS<TYPE> : public FromJS##CLASS<TYPE> {                                                       \
     using FromJS##CLASS<TYPE>::FromJS##CLASS;                                                                          \
-    static constexpr const char *TSType() { return "string"; };                                                        \
+    static const std::string &TSType() { return string_tstype; };                                                      \
   };                                                                                                                   \
   template <const ReturnAttribute &RETATTR> struct ToJS<TYPE, RETATTR> : public ToJS##CLASS<TYPE, RETATTR> {           \
     using ToJS##CLASS<TYPE, RETATTR>::ToJS##CLASS;                                                                     \
-    static constexpr const char *TSType() { return "string"; };                                                        \
+    static const std::string &TSType() { return string_tstype; };                                                      \
   };
 
 // The const versions are needed to ensure that we

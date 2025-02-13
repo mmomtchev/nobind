@@ -10,6 +10,8 @@ namespace Typemap {
 // In C++ a Node::Buffer decomposes to std::pair<uint8_t *, size_t>
 using Buffer = std::pair<uint8_t *, size_t>;
 
+const std::string Buffer_tstype = "Buffer"s;
+
 // When calling C++ with a JS Buffer, C++ receives a pointer
 // to the Node.js Buffer region
 // The JS Buffer object is protected from the GC for the
@@ -33,7 +35,7 @@ public:
   FromJS(const FromJS &) = delete;
   inline FromJS(FromJS &&) = default;
 
-  static constexpr const char *TSType() { return "Buffer"; }
+  static const std::string &TSType() { return Buffer_tstype; }
 };
 
 // When receiving a Buffer from C++ we consider that
@@ -61,7 +63,7 @@ public:
   ToJS(const ToJS &) = delete;
   ToJS(ToJS &&) = delete;
 
-  static constexpr const char *TSType() { return "Buffer"; }
+  static const std::string &TSType() { return Buffer_tstype; }
 };
 
 } // namespace Typemap

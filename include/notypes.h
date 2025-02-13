@@ -18,6 +18,8 @@ inline void CheckArgLength(Napi::Env env, size_t expected, size_t actual) {
   }
 }
 
+const std::string boolean_tstype = "boolean"s;
+
 // https://stackoverflow.com/questions/22825512/get-type-of-member-memberpointer-points-to
 template <class C, typename T> T getMemberPointerType(T C::*v);
 
@@ -32,7 +34,7 @@ public:
   inline explicit ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
   inline Napi::Value Get() { return Napi::Boolean::New(env_, val_); }
 
-  static constexpr const char *TSType() { return "boolean"; };
+  static const std::string &TSType() { return boolean_tstype; };
 };
 
 template <> class FromJS<bool> {
@@ -47,7 +49,7 @@ public:
   }
   inline bool Get() { return val_; }
 
-  static constexpr const char *TSType() { return "boolean"; };
+  static const std::string &TSType() { return boolean_tstype; };
 };
 
 // native specializations (does not support async)
