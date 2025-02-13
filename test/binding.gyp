@@ -53,7 +53,7 @@
         }        
       }],
       ['enable_typescript == "true"', {
-        'defines': [ 'NOBIND_TYPESCRIPT_GENERATOR=1' ]      
+        'defines': [ 'NOBIND_TYPESCRIPT_GENERATOR' ]      
       }]
     ]
   }

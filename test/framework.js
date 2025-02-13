@@ -18,8 +18,7 @@ function list() {
 function clean(test, stdio) {
   execFileSync(npx, [
     'node-gyp',
-    'clean',
-    `--test=${test}`
+    'clean'
   ], { stdio: stdio || 'pipe', cwd: __dirname, env, shell: true });
 }
 
