@@ -15,7 +15,7 @@ function list() {
     .map((t) => t.split('.')[0]);
 }
 
-function clean(test, stdio) {
+function clean(stdio) {
   execFileSync(npx, [
     'node-gyp',
     'clean'
