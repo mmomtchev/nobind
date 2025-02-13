@@ -15,6 +15,8 @@ public:
     val_ = std::atoi(val.ToString().Utf8Value().c_str());
   }
   inline int Get() { return val_; }
+
+  static const std::string TSType() { return "string"; };
 };
 
 template <> class ToJS<int> {
@@ -24,6 +26,8 @@ template <> class ToJS<int> {
 public:
   inline explicit ToJS(Napi::Env env, int val) : env_(env), val_(val) {}
   inline Napi::Value Get() { return Napi::String::New(env_, std::to_string(val_)); }
+
+  static const std::string TSType() { return "string"; };
 };
 
 template <> class FromJS<const std::string &> {
@@ -33,6 +37,8 @@ public:
   inline explicit FromJS(Napi::Value) {}
   inline const std::string &Get() { return fixed; }
   static const size_t Inputs = 0;
+
+  static const std::string TSType() { return ""; };
 };
 
 const std::string FromJS<const std::string &>::fixed = "Static string";

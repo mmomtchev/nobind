@@ -69,6 +69,8 @@ template <typename... ARGS> inline std::string FromJSTypes() {
   std::vector<std::string> types{FromJSType<ARGS>()...};
   std::string types_text;
   for (size_t i = 0; i < types.size(); i++) {
+    if (types[i].empty())
+      continue;
     if (!types_text.empty())
       types_text += ", "s;
     types_text += "arg"s + std::to_string(i) + ": "s + types[i];
