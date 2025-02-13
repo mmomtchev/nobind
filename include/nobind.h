@@ -77,6 +77,10 @@ public:
       setter = &SetterWrapper<std::remove_pointer_t<decltype(OBJECT)>, OBJECT>;
     }
     exports_.DefineProperty(Napi::PropertyDescriptor::Accessor(name, getter, setter));
+
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    typescript_types_ += GlobalSignature<PROP, std::remove_pointer_t<decltype(OBJECT)>>(name, "export ");
+#endif
     return *this;
   }
 

@@ -6,9 +6,12 @@ describe('StaticMembers', () => {
     assert.instanceOf(o, dll.StaticMembers);
 
     assert.strictEqual(dll.StaticMembers.get_static(), 2);
+    // @ts-expect-error
     assert.isUndefined(o.get_static);
 
     assert.isUndefined(dll.StaticMembers.nothing_static());
+
+    // @ts-expect-error
     assert.isUndefined(o.nothing_static);
   });
 
@@ -17,6 +20,8 @@ describe('StaticMembers', () => {
     assert.instanceOf(o, dll.StaticMembers);
 
     assert.strictEqual(dll.StaticMembers.static_member, 2);
+
+    // @ts-expect-error
     assert.isUndefined(o.static_member);
   });
 
@@ -39,6 +44,7 @@ describe('StaticMembers', () => {
       const o = new dll.StaticMembers;
       assert.instanceOf(o, dll.StaticMembers);
 
+      // @ts-expect-error
       dll.StaticMembers.static_readonly = 2727;
       assert.notEqual(dll.StaticMembers.static_member, 2727);
     });

@@ -187,6 +187,19 @@ std::string PropertySignature(NAME name, const char *prefix) {
          ";\n";
 }
 
+// Global variable
+template <const PropertyAttribute &PROP, typename TYPE, typename NAME = const char *>
+std::string GlobalSignature(NAME name, const char *prefix) {
+  std::string resolved_name;
+  if constexpr (std::is_same_v<Napi::Symbol, NAME>) {
+    resolved_name = "["s + ((Napi::Symbol)name).ToObject().Get("description").ToString().Utf8Value() + "]"s;
+  } else {
+    resolved_name = std::string{name};
+  }
+  return std::string{prefix} + (PROP.isReadOnly() ? "const "s : "var "s) + resolved_name + ": "s + ToJSType<TYPE>() +
+         ";\n";
+}
+
 template <typename T, typename U> std::string createTSRecord() {
   return "Record<"s + FromJSType<T>() + ", "s + FromJSType<U>() + ">"s;
 }
