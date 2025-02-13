@@ -7,6 +7,15 @@
     {
       'target_name': '<(test)',
       'sources': [ 'tests/<(test).cc', '<@(fixtures)' ],
+      # RTTI is only for easier debugging of the templates
+      'cflags!': [ '-fno-rtti' ],
+      'cflags_cc!': [ '-fno-rtti' ],
+      'cflags_cc': [ '-frtti' ],
+      'xcode_settings': {
+        'OTHER_CPLUSPLUSFLAGS': [
+          '-frtti'
+        ]
+      },
       'include_dirs': [
         '.',
         '../include',
