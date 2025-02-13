@@ -17,7 +17,6 @@ describe('overloaded constructor', () => {
 
   it('original C++ exception', () => {
     assert.throws(() => {
-      // @ts-expect-error
       new dll.TwoCons(false);
     }, /wrong constructor/);
   });
@@ -29,7 +28,6 @@ describe('overloaded constructor', () => {
     }, /No constructor with 3 arguments found/);
 
     assert.throws(() => {
-      // @ts-expect-error
       new dll.TwoCons(null);
     }, /All constructors with 1 arguments tried: \[Expected a string, Expected a number, Expected a boolean\]/);
   });

@@ -2,6 +2,7 @@ const { assert } = require('chai');
 
 it('nominal', () => {
   // instanceof does not work without this
+  // @ts-ignore
   dll.Derived.prototype.__proto__ = dll.Base.prototype;
 
   const b = new dll.Base(12);
