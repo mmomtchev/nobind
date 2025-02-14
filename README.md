@@ -556,6 +556,8 @@ public:
 };
 ```
 
+If the compiler supports RTTI and has the demangling ABI, defining `NOBIND_TYPESCRIPT_DEBUG` will produce type annotation comments with the original C++ types. 
+
 #### Forward declarations
 
 Generating TypeScript definitions may require the use of forward declarations - for example when two classes reference each other. In this case at least one of the classes must be declared before the other one is defined:
