@@ -9,17 +9,9 @@ namespace Nobind {
 
 using namespace std::string_literals;
 
-// Helpers to determine if the typemap contains a TSType / DynamicTSType
+// Helpers to determine if the typemap contains a TSType
 template <typename T> class JSTypemapHasTSType {
   template <typename U> static constexpr decltype(std::declval<U &>().TSType, bool()) test(int) { return true; }
-  template <typename U> static constexpr inline bool test(...) { return false; }
-
-public:
-  static constexpr bool value = test<T>(int());
-};
-
-template <typename T> class JSTypemapHasDynamicTSType {
-  template <typename U> static constexpr decltype(std::declval<U &>().DynamicTSType, bool()) test(int) { return true; }
   template <typename U> static constexpr inline bool test(...) { return false; }
 
 public:
