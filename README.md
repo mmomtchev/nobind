@@ -493,6 +493,31 @@ public:
 
 `DateTime` can returned a (non-`const`) reference to its member object `Time`. This reference should obviously use shared semantics as the newly created JS proxy object won't own the underlying C++ object. However, what will happen if the GC collects the parent object while JavaScript is still holding a reference to the returned nested object? This special case, which is somewhat common in the C++ world, requires special handling that can be enabled by using the `Nobind::ReturnNested` return attribute. In this case the returned reference will be bound the parent object which will be protected from the GC until the nested reference exists. This return attribute has a meaning only for class members and it is applied by default for class getters.
 
+### Recursive typemaps
+
+Typemaps can use recursion to reference other typemaps - this typemap for `std::map<std::string, T>` calls the existing typemaps for each contained object by using `FromJSValue<T>` and `ToJSValue<T>`.
+
+```cpp
+template <typename T> class FromJS<std::map<std::string, T>> {
+  std::map<std::string, T> val_;
+
+public:
+  inline explicit FromJS(const Napi::Value &val) {
+    if (!val.IsObject()) {
+      throw Napi::TypeError::New(val.Env(), "Expected an object");
+    }
+    Napi::Object object = val.ToObject();
+    for (auto prop : object) {
+      val_.insert({prop.first.ToString().Utf8Value(), FromJSValue<T>(prop.second).Get()});
+    }
+  }
+
+  inline M Get() { return val_; }
+  FromJS(const FromJS &) = delete;
+  FromJS(FromJS &&) = default;
+};
+```
+
 ### Storing custom per-isolate data
 
 Sometimes a module needs to store *"global"* data. With `node-addon-api` the proper way to store this data is in a per-isolate data structure - since Node.js is allowed to call the same instance from multiple independent isolates. To access the per-isolate storage with `nobind17`, declare the module specific structure and then use the standard `node-addon-api` calls to access it:
@@ -542,6 +567,18 @@ m.def<Base>("Base").cons<std::string &>();
 ```
 
 The declaration and definition must use the same name. This allows the TypeScript generator to be able to correctly resolve `Base` objects when generating `Dependant`.
+
+#### Dynamic class name
+
+When creating generic typemaps, the current TypeScript name of the type can be obtained by calling `NoObjectWrap<T>::GetName()` - this requires that the class has at least been previously declared.
+
+```cpp
+static const std::string &TSType() { return NoObjectWrap<T>::::GetName(); };
+```
+
+#### Recursion
+
+Recursive typemaps with TypeScript support can use the `FromJSType<T>` and `ToJSType<T>` typemaps to obtain the TypeScript definitions of the nested objects. Additionnaly, `createTSRecord<T, U>` and `createTSArray<T>` can be used to create `Record<>` and `[]` definitions.
 
 ### Troubleshooting
 
