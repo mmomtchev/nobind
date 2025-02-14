@@ -337,7 +337,8 @@ private:
       if (returned.IsObject()) {
         // We simply attach the parent (this) as a hidden property in the nested object
         // This way the parent cannot be GCed until the nested objects is GCed
-        returned.ToObject().DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_PARENT_PROP, this->Value()));
+        returned.ToObject().DefineProperty(
+            Napi::PropertyDescriptor::Value(NOBIND_PARENT_PROP, this->Value(), napi_default));
       }
     }
     return returned;
@@ -605,7 +606,8 @@ public:
     exports_.Set(name_, ctor);
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
-    exports_.Get(name_).ToObject().Set(NOBIND_TYPESCRIPT_PROP, Napi::String::New(env_, class_typescript_types_));
+    exports_.Get(name_).ToObject().DefineProperty(Napi::PropertyDescriptor::Value(
+        NOBIND_TYPESCRIPT_PROP, Napi::String::New(env_, class_typescript_types_), napi_default));
     global_typescript_types_ += "}\n"s;
 #endif
   }

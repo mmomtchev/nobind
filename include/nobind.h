@@ -45,8 +45,8 @@ public:
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
   ~Module() {
-    exports_.DefineProperty(Napi::PropertyDescriptor::Value(
-        NOBIND_TYPESCRIPT_PROP, Napi::String::New(env_, typescript_types_), napi_enumerable));
+    exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
+                                                            Napi::String::New(env_, typescript_types_), napi_default));
   }
 #endif
 
