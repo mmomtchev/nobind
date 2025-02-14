@@ -84,7 +84,7 @@ public:
     return *this;
   }
 
-  // Class
+  // Class definition
   template <class CLASS> ClassDefinition<CLASS> def(const char *name) {
     return ClassDefinition<CLASS>(name, env_, exports_, class_idx_++
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
@@ -93,6 +93,13 @@ public:
 #endif
     );
   }
+
+  // Forward class declaration
+  template <class CLASS> void decl(const char *name) {
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+    NoObjectWrap<CLASS>::Declare(name);
+#endif
+  };
 
   Napi::Env Env() { return env_; }
 

@@ -14,6 +14,8 @@ using namespace std::literals::string_literals;
 
 namespace Nobind {
 
+#define NOBIND_NAME_NOT_INITIALIZED "<undeclared class, please use decl()>"
+
 struct EmptyEnvInstanceData {};
 
 struct BaseEnvInstanceData {
@@ -134,14 +136,15 @@ public:
     *MEMBER = FromJSValue<T>(val).Get();
   }
 
+  static void Declare(const char *jsname) { name = std::string{jsname}; }
+
   static void
   Configure(const std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> &constructors,
-            size_t idx, const char *jsname) {
+            size_t idx) {
     // (class_idx == 0) - first module initialization
     // (class_idx == idx) - subsequent initialization (worker_thread)
     assert(class_idx == 0 || class_idx == idx);
     class_idx = idx;
-    name = std::string{jsname};
     cons = constructors;
   }
 
@@ -348,7 +351,7 @@ private:
 };
 
 template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
-template <typename CLASS> std::string NoObjectWrap<CLASS>::name;
+template <typename CLASS> std::string NoObjectWrap<CLASS>::name = NOBIND_NAME_NOT_INITIALIZED;
 template <typename CLASS>
 std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> NoObjectWrap<CLASS>::cons;
 
@@ -437,7 +440,8 @@ template <typename CLASS> inline CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::V
   Napi::Object obj = val.ToObject();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   if (!obj.InstanceOf(instance->_Nobind_cons[class_idx].Value())) {
-    throw Napi::TypeError::New(env, "Expected a "s + (name.size() > 0 ? name : "<unknown to nobind17 class>"s));
+    throw Napi::TypeError::New(env, "Expected a "s +
+                                        (name != NOBIND_NAME_NOT_INITIALIZED ? name : "<unknown to nobind17 class>"s));
   }
   return NoObjectWrap<CLASS>::Unwrap(obj)->self;
 }
@@ -582,7 +586,7 @@ public:
         class_typescript_types_(""), global_typescript_types_(global_typescript_types)
 #endif
   {
-    NoObjectWrap<CLASS>::Configure(constructors, class_idx_, name_);
+    NoObjectWrap<CLASS>::Declare(name);
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     global_typescript_types_ += "export class "s + name + " { \n"s;
 #endif
@@ -591,7 +595,7 @@ public:
   ~ClassDefinition() {
     Napi::Function ctor = NoObjectWrap<CLASS>::GetClass(env_, name_, properties);
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
-    NoObjectWrap<CLASS>::Configure(constructors, class_idx_, name_);
+    NoObjectWrap<CLASS>::Configure(constructors, class_idx_);
     instance->_Nobind_cons.emplace(instance->_Nobind_cons.begin() + class_idx_, Napi::Persistent(ctor));
     exports_.Set(name_, ctor);
 

@@ -531,6 +531,18 @@ public:
 };
 ```
 
+#### Forward declarations
+
+Generating TypeScript definitions may require the use of forward declarations - for example when two classes reference each other. In this case at least one of the classes must be declared before the other one is defined:
+
+```cpp
+m.decl<Base>("Base");
+m.def<Dependant>("Dependant").cons<const Hello &>();
+m.def<Base>("Base").cons<std::string &>();
+```
+
+The declaration and definition must use the same name. This allows the TypeScript generator to be able to correctly resolve `Base` objects when generating `Dependant`.
+
 ### Troubleshooting
 
 Most of the work that `nobind17` does happens during the C++ compilation of the project. It is at that moment that the templates will be instantiated.
