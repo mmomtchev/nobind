@@ -62,8 +62,8 @@ function build(stdio) {
 }
 
 function gen_typescript() {
-  assert(globalThis.dll.__typescript_types !== undefined);
-  fs.writeFileSync(path.resolve(__dirname, 'build', 'dll.d.ts'), globalThis.dll.__typescript_types);
+  assert(globalThis.dll.__typescript !== undefined);
+  fs.writeFileSync(path.resolve(__dirname, 'build', 'dll.d.ts'), globalThis.dll.__typescript);
 }
 
 function check_typescript(test, stdio) {

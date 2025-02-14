@@ -600,7 +600,7 @@ public:
     exports_.Set(name_, ctor);
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
-    exports_.Get(name_).ToObject().Set("__typescript_types", Napi::String::New(env_, class_typescript_types_));
+    exports_.Get(name_).ToObject().Set(NOBIND_TYPESCRIPT_PROP, Napi::String::New(env_, class_typescript_types_));
     global_typescript_types_ += "}\n"s;
 #endif
   }

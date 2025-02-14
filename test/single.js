@@ -52,8 +52,8 @@ switch (process.argv[2]) {
     break;
   case 'show-types':
     framework.load(test, 'Debug');
-    assert(globalThis.dll.__typescript_types !== undefined, 'No TypeScript generator');
-    console.log(globalThis.dll.__typescript_types);
+    assert(globalThis.dll.__typescript !== undefined, 'No TypeScript generator');
+    console.log(globalThis.dll.__typescript);
     break;
   case 'check-types':
     framework.check_typescript(test, 'inherit');

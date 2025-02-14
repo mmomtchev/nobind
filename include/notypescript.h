@@ -1,4 +1,8 @@
 #pragma once
+#ifndef NOBIND_TYPESCRIPT_PROP
+#define NOBIND_TYPESCRIPT_PROP "__typescript"
+#endif
+
 #include <napi.h>
 #include <noattributes.h>
 #include <ostream>
