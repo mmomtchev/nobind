@@ -606,8 +606,10 @@ public:
     exports_.Set(name_, ctor);
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifdef NOBIND_TYPESCRIPT_LOCAL_DEFINITIONS
     exports_.Get(name_).ToObject().DefineProperty(Napi::PropertyDescriptor::Value(
         NOBIND_TYPESCRIPT_PROP, Napi::String::New(env_, class_typescript_types_), napi_default));
+#endif
     global_typescript_types_ += "}\n"s;
 #endif
   }
