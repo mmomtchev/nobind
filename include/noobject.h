@@ -14,7 +14,7 @@ using namespace std::literals::string_literals;
 
 namespace Nobind {
 
-#define NOBIND_NAME_NOT_INITIALIZED "<undeclared class, please use decl()>"
+#define NOBIND_NAME_NOT_INITIALIZED "unknown /* may be missing a forward declaration */"
 
 struct EmptyEnvInstanceData {};
 
