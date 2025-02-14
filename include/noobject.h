@@ -1,4 +1,11 @@
 #pragma once
+#ifndef NOBIND_PARENT_PROP
+#define NOBIND_PARENT_PROP "__nobind_parent_reference"
+#endif
+#ifndef NOBIND_NAME_NOT_INITIALIZED
+#define NOBIND_NAME_NOT_INITIALIZED "unknown /* may be missing a forward declaration */"
+#endif
+
 #include <assert.h>
 #include <functional>
 #include <napi.h>
@@ -13,8 +20,6 @@
 using namespace std::literals::string_literals;
 
 namespace Nobind {
-
-#define NOBIND_NAME_NOT_INITIALIZED "unknown /* may be missing a forward declaration */"
 
 struct EmptyEnvInstanceData {};
 
@@ -332,7 +337,7 @@ private:
       if (returned.IsObject()) {
         // We simply attach the parent (this) as a hidden property in the nested object
         // This way the parent cannot be GCed until the nested objects is GCed
-        returned.ToObject().DefineProperty(Napi::PropertyDescriptor::Value("__nobind_parent_reference", this->Value()));
+        returned.ToObject().DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_PARENT_PROP, this->Value()));
       }
     }
     return returned;
