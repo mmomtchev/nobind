@@ -21,7 +21,7 @@ public:
 template <typename CLASS> class NoObjectWrap;
 
 // Resolve a C++ argument type to TS argument type
-template <typename T> std::string FromJSType() {
+template <typename T> std::string FromTSType() {
   if constexpr (std::is_constructible_v<TypemapOverrides::FromJS<std::remove_cv_t<T>>, const Napi::Value &>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::FromJS<std::remove_cv_t<T>>>::value) {
       return TypemapOverrides::FromJS<std::remove_cv_t<T>>::TSType();
@@ -38,7 +38,7 @@ template <typename T> std::string FromJSType() {
 }
 
 // Resolve a C++ return type to a TS return type
-template <typename T> std::string ToJSType() {
+template <typename T> std::string ToTSType() {
   if constexpr (std::is_void_v<T>) {
     return "void"s;
   } else if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>>, const Napi::Env &, T>) {
@@ -58,7 +58,7 @@ template <typename T> std::string ToJSType() {
 
 // Construct a string with all function argument
 template <typename... ARGS> inline std::string FromJSTypes() {
-  std::vector<std::string> types{FromJSType<ARGS>()...};
+  std::vector<std::string> types{FromTSType<ARGS>()...};
   std::string types_text;
   for (size_t i = 0; i < types.size(); i++) {
     if (types[i].empty())
@@ -78,9 +78,9 @@ inline std::string FunctionSignature(const char *name, const char *prefix, std::
   std::string types_text = FromJSTypes<ARGS...>();
   std::string return_text;
   if constexpr (RETATTR.isAsync())
-    return_text = "Promise<"s + ToJSType<RETURN>() + ">"s;
+    return_text = "Promise<"s + ToTSType<RETURN>() + ">"s;
   else
-    return_text = ToJSType<RETURN>();
+    return_text = ToTSType<RETURN>();
   return std::string{prefix} + std::string{name} + "("s + types_text + "): "s + return_text + ";\n"s;
 }
 
@@ -128,9 +128,9 @@ inline std::string MethodSignature(const char *name, const char *prefix, std::in
   std::string types_text = FromJSTypes<ARGS...>();
   std::string return_text;
   if constexpr (RETATTR.isAsync())
-    return_text = "Promise<"s + ToJSType<RETURN>() + ">"s;
+    return_text = "Promise<"s + ToTSType<RETURN>() + ">"s;
   else
-    return_text = ToJSType<RETURN>();
+    return_text = ToTSType<RETURN>();
   return std::string{prefix} + std::string{name} + "("s + types_text + "): "s + return_text + ";\n"s;
 }
 
@@ -175,7 +175,7 @@ std::string PropertySignature(NAME name, const char *prefix) {
   } else {
     resolved_name = std::string{name};
   }
-  return std::string{prefix} + (PROP.isReadOnly() ? "readonly "s : ""s) + resolved_name + ": "s + ToJSType<TYPE>() +
+  return std::string{prefix} + (PROP.isReadOnly() ? "readonly "s : ""s) + resolved_name + ": "s + ToTSType<TYPE>() +
          ";\n";
 }
 
@@ -188,13 +188,13 @@ std::string GlobalSignature(NAME name, const char *prefix) {
   } else {
     resolved_name = std::string{name};
   }
-  return std::string{prefix} + (PROP.isReadOnly() ? "const "s : "var "s) + resolved_name + ": "s + ToJSType<TYPE>() +
+  return std::string{prefix} + (PROP.isReadOnly() ? "const "s : "var "s) + resolved_name + ": "s + ToTSType<TYPE>() +
          ";\n";
 }
 
 template <typename T, typename U> std::string createTSRecord() {
-  return "Record<"s + FromJSType<T>() + ", "s + FromJSType<U>() + ">"s;
+  return "Record<"s + FromTSType<T>() + ", "s + FromTSType<U>() + ">"s;
 }
 
-template <typename T> std::string createTSArray() { return FromJSType<T>() + "[]"s; }
+template <typename T> std::string createTSArray() { return FromTSType<T>() + "[]"s; }
 } // namespace Nobind
