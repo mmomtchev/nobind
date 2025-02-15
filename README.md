@@ -43,14 +43,14 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | Method of operation | Custom C++ header compiler, uses its own interface language, generates C++ code | Collection of C++ templates to be included in the project |
 | Method of using | Must write metaprogramming code | Must enumerate the binded methods using C++ syntax |
 | C++ requirements | C++11 | C++17 with some features such as wrapping of lambdas requiring C++20 |
-| C++ types | No function pointers | No `enum` and functions pointers |
+| C++ types | No function pointers | No functions pointers, `enum`s are not automatic |
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
 | Async locking | Yes, with automatic dead-lock prevention | Not in 1.0 |
 | Smart pointers | Yes | Not in 1.0, but planned |
-| TypeScript support | Yes, automatic | No, must write the typings |
+| TypeScript support | Automatic | Automatic |
 | ES6 named exports for all C/C++ functions | Yes, automatic | No, must write it |
 | WASM/Browser support | Yes | Not in 1.0, but planned through `embind` compatibility |
 | Cross-platform | Yes | Yes |
