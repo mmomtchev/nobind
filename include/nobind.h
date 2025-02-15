@@ -85,11 +85,12 @@ public:
   }
 
   // Class definition
-  template <class CLASS> ClassDefinition<CLASS> def(const char *name) {
-    return ClassDefinition<CLASS>(name, env_, exports_, class_idx_++
+  template <typename CLASS, typename BASE = void, typename... INTERFACES>
+  ClassDefinition<CLASS, BASE, INTERFACES...> def(const char *name) {
+    return ClassDefinition<CLASS, BASE, INTERFACES...>(name, env_, exports_, class_idx_++
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
-                                  ,
-                                  typescript_types_
+                                                       ,
+                                                       typescript_types_
 #endif
     );
   }

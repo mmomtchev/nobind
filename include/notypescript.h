@@ -78,7 +78,7 @@ template <typename T> std::string ToTSType() {
 }
 
 // Construct a string with all function argument
-template <typename... ARGS> inline std::string FromJSTypes() {
+template <typename... ARGS> inline std::string FromTSTypes() {
   std::vector<std::string> types{FromTSType<ARGS>()...};
   std::string types_text;
   for (size_t i = 0; i < types.size(); i++) {
@@ -91,12 +91,26 @@ template <typename... ARGS> inline std::string FromJSTypes() {
   return types_text;
 }
 
+// Construct a string with all implements arguments
+template <typename... INTERFACES> inline std::string FromTSTInterfaces() {
+  std::vector<std::string> types{FromTSType<INTERFACES>()...};
+  std::string types_text;
+  for (size_t i = 0; i < types.size(); i++) {
+    if (!types_text.empty())
+      types_text += ", "s;
+    else
+      types_text += " implements ";
+    types_text += types[i];
+  }
+  return types_text;
+}
+
 // FunctionSignature is a three-stage function (refer to the comments in nofunction.h)
 // It constructs TypeScript signatures for global function ands static class members
 // Third stage
 template <const ReturnAttribute &RETATTR, auto *FUNC, typename RETURN, typename... ARGS, std::size_t... I>
 inline std::string FunctionSignature(const char *name, const char *prefix, std::index_sequence<I...>) {
-  std::string types_text = FromJSTypes<ARGS...>();
+  std::string types_text = FromTSTypes<ARGS...>();
   std::string return_text;
   if constexpr (RETATTR.isAsync())
     return_text = "Promise<"s + ToTSType<RETURN>() + ">"s;
@@ -138,7 +152,7 @@ std::string ExtensionSignature(const char *name, const char *prefix) {
 
 // Construct a TypeScript signature for a class constructor
 template <typename... ARGS> std::string ConstructorSignature() {
-  std::string types_text = FromJSTypes<ARGS...>();
+  std::string types_text = FromTSTypes<ARGS...>();
   return "constructor("s + types_text + ");\n"s;
 }
 
@@ -146,7 +160,7 @@ template <typename... ARGS> std::string ConstructorSignature() {
 // Third stage
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS, std::size_t... I>
 inline std::string MethodSignature(const char *name, const char *prefix, std::index_sequence<I...>) {
-  std::string types_text = FromJSTypes<ARGS...>();
+  std::string types_text = FromTSTypes<ARGS...>();
   std::string return_text;
   if constexpr (RETATTR.isAsync())
     return_text = "Promise<"s + ToTSType<RETURN>() + ">"s;

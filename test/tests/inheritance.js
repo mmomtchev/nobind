@@ -1,3 +1,4 @@
+/// <reference path="../dll.d.ts" />
 const { assert } = require('chai');
 
 it('nominal', () => {
@@ -7,6 +8,7 @@ it('nominal', () => {
 
   const b = new dll.Base(12);
   assert.instanceOf(b, dll.Base);
+  assert.notInstanceOf(b, dll.Derived);
   assert.strictEqual(b.get(), 12);
   assert.strictEqual(b.base_get(), 12);
 
@@ -17,4 +19,12 @@ it('nominal', () => {
   assert.strictEqual(d.virtual_base_get(), 11);
   assert.strictEqual(d.base_get(), 10);
   assert.strictEqual(d.derived_get(), 11);
+
+  assert.throws(() => {
+    // @ts-expect-error
+    b.derived_get();
+  });
+
+  assert.strictEqual(d.ret1(), 1);
+  assert.strictEqual(d.ret2(), 2);
 });

@@ -453,7 +453,7 @@ template <typename CLASS> inline CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::V
 }
 
 // API class for defining a class binding
-template <class CLASS> class ClassDefinition {
+template <typename CLASS, typename BASE, typename... INTERFACES> class ClassDefinition {
   const char *name_;
   Napi::Env env_;
   Napi::Object exports_;
@@ -594,7 +594,11 @@ public:
   {
     NoObjectWrap<CLASS>::Declare(name);
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
-    global_typescript_types_ += "export class "s + name + " { \n"s;
+    global_typescript_types_ += "export class "s + name;
+    if constexpr (!std::is_void_v<BASE>)
+      global_typescript_types_ += " extends "s + NoObjectWrap<BASE>::GetName();
+    global_typescript_types_ += FromTSTInterfaces<INTERFACES...>();
+    global_typescript_types_ += " { \n"s;
 #endif
   }
 

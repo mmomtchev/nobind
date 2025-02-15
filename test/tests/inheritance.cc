@@ -3,9 +3,11 @@
 #include <nobind.h>
 
 NOBIND_MODULE(inheritance, m) {
+  m.def<IF1>("IF1").def<&IF1::ret1>("ret1");
+  m.def<IF2>("IF2").def<&IF2::ret2>("ret2");
   m.def<Base>("Base").cons<int>().def<&Base::get>("get").def<&Base::base_get>("base_get");
 
-  m.def<Derived>("Derived")
+  m.def<Derived, Base, IF1, IF2>("Derived")
       .cons<int>()
       .def<&Derived::get>("get")
   // Both of these are artificial edge cases for testing purposes
@@ -21,5 +23,7 @@ NOBIND_MODULE(inheritance, m) {
       .def<&Derived::get>("virtual_base_get")
       .def<static_cast<int (Derived::*)() const>(&Derived::base_get)>("base_get")
 #endif
-      .def<&Derived::derived_get>("derived_get");
+      .def<&Derived::derived_get>("derived_get")
+      .def<&IF1::ret1>("ret1")
+      .def<&IF2::ret2>("ret2");
 }
