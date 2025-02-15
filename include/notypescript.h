@@ -11,7 +11,7 @@
 
 #if defined(NOBIND_TYPESCRIPT_DEBUG)
 #include <cxxabi.h>
-#define TSTYPE_DEBUG "/* C++ type: "s + demangle<std::string>(typeid(T).name()) + " */ "s +
+#define TSTYPE_DEBUG(T) ((T).empty() ? "" : "/* C++ type: "s + demangle<std::string>(typeid(T).name()) + " */ "s + (T))
 
 // https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
 // (templated to be able to include in a header file)
@@ -23,7 +23,7 @@ template <typename T> T demangle(const char *name) {
   return (status == 0) ? res.get() : name;
 }
 #else
-#define TSTYPE_DEBUG
+#define TSTYPE_DEBUG(T) T
 #endif
 
 namespace Nobind {
@@ -45,15 +45,15 @@ template <typename CLASS> class NoObjectWrap;
 template <typename T> std::string FromTSType() {
   if constexpr (std::is_constructible_v<TypemapOverrides::FromJS<std::remove_cv_t<T>>, const Napi::Value &>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::FromJS<std::remove_cv_t<T>>>::value) {
-      return TSTYPE_DEBUG TypemapOverrides::FromJS<std::remove_cv_t<T>>::TSType();
+      return TSTYPE_DEBUG(TypemapOverrides::FromJS<std::remove_cv_t<T>>::TSType());
     } else {
-      return TSTYPE_DEBUG "unknown"s;
+      return TSTYPE_DEBUG("unknown"s);
     }
   } else {
     if constexpr (JSTypemapHasTSType<Typemap::FromJS<std::remove_cv_t<T>>>::value) {
-      return TSTYPE_DEBUG Typemap::FromJS<std::remove_cv_t<T>>::TSType();
+      return TSTYPE_DEBUG(Typemap::FromJS<std::remove_cv_t<T>>::TSType());
     } else {
-      return TSTYPE_DEBUG "unknown"s;
+      return TSTYPE_DEBUG("unknown"s);
     }
   }
 }
@@ -61,18 +61,18 @@ template <typename T> std::string FromTSType() {
 // Resolve a C++ return type to a TS return type
 template <typename T> std::string ToTSType() {
   if constexpr (std::is_void_v<T>) {
-    return TSTYPE_DEBUG "void"s;
+    return TSTYPE_DEBUG("void"s);
   } else if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>>, const Napi::Env &, T>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::ToJS<std::remove_cv_t<T>>>::value) {
-      return TSTYPE_DEBUG TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType();
+      return TSTYPE_DEBUG(TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType());
     } else {
-      return TSTYPE_DEBUG "unknown"s;
+      return TSTYPE_DEBUG("unknown"s);
     }
   } else {
     if constexpr (JSTypemapHasTSType<Typemap::ToJS<std::remove_cv_t<T>>>::value) {
-      return TSTYPE_DEBUG Typemap::ToJS<std::remove_cv_t<T>>::TSType();
+      return TSTYPE_DEBUG(Typemap::ToJS<std::remove_cv_t<T>>::TSType());
     } else {
-      return TSTYPE_DEBUG "unknown"s;
+      return TSTYPE_DEBUG("unknown"s);
     }
   }
 }
