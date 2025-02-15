@@ -40,6 +40,5 @@ describe('per isolate data', () => {
 });
 
 it('manually set constant', () => {
-  // @ts-ignore
   assert.isBoolean(dll.debug_build);
 });

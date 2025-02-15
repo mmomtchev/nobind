@@ -101,6 +101,11 @@ public:
 #endif
   };
 
+#ifdef NOBIND_TYPESCRIPT_GENERATOR
+  // Custom TypeScript fragment
+  void typescript_fragment(const char *fragment) { typescript_types_ += fragment; }
+#endif
+
   Napi::Env Env() { return env_; }
 
   Napi::Object Exports() { return exports_; }

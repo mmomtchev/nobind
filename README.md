@@ -582,6 +582,14 @@ static const std::string &TSType() { return NoObjectWrap<T>::::GetName(); };
 
 Recursive typemaps with TypeScript support can use the `FromTSType<T>` and `ToTSType<T>` typemaps to obtain the TypeScript definitions of the nested objects. Additionnaly, `createTSRecord<T, U>` and `createTSArray<T>` can be used to create `Record<>` and `[]` definitions.
 
+#### Custom TypeScript fragments
+
+Inserting a custom TypeScript code fragment anywhere at the root level in the code is possible with:
+
+```cpp
+m.typescript_fragment("export class CustomClass {}");
+```
+
 ### Troubleshooting
 
 Most of the work that `nobind17` does happens during the C++ compilation of the project. It is at that moment that the templates will be instantiated.
