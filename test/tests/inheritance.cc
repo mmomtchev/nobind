@@ -24,6 +24,6 @@ NOBIND_MODULE(inheritance, m) {
       .def<static_cast<int (Derived::*)() const>(&Derived::base_get)>("base_get")
 #endif
       .def<&Derived::derived_get>("derived_get")
-      .def<&IF1::ret1>("ret1")
-      .def<&IF2::ret2>("ret2");
+      .def<&Derived::ret1>("ret1")
+      .def<&Derived::ret2>("ret2");
 }
