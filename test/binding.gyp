@@ -2,6 +2,7 @@
   'variables': {
     'enable_asan%': 'false',
     'enable_typescript%': 'false',
+    'enable_typescript_debug%': 'false',
     'test_output%': '<(test)'
   },
   'targets': [
@@ -55,6 +56,9 @@
       }],
       ['enable_typescript == "true"', {
         'defines': [ 'NOBIND_TYPESCRIPT_GENERATOR' ]      
+      }],
+      ['enable_typescript_debug == "true"', {
+        'defines': [ 'NOBIND_TYPESCRIPT_DEBUG' ]      
       }]
     ]
   }
