@@ -59,18 +59,26 @@ template <typename T> std::string FromTSType() {
 }
 
 // Resolve a C++ return type to a TS return type
-template <typename T> std::string ToTSType() {
+template <typename T, const ReturnAttribute &RETATTR = ReturnNullThrow> std::string ToTSType() {
   if constexpr (std::is_void_v<T>) {
     return TSTYPE_DEBUG("void"s);
   } else if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>>, const Napi::Env &, T>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::ToJS<std::remove_cv_t<T>>>::value) {
-      return TSTYPE_DEBUG(TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType());
+      if constexpr (RETATTR.isReturnNullAccept()) {
+        return TSTYPE_DEBUG(TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType() + " | null");
+      } else {
+        return TSTYPE_DEBUG(TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType());
+      }
     } else {
       return TSTYPE_DEBUG("unknown"s);
     }
   } else {
     if constexpr (JSTypemapHasTSType<Typemap::ToJS<std::remove_cv_t<T>>>::value) {
-      return TSTYPE_DEBUG(Typemap::ToJS<std::remove_cv_t<T>>::TSType());
+      if constexpr (RETATTR.isReturnNullAccept()) {
+        return TSTYPE_DEBUG(Typemap::ToJS<std::remove_cv_t<T>>::TSType() + " | null");
+      } else {
+        return TSTYPE_DEBUG(Typemap::ToJS<std::remove_cv_t<T>>::TSType());
+      }
     } else {
       return TSTYPE_DEBUG("unknown"s);
     }
@@ -113,9 +121,9 @@ inline std::string FunctionSignature(const char *name, const char *prefix, std::
   std::string types_text = FromTSTypes<ARGS...>();
   std::string return_text;
   if constexpr (RETATTR.isAsync())
-    return_text = "Promise<"s + ToTSType<RETURN>() + ">"s;
+    return_text = "Promise<"s + ToTSType<RETURN, RETATTR>() + ">"s;
   else
-    return_text = ToTSType<RETURN>();
+    return_text = ToTSType<RETURN, RETATTR>();
   return std::string{prefix} + std::string{name} + "("s + types_text + "): "s + return_text + ";\n"s;
 }
 
@@ -163,9 +171,9 @@ inline std::string MethodSignature(const char *name, const char *prefix, std::in
   std::string types_text = FromTSTypes<ARGS...>();
   std::string return_text;
   if constexpr (RETATTR.isAsync())
-    return_text = "Promise<"s + ToTSType<RETURN>() + ">"s;
+    return_text = "Promise<"s + ToTSType<RETURN, RETATTR>() + ">"s;
   else
-    return_text = ToTSType<RETURN>();
+    return_text = ToTSType<RETURN, RETATTR>();
   return std::string{prefix} + std::string{name} + "("s + types_text + "): "s + return_text + ";\n"s;
 }
 

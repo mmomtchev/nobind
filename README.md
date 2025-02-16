@@ -608,7 +608,7 @@ static const std::string &TSType() { return NoObjectWrap<T>::::GetName(); };
 
 #### Recursion
 
-Recursive typemaps with TypeScript support can use the `FromTSType<T>` and `ToTSType<T>` typemaps to obtain the TypeScript definitions of the nested objects. Additionnaly, `createTSRecord<T, U>` and `createTSArray<T>` can be used to create `Record<>` and `[]` definitions.
+Recursive typemaps with TypeScript support can use the `FromTSType<T>` and `ToTSType<T, RETATTR = ReturnNullThrow>` typemaps to obtain the TypeScript definitions of the nested objects. Additionnaly, `createTSRecord<T, U>` and `createTSArray<T>` can be used to create `Record<>` and `[]` definitions.
 
 #### Custom TypeScript fragments
 
