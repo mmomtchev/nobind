@@ -1,3 +1,4 @@
+#include <fixtures/abstract.h>
 #include <fixtures/inheritance.h>
 
 #include <nobind.h>
@@ -28,4 +29,7 @@ NOBIND_MODULE(inheritance, m) {
       .def<static_cast<int (Derived::*)()>(&Derived::ret2)>("ret2")
 #endif
       .def<&Derived::derived_get>("derived_get");
+
+  m.def<Abstract>("Abstract");
+  m.def<DerivedAbstract, Abstract>("DerivedAbstract").cons<int>().def<&DerivedAbstract::Id>("id");
 }

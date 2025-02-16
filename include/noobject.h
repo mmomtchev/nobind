@@ -594,7 +594,11 @@ public:
   {
     NoObjectWrap<CLASS>::Declare(name);
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
-    global_typescript_types_ += "export class "s + name;
+    global_typescript_types_ += "export ";
+    if constexpr (std::is_abstract_v<CLASS>) {
+      global_typescript_types_ += "abstract ";
+    }
+    global_typescript_types_ += " class "s + name;
     if constexpr (!std::is_void_v<BASE>)
       global_typescript_types_ += " extends "s + NoObjectWrap<BASE>::GetName();
     global_typescript_types_ += FromTSTInterfaces<INTERFACES...>();
@@ -602,7 +606,7 @@ public:
 #endif
   }
 
-  ~ClassDefinition() {
+  ~ClassDefinition() noexcept(false) {
     Napi::Function ctor = NoObjectWrap<CLASS>::GetClass(env_, name_, properties);
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
     NoObjectWrap<CLASS>::Configure(constructors, class_idx_);
@@ -611,6 +615,10 @@ public:
 
     if constexpr (!std::is_void_v<BASE>) {
       auto base_constructor = exports_.Get(NoObjectWrap<BASE>::GetName());
+      if (base_constructor.IsUndefined()) {
+        throw Napi::Error::New(env_,
+                               "Base class "s + NoObjectWrap<BASE>::GetName() + " not found, is the class defined?"s);
+      }
       auto base_prototype = base_constructor.ToObject().Get("prototype");
       ctor.ToObject().Get("prototype").ToObject().Set("__proto__", base_prototype);
     }

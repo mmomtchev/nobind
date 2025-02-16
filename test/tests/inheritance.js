@@ -24,3 +24,15 @@ it('nominal', () => {
   assert.strictEqual(d.ret1(), 1);
   assert.strictEqual(d.ret2(), 2);
 });
+
+it('abstract', () => {
+  const d = new dll.DerivedAbstract(17);
+  assert.instanceOf(d, dll.DerivedAbstract);
+  assert.instanceOf(d, dll.Abstract);
+  assert.strictEqual(d.id(), 17);
+
+  assert.throws(() => {
+    // @ts-expect-error
+    new dll.Abstract;
+  });
+});

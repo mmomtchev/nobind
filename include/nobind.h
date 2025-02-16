@@ -85,6 +85,7 @@ public:
   }
 
   // Class definition
+  // (this is a use case for std::bases but it seems that the proposal has lost traction)
   template <typename CLASS, typename BASE = void, typename... INTERFACES>
   ClassDefinition<CLASS, BASE, INTERFACES...> def(const char *name) {
     return ClassDefinition<CLASS, BASE, INTERFACES...>(name, env_, exports_, class_idx_++

@@ -1,3 +1,5 @@
+#include "abstract.h"
+
 class Base {
 protected:
   int b;
@@ -28,4 +30,14 @@ public:
   virtual ~Derived();
   virtual int get() const override;
   int derived_get() const;
+};
+
+class DerivedAbstract : public Abstract {
+  int id;
+
+public:
+  DerivedAbstract(int);
+  ~DerivedAbstract() override = default;
+  virtual std::string GetName() override;
+  virtual int Id() override;
 };
