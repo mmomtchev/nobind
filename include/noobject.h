@@ -490,7 +490,6 @@ public:
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     std::string typescript_types = MethodSignature<RET, MEMBER>(name, "  ");
-    global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
 
@@ -510,7 +509,6 @@ public:
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     std::string typescript_types = PropertySignature<PROP, decltype(getMemberPointerType(MEMBER))>(name, "  ");
-    global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
 
@@ -530,7 +528,6 @@ public:
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     std::string typescript_types = FunctionSignature<RET, MEMBER>(name, "  static ");
-    global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
 
@@ -550,7 +547,6 @@ public:
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     std::string typescript_types = PropertySignature<PROP, std::remove_pointer_t<decltype(MEMBER)>>(name, "  static ");
-    global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
 
@@ -568,7 +564,6 @@ public:
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     std::string typescript_types = ExtensionSignature<RET, FUNC>(name, "  ");
-    global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
 
@@ -584,7 +579,6 @@ public:
 
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     std::string typescript_types = "  " + ConstructorSignature<ARGS...>();
-    global_typescript_types_ += typescript_types;
     class_typescript_types_ += typescript_types;
 #endif
 
@@ -604,19 +598,6 @@ public:
 #endif
   {
     NoObjectWrap<CLASS>::Declare(name);
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
-    global_typescript_types_ += "export ";
-    if constexpr (std::is_abstract_v<CLASS> || !std::is_destructible_v<CLASS>) {
-      global_typescript_types_ += "abstract ";
-    } else if (constructors.size() == 0) {
-      global_typescript_types_ += "abstract ";
-    }
-    global_typescript_types_ += " class "s + name;
-    if constexpr (!std::is_void_v<BASE>)
-      global_typescript_types_ += " extends "s + NoObjectWrap<BASE>::GetName();
-    global_typescript_types_ += FromTSTInterfaces<INTERFACES...>();
-    global_typescript_types_ += " { \n"s;
-#endif
   }
 
   ~ClassDefinition() noexcept(false) {
@@ -641,6 +622,18 @@ public:
     exports_.Get(name_).ToObject().DefineProperty(Napi::PropertyDescriptor::Value(
         NOBIND_TYPESCRIPT_PROP, Napi::String::New(env_, class_typescript_types_), napi_default));
 #endif
+    global_typescript_types_ += "export ";
+    if constexpr (std::is_abstract_v<CLASS> || !std::is_destructible_v<CLASS>) {
+      global_typescript_types_ += "abstract ";
+    } else if (constructors.size() == 0) {
+      global_typescript_types_ += "abstract ";
+    }
+    global_typescript_types_ += " class "s + name_;
+    if constexpr (!std::is_void_v<BASE>)
+      global_typescript_types_ += " extends "s + NoObjectWrap<BASE>::GetName();
+    global_typescript_types_ += FromTSTInterfaces<INTERFACES...>();
+    global_typescript_types_ += " { \n"s;
+    global_typescript_types_ += class_typescript_types_;
     global_typescript_types_ += "}\n"s;
 #endif
   }
