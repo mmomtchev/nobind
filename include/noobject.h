@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <functional>
+#include <iostream>
 #include <napi.h>
 #include <numeric>
 #include <tuple>
@@ -94,7 +95,7 @@ public:
   // C++ convention constructors
   template <bool OWNED> static Napi::Value New(Napi::Env, CLASS *);
   template <bool OWNED> static Napi::Value New(Napi::Env, const CLASS *);
-  virtual ~NoObjectWrap();
+  virtual ~NoObjectWrap() override;
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
 
@@ -362,8 +363,15 @@ template <typename CLASS>
 std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> NoObjectWrap<CLASS>::cons;
 
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
-  if (owned && self != nullptr)
-    delete self;
+  if (owned && self != nullptr) {
+    if constexpr (!std::is_abstract_v<CLASS>) {
+      delete self;
+    } else {
+      // Abstract classes cannot be deleted
+      std::cerr << "Cannot delete an object of abstract class "s + name << std::endl;
+      std::terminate();
+    }
+  }
 }
 
 // A constructor can be called in two ways:

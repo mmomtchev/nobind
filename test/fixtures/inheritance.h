@@ -37,7 +37,7 @@ class DerivedAbstract : public Abstract {
 
 public:
   DerivedAbstract(int);
-  ~DerivedAbstract() override = default;
+  virtual ~DerivedAbstract() override = default;
   virtual std::string GetName() override;
   virtual int Id() override;
 };
