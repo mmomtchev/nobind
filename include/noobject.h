@@ -609,6 +609,12 @@ public:
     instance->_Nobind_cons.emplace(instance->_Nobind_cons.begin() + class_idx_, Napi::Persistent(ctor));
     exports_.Set(name_, ctor);
 
+    if constexpr (!std::is_void_v<BASE>) {
+      auto base_constructor = exports_.Get(NoObjectWrap<BASE>::GetName());
+      auto base_prototype = base_constructor.ToObject().Get("prototype");
+      ctor.ToObject().Get("prototype").ToObject().Set("__proto__", base_prototype);
+    }
+
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
 #ifdef NOBIND_TYPESCRIPT_LOCAL_DEFINITIONS
     exports_.Get(name_).ToObject().DefineProperty(Napi::PropertyDescriptor::Value(

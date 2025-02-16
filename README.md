@@ -55,7 +55,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | WASM/Browser support | Yes | Not in 1.0, but planned through `embind` compatibility |
 | Cross-platform | Yes | Yes |
 | Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind11` is planned in theory |
-| Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support | Yes, but no downcasting support and `instanceof` requires a small kludge in the JavaScript wrapper (see [here](https://github.com/mmomtchev/nobind17/blob/main/test/tests/inheritance.js)) |
+| Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support, diamond inheritance is not supported | Yes, but no automatic downcasting support and no diamond inheritance |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes, automatic | Yes, manual
 | Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `n`:`1` transformations of input arguments |
@@ -534,6 +534,33 @@ NOBIND_MODULE_DATA(native, m, PerIsolateData) {
 ```
 
 `nobind17` / `node-addon-api` will take care of creating and freeing this structure when new isolates are created and destroyed.
+
+### C++ inheritance
+
+Direct simple inheritance without virtual methods (*almost*) works out of the box. In order to properly set up the JavaScript `instanceof` operator, the class definitions must include the base class as a second template argument:
+
+```cpp
+m.def<Derived, Base>("Derived");
+```
+
+The only caveat is that this does not automatically inherit all the base class members. These must be declared separately for each class:
+
+```cpp
+m.def<Base>("Base").cons<int>().def<&Base::get>("get").def<&Base::base_get>("base_get");
+m.def<Derived, Base>("Derived").cons<int>().def<&Derived::get>("get").def<&Derived::base_get>("base_get");
+```
+
+In this case, `get()` is a virtual method overriden in `Derived` and there is a single `base_get()` in `Base` that must also be explicitly declared in `Derived`. Resolution of virtual methods is left to the C++ compiler and follows the usual rules.
+
+MSVC 2019, which is not fully C++17 compliant, requires a `static_cast` in this situation: see [here](https://github.com/mmomtchev/nobind17/blob/main/test/tests/inheritance.js). Later versions are fully compliant when using `/permissive-`.
+
+When having to transpose multiple inheritance in C++ to JavaScript, it is possible to declare multiple implemented interfaces:
+
+```cpp
+m.def<Derived, Base, Interface1, Interface2>("Derived");
+```
+
+Currently this has an effect only on the TypeScript definitions which will include the corresponding `implements` declarations. `instanceof` in JavaScript will work only with the first base class.
 
 ### TypeScript support
 
