@@ -19,16 +19,13 @@ NOBIND_MODULE(inheritance, m) {
       // invocation happens through a Derived object
       .def<&Base::get>("virtual_base_get")
       .def<&Derived::base_get>("base_get")
+      .def<&IF1::ret1>("ret1")
+      .def<&IF2::ret2>("ret2")
 #else
       .def<&Derived::get>("virtual_base_get")
       .def<static_cast<int (Derived::*)() const>(&Derived::base_get)>("base_get")
-#endif
-      .def<&Derived::derived_get>("derived_get")
-#ifdef _MSC_VER
       .def<static_cast<int (Derived::*)()>(&Derived::ret1)>("ret1")
-      .def<static_cast<int (Derived::*)()>(&Derived::ret2)>("ret2");
-#else
-      .def<&IF1::ret1>("ret1")
-      .def<&IF2::ret2>("ret2");
+      .def<static_cast<int (Derived::*)()>(&Derived::ret2)>("ret2")
 #endif
+      .def<&Derived::derived_get>("derived_get");
 }
