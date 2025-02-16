@@ -46,6 +46,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | C++ types | Almost all, nested classes support is very limited | No functions pointers, no nested classes, `enum`s are not automatic |
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | C++ namespaces | Can be exposed to JS with some limitations and manual work | Supported in C++ but not exposed to JS |
+| Optional arguments with default values | Yes | No, all arguments become mandatory |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
