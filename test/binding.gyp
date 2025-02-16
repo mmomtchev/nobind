@@ -1,7 +1,7 @@
 {
   'variables': {
     'enable_asan%': 'false',
-    'enable_typescript%': 'false',
+    'enable_typescript%': 'true',
     'enable_typescript_debug%': 'false',
     'test_output%': '<(test)'
   },
@@ -54,8 +54,8 @@
           ]
         }        
       }],
-      ['enable_typescript == "true"', {
-        'defines': [ 'NOBIND_TYPESCRIPT_GENERATOR' ]      
+      ['enable_typescript == "false"', {
+        'defines': [ 'NOBIND_NO_TYPESCRIPT_GENERATOR' ]      
       }],
       ['enable_typescript_debug == "true"', {
         'defines': [ 'NOBIND_TYPESCRIPT_DEBUG' ]      

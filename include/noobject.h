@@ -471,7 +471,7 @@ template <typename CLASS, typename BASE, typename... INTERFACES> class ClassDefi
   std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> properties;
   std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> constructors;
   size_t class_idx_;
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
   std::string class_typescript_types_, &global_typescript_types_;
 #endif
 
@@ -488,7 +488,7 @@ public:
     }
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     std::string typescript_types = MethodSignature<RET, MEMBER>(name, "  ");
     class_typescript_types_ += typescript_types;
 #endif
@@ -507,7 +507,7 @@ public:
     }
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, setter));
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     std::string typescript_types = PropertySignature<PROP, decltype(getMemberPointerType(MEMBER))>(name, "  ");
     class_typescript_types_ += typescript_types;
 #endif
@@ -526,7 +526,7 @@ public:
     }
     properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     std::string typescript_types = FunctionSignature<RET, MEMBER>(name, "  static ");
     class_typescript_types_ += typescript_types;
 #endif
@@ -545,7 +545,7 @@ public:
     }
     properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     std::string typescript_types = PropertySignature<PROP, std::remove_pointer_t<decltype(MEMBER)>>(name, "  static ");
     class_typescript_types_ += typescript_types;
 #endif
@@ -562,7 +562,7 @@ public:
     wrapper = &NoObjectWrap<CLASS>::template ExtensionWrapper<RET, FUNC>;
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     std::string typescript_types = ExtensionSignature<RET, FUNC>(name, "  ");
     class_typescript_types_ += typescript_types;
 #endif
@@ -577,7 +577,7 @@ public:
       constructors.resize(sizeof...(ARGS) + 1);
     constructors[sizeof...(ARGS)].push_back(wrapper);
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     std::string typescript_types = "  " + ConstructorSignature<ARGS...>();
     class_typescript_types_ += typescript_types;
 #endif
@@ -586,13 +586,13 @@ public:
   }
 
   explicit ClassDefinition(const char *name, Napi::Env env, Napi::Object exports, size_t class_idx
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
                            ,
                            std::string &global_typescript_types
 #endif
                            )
       : name_(name), env_(env), exports_(exports), properties(), constructors(), class_idx_(class_idx)
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
         ,
         class_typescript_types_(""), global_typescript_types_(global_typescript_types)
 #endif
@@ -617,7 +617,7 @@ public:
       ctor.ToObject().Get("prototype").ToObject().Set("__proto__", base_prototype);
     }
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
 #ifdef NOBIND_TYPESCRIPT_LOCAL_DEFINITIONS
     exports_.Get(name_).ToObject().DefineProperty(Napi::PropertyDescriptor::Value(
         NOBIND_TYPESCRIPT_PROP, Napi::String::New(env_, class_typescript_types_), napi_default));

@@ -565,7 +565,7 @@ Currently this has an effect only on the TypeScript definitions which will inclu
 
 ### TypeScript support
 
-Version 2 adds support for built-in automatically generated TypeScript definitions. These will be available inside the binary module in a special read-only variable called `__typescript`. The module must be built with the macro `NOBIND_TYPESCRIPT_GENERATOR` defined. The default property name can be modified by defining `NOBIND_TYPESCRIPT_PROP`. In order to generate custom types, custom typemaps must have an additional method called `TSType()` returning an `std::string` with the TypeScript type:
+Version 2 adds support for built-in automatically generated TypeScript definitions. These will be available inside the binary module in a special read-only variable called `__typescript`. This behaviour can be disabled if the module is built with the macro `NOBIND_NO_TYPESCRIPT_GENERATOR` defined. The default property name can be modified by defining `NOBIND_TYPESCRIPT_PROP`. In order to generate custom types, custom typemaps must have an additional method called `TSType()` returning an `std::string` with the TypeScript type:
 
 ```cpp
 template <> class FromJS<bool> {

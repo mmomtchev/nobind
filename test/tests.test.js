@@ -13,7 +13,7 @@ describe('nobind', function () {
       after('GC', global.gc);
     });
     describe(`${t} w/o TypeScript`, () => {
-      before('configure', () => framework.configure(t, undefined, process.env.ENABLE_ASAN && ['--debug', '--enable_asan'], `${t}-notypescript`));
+      before('configure', () => framework.configure(t, undefined, process.env.ENABLE_ASAN && ['--debug', '--enable_asan', '--enable_typescript=false'], `${t}-notypescript`));
       it('build', () => framework.build());
     });
   }

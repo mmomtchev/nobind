@@ -19,7 +19,7 @@
 #include <nostl.h>
 #include <nostringmaps.h>
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
 #include <notypescript.h>
 #endif
 
@@ -29,21 +29,21 @@ template <char const MODULE[]> class Module {
   Napi::Env env_;
   Napi::Object exports_;
   size_t class_idx_;
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
   std::string typescript_types_;
 #endif
 
 public:
   Module(Napi::Env env, Napi::Object exports)
       : env_{env}, exports_{exports}, class_idx_{0}
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
         ,
         typescript_types_{""}
 #endif
   {
   }
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
   ~Module() {
     exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
                                                             Napi::String::New(env_, typescript_types_), napi_default));
@@ -61,7 +61,7 @@ public:
     }
     Napi::Function js = Napi::Function::New(env_, wrapper);
     exports_.Set(name, js);
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     typescript_types_ += FunctionSignature<RET, OBJECT>(name, "export function ");
 #endif
     return *this;
@@ -78,7 +78,7 @@ public:
     }
     exports_.DefineProperty(Napi::PropertyDescriptor::Accessor(name, getter, setter));
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     typescript_types_ += GlobalSignature<PROP, std::remove_pointer_t<decltype(OBJECT)>>(name, "export ");
 #endif
     return *this;
@@ -89,7 +89,7 @@ public:
   template <typename CLASS, typename BASE = void, typename... INTERFACES>
   ClassDefinition<CLASS, BASE, INTERFACES...> def(const char *name) {
     return ClassDefinition<CLASS, BASE, INTERFACES...>(name, env_, exports_, class_idx_++
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
                                                        ,
                                                        typescript_types_
 #endif
@@ -98,12 +98,12 @@ public:
 
   // Forward class declaration
   template <class CLASS> void decl(const char *name) {
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     NoObjectWrap<CLASS>::Declare(name);
 #endif
   };
 
-#ifdef NOBIND_TYPESCRIPT_GENERATOR
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
   // Custom TypeScript fragment
   void typescript_fragment(const char *fragment) { typescript_types_ += fragment; }
   void typescript_fragment(const std::string &fragment) { typescript_types_ += fragment; }

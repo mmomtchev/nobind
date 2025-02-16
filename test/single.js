@@ -33,6 +33,9 @@ switch (process.argv[2]) {
   case 'configure-tsdebug':
     framework.configure(test, 'inherit', ['--debug', '--enable_typescript', '--enable_typescript-debug']);
     break;
+  case 'configure-nots':
+    framework.configure(test, 'inherit', ['--debug', '--enable_typescript=false']);
+    break;
   case 'configure-asan':
     framework.configure(test, 'inherit', ['--debug', '--enable_asan']);
     break;
