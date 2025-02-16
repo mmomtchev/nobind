@@ -1,0 +1,8 @@
+#include <fixtures/undestructible.h>
+
+#include <nobind.h>
+
+NOBIND_MODULE(undescrutible, m) {
+  static_assert(!std::is_destructible_v<Undestructible>, "Undestructible is destructible");
+  m.def<Undestructible>("Undestructible").cons<>();
+}

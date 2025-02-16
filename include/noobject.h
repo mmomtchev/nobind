@@ -364,11 +364,11 @@ std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback
 
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   if (owned && self != nullptr) {
-    if constexpr (!std::is_abstract_v<CLASS>) {
+    if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
       delete self;
     } else {
       // Abstract classes cannot be deleted
-      std::cerr << "Cannot delete an object of abstract class "s + name << std::endl;
+      std::cerr << "Cannot delete an object of abstract or non destructible class "s + name << std::endl;
       std::terminate();
     }
   }
@@ -388,6 +388,9 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
   }
   // From JS
   owned = true;
+  if constexpr (std::is_abstract_v<CLASS> || !std::is_destructible_v<CLASS>) {
+    throw Napi::TypeError::New(env, "Cannot create an object of abstract or non destructible class "s + name);
+  }
   if (cons.size() > info.Length() && cons[info.Length()].size() > 0) {
     std::vector<std::string> errors;
     for (auto ctor : cons[info.Length()]) {
@@ -603,7 +606,7 @@ public:
     NoObjectWrap<CLASS>::Declare(name);
 #ifdef NOBIND_TYPESCRIPT_GENERATOR
     global_typescript_types_ += "export ";
-    if constexpr (std::is_abstract_v<CLASS>) {
+    if constexpr (std::is_abstract_v<CLASS> || !std::is_destructible_v<CLASS>) {
       global_typescript_types_ += "abstract ";
     }
     global_typescript_types_ += " class "s + name;
