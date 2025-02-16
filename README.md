@@ -43,7 +43,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | Method of operation | Custom C++ header compiler, uses its own interface language, generates C++ code | Collection of C++ templates to be included in the project |
 | Method of using | Must write metaprogramming code | Must enumerate the binded methods using C++ syntax |
 | C++ requirements | C++11 | C++17 with some features such as wrapping of lambdas requiring C++20 |
-| C++ types | All | No functions pointers, `enum`s are not automatic |
+| C++ types | Almost all, nested classes support is very limited | No functions pointers, no nested classes, `enum`s are not automatic |
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
