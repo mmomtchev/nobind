@@ -608,6 +608,8 @@ public:
     global_typescript_types_ += "export ";
     if constexpr (std::is_abstract_v<CLASS> || !std::is_destructible_v<CLASS>) {
       global_typescript_types_ += "abstract ";
+    } else if (constructors.size() == 0) {
+      global_typescript_types_ += "abstract ";
     }
     global_typescript_types_ += " class "s + name;
     if constexpr (!std::is_void_v<BASE>)
