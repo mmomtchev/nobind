@@ -50,17 +50,17 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
-| Async locking | Yes, with automatic dead-lock prevention | Not in 1.0 |
-| Smart pointers | Yes | Not in 1.0, but planned |
+| Async locking | Yes, with automatic dead-lock prevention | Not at the moment, but planned |
+| Smart pointers | Yes | Not in at the moment, but planned |
 | TypeScript support | Automatic | Automatic |
 | ES6 named exports for all C/C++ functions | Yes, automatic | No, must write it |
-| WASM/Browser support | Yes | Not in 1.0, but planned through `embind` compatibility |
+| WASM/Browser support | Yes | Not at the moment, but planned through `embind` compatibility |
 | Cross-platform | Yes | Yes |
 | Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind11` is planned in theory |
 | Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support, diamond inheritance is not supported | Yes, but no automatic downcasting support and no diamond inheritance |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes, automatic | Yes, manual
-| Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `n`:`1` transformations of input arguments |
+| Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `n`:`1` and `n`:`0` transformations of input arguments |
 | Custom type casters | Yes | Yes |
 | Interfacing between multiple modules | Yes | No |
 
