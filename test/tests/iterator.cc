@@ -11,12 +11,19 @@ template <typename T> class JSIterator {
 public:
   JSIterator(T &obj, typename T::iterator begin) : target(obj), it(begin) {}
   Napi::Value next(Napi::Env env) {
+    using value_type_t = std::remove_reference_t<decltype(*it)>;
+
     Napi::Object ret = Napi::Object::New(env);
     if (it == target.end()) {
       ret.Set("done", Napi::Boolean::New(env, true));
     } else {
-      auto value = Nobind::ToJS<std::remove_reference_t<decltype(*it)>, Nobind::ReturnDefault>(env, *it);
-      ret.Set("value", value.Get());
+      Napi::Value value;
+      if constexpr (std::is_scalar_v<value_type_t>) {
+        value = Nobind::ToJS<value_type_t, Nobind::ReturnShared>(env, *it).Get();
+      } else {
+        value = Nobind::ToJS<value_type_t &, Nobind::ReturnShared>(env, *it).Get();
+      }
+      ret.Set("value", value);
       ret.Set("done", Napi::Boolean::New(env, false));
       it++;
     }
