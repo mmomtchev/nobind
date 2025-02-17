@@ -1,4 +1,3 @@
-/// <reference path="../dll.d.ts" />
 const { assert } = require('chai');
 
 it('nominal', () => {

@@ -1,6 +1,4 @@
-// Range is a standard C++ iterable object
-// https://en.cppreference.com/w/cpp/iterator/iterator
-//
+// Range is a standard C++17 iterable object
 //
 // Can be used from C++ as:
 //
@@ -12,25 +10,27 @@
 #include <iostream>
 
 template <long FROM, long TO> class Range {
+  int d;
+
 public:
-  class iterator : public std::iterator<std::input_iterator_tag, long, long, const long *, long> {
+  explicit Range();
+  class iterator {
     long num = FROM;
 
   public:
-    explicit iterator(long _num = 0) : num(_num) {}
-    iterator &operator++() {
-      num = TO >= FROM ? num + 1 : num - 1;
-      return *this;
-    }
-    iterator operator++(int) {
-      iterator retval = *this;
-      ++(*this);
-      return retval;
-    }
-    bool operator==(iterator other) const { return num == other.num; }
-    bool operator!=(iterator other) const { return !(*this == other); }
-    long &operator*() const { return num; }
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = long;
+    using difference_type = long;
+    using pointer = long *;
+    using reference = long &;
+
+    explicit iterator(long _num = 0);
+    iterator &operator++();
+    iterator operator++(int);
+    bool operator==(iterator other) const;
+    bool operator!=(iterator other) const;
+    long &operator*() const;
   };
-  iterator begin() { return iterator(FROM); }
-  iterator end() { return iterator(TO >= FROM ? TO + 1 : TO - 1); }
+  iterator begin();
+  iterator end();
 };

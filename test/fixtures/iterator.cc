@@ -1,11 +1,10 @@
 #include "iterator.h"
 
-// The custom iterator implementation - nothing unusual here, it comes from:
-// https://en.cppreference.com/w/cpp/iterator/iterator
 //
+// The custom iterator implementation - nothing unusual here
 // The JS magic is in the test
 //
-template <long FROM, long TO> Range<FROM, TO>::iterator::iterator(long _num = 0) : num(_num) {}
+template <long FROM, long TO> Range<FROM, TO>::iterator::iterator(long _num) : num(_num) {}
 
 template <long FROM, long TO> typename Range<FROM, TO>::iterator &Range<FROM, TO>::iterator::operator++() {
   num = TO >= FROM ? num + 1 : num - 1;
@@ -30,3 +29,4 @@ template <long FROM, long TO> typename Range<FROM, TO>::iterator Range<FROM, TO>
 template <long FROM, long TO> typename Range<FROM, TO>::iterator Range<FROM, TO>::end() {
   return Range::iterator(TO >= FROM ? TO + 1 : TO - 1);
 }
+template <long FROM, long TO> Range<FROM, TO>::Range() { printf("Test: %d"); }
