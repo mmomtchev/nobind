@@ -20,6 +20,8 @@ Napi::Value get_exports(const Napi::CallbackInfo &info) {
   return env.GetInstanceData<Nobind::EnvInstanceData<PerIsolateData>>()->exports.Value();
 }
 
+Napi::Value get_string(Napi::Env env) { return Napi::String::New(env, "hello from get_string"); }
+
 class WithNative {
 public:
   WithNative() {}
@@ -35,6 +37,7 @@ public:
 NOBIND_MODULE_DATA(native, m, PerIsolateData) {
   m.def<WithNative>("WithNative").cons<>().def<&WithNative::method_native>("method_native");
   m.def<&global_native>("global_native");
+  m.def<&get_string>("get_string");
 
   m.Env().GetInstanceData<Nobind::EnvInstanceData<PerIsolateData>>()->exports =
       Napi::Persistent<Napi::Object>(m.Exports());

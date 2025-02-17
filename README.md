@@ -478,6 +478,16 @@ NOBIND_MODULE(native, m) {
 }
 ```
 
+Automatically generating `Napi::Env` arguments without consuming input arguments is also possible, this allows to create a function without any arguments that returns a `Napi::Value`:
+
+```cpp
+Napi::Value get_string(Napi::Env env) {
+  return Napi::String::New(env, "string w/o arguments");
+}
+```
+
+All `Napi::Env` arguments will be automatically filled.
+
 ### Nested references
 
 Consider the following C++ code:

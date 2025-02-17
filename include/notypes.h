@@ -72,6 +72,18 @@ public:
   inline Napi::Value Get() { return val_; }
 };
 
+// Typemap that generates Napi::Env arguments w/o consuming input
+template <> class FromJS<Napi::Env> {
+  Napi::Env val_;
+
+public:
+  inline explicit FromJS(const Napi::Value &val) : val_(val.Env()) {}
+  inline const Napi::Env Get() { return val_; }
+  static const std::string TSType() { return ""; };
+
+  static const size_t Inputs = 0;
+};
+
 } // namespace Typemap
 
 // never_void is a helper that allows to declare function arguments
