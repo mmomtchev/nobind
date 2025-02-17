@@ -360,6 +360,8 @@ Note that `nooverrides.h` must be included first, then the custom typemaps, then
 
 A very good starting point for implementing a custom typemap are the standard number typemaps in [`nonumbermaps.h`](https://github.com/mmomtchev/nobind/blob/main/include/nonumbermaps.h), the string ones in [`nostringmaps.h`](https://github.com/mmomtchev/nobind/blob/main/include/nostringmaps.h) and the STL maps which are recursive in [`nostl.h`](https://github.com/mmomtchev/nobind/blob/main/include/nostl.h).
 
+A very advanced example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/main/test/tests/iterator.cc) contains a typemap that implements `Symbol.iterator` from a C++17 iterator. Currently, it is not part of the standard typemaps, as using it has some caveats.
+
 ### Using `Buffer`s
 
 Unless the C++ code has been designed for `nobind17`, using a `Buffer` will likely require creating custom wrappers to convert from and to `std::pair<uint8_t*, size_t>`:
