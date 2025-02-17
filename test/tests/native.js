@@ -30,6 +30,13 @@ describe('global method', () => {
   });
 });
 
+describe('function w/o arguments', () => {
+  it('nominal', () => {
+    assert.isString(dll.get_string());
+    assert.strictEqual(dll.get_string(), "hello from get_string");
+  });
+});
+
 describe('per isolate data', () => {
   it('retrieve stored data', () => {
     // @ts-ignore
