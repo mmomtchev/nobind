@@ -154,21 +154,14 @@ std::string FunctionSignature(NAME name, const char *prefix) {
 }
 
 // Class extension, second stages, call the FunctionSignature 3rd stage
-// Variant 1, This() is CLASS &
+// Variant 1, This() is CLASS & or const CLASS &
 template <const ReturnAttribute &RETATTR, typename RETURN, typename CLASS, typename... ARGS,
           RETURN (*FUNC)(CLASS &, ARGS...), typename NAME = const char *>
 inline std::string ExtensionSignature(NAME name, const char *prefix,
                                       std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
   return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
-// Variant 2, This() is const CLASS &
-template <const ReturnAttribute &RETATTR, typename RETURN, typename CLASS, typename... ARGS,
-          RETURN (*FUNC)(const CLASS &, ARGS...), typename NAME = const char *>
-inline std::string ExtensionSignature(NAME name, const char *prefix,
-                                      std::integral_constant<RETURN (*)(const CLASS &, ARGS...), FUNC>) {
-  return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
-}
-// Variant 3, This() is Napi::Value
+// Variant 2, This() is Napi::Value
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(Napi::Value, ARGS...),
           typename NAME = const char *>
 inline std::string ExtensionSignature(NAME name, const char *prefix,
