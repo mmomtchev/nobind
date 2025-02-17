@@ -56,6 +56,12 @@ describe('setters', () => {
     assert.strictEqual(o.var, 1717);
   });
 
+  it('symbol named method', () => {
+    const o = new dll.Hello('Garga');
+    assert.isFunction(o[Symbol.split]);
+    assert.strictEqual(o[Symbol.split]('Mr'), o.greet('Mr'));
+  });
+
   it('readOnly properties', () => {
     const o = new dll.Hello('Garga');
     assert.isNumber(o.id);
@@ -112,6 +118,11 @@ describe('extension w/args', () => {
       // @ts-expect-error
       dll.Hello.prototype.toStringWithArg();
     }, /Illegal invocation/);
+
+    assert.throws(() => {
+      // @ts-ignore
+      const a = [...o];
+    }, /Not iterable/);
   });
 });
 

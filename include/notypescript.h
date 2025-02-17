@@ -116,45 +116,53 @@ template <typename... INTERFACES> inline std::string FromTSTInterfaces() {
 // FunctionSignature is a three-stage function (refer to the comments in nofunction.h)
 // It constructs TypeScript signatures for global function ands static class members
 // Third stage
-template <const ReturnAttribute &RETATTR, auto *FUNC, typename RETURN, typename... ARGS, std::size_t... I>
-inline std::string FunctionSignature(const char *name, const char *prefix, std::index_sequence<I...>) {
+template <const ReturnAttribute &RETATTR, auto *FUNC, typename RETURN, typename... ARGS, std::size_t... I,
+          typename NAME = const char *>
+inline std::string FunctionSignature(NAME name, const char *prefix, std::index_sequence<I...>) {
   std::string types_text = FromTSTypes<ARGS...>();
   std::string return_text;
+  std::string resolved_name;
+  if constexpr (std::is_same_v<Napi::Symbol, NAME>) {
+    resolved_name = "["s + ((Napi::Symbol)name).ToObject().Get("description").ToString().Utf8Value() + "]"s;
+  } else {
+    resolved_name = std::string{name};
+  }
   if constexpr (RETATTR.isAsync())
     return_text = "Promise<"s + ToTSType<RETURN, RETATTR>() + ">"s;
   else
     return_text = ToTSType<RETURN, RETATTR>();
-  return std::string{prefix} + std::string{name} + "("s + types_text + "): "s + return_text + ";\n"s;
+  return std::string{prefix} + resolved_name + "("s + types_text + "): "s + return_text + ";\n"s;
 }
 
 // Second stage, two variants (except and noexcept)
-template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
-inline std::string FunctionSignature(const char *name, const char *prefix,
-                                     std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...),
+          typename NAME = const char *>
+inline std::string FunctionSignature(NAME name, const char *prefix, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
   return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
-template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...) noexcept>
-inline std::string FunctionSignature(const char *name, const char *prefix,
+template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...) noexcept,
+          typename NAME = const char *>
+inline std::string FunctionSignature(NAME name, const char *prefix,
                                      std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
   return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 
 // First stage
-template <const ReturnAttribute &RETATTR, auto *FUNC>
-std::string FunctionSignature(const char *name, const char *prefix) {
+template <const ReturnAttribute &RETATTR, auto *FUNC, typename NAME = const char *>
+std::string FunctionSignature(NAME name, const char *prefix) {
   return FunctionSignature<RETATTR>(name, prefix, std::integral_constant<decltype(FUNC), FUNC>{});
 }
 
 // Class extension, second stage, calls the FunctionSignature 3rd stage
 template <const ReturnAttribute &RETATTR, typename RETURN, typename CLASS, typename... ARGS,
-          RETURN (*FUNC)(CLASS &, ARGS...)>
-inline std::string ExtensionSignature(const char *name, const char *prefix,
+          RETURN (*FUNC)(CLASS &, ARGS...), typename NAME = const char *>
+inline std::string ExtensionSignature(NAME name, const char *prefix,
                                       std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
   return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 // Class extension, first stage
-template <const ReturnAttribute &RETATTR, auto *FUNC>
-std::string ExtensionSignature(const char *name, const char *prefix) {
+template <const ReturnAttribute &RETATTR, auto *FUNC, typename NAME = const char *>
+std::string ExtensionSignature(NAME name, const char *prefix) {
   return ExtensionSignature<RETATTR>(name, prefix, std::integral_constant<decltype(FUNC), FUNC>{});
 }
 
@@ -166,46 +174,54 @@ template <typename... ARGS> std::string ConstructorSignature() {
 
 // Member function, 3 stages
 // Third stage
-template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS, std::size_t... I>
-inline std::string MethodSignature(const char *name, const char *prefix, std::index_sequence<I...>) {
+template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS, std::size_t... I,
+          typename NAME = const char *>
+inline std::string MethodSignature(NAME name, const char *prefix, std::index_sequence<I...>) {
   std::string types_text = FromTSTypes<ARGS...>();
   std::string return_text;
+  std::string resolved_name;
+  if constexpr (std::is_same_v<Napi::Symbol, NAME>) {
+    resolved_name = "["s + ((Napi::Symbol)name).ToObject().Get("description").ToString().Utf8Value() + "]"s;
+  } else {
+    resolved_name = std::string{name};
+  }
   if constexpr (RETATTR.isAsync())
     return_text = "Promise<"s + ToTSType<RETURN, RETATTR>() + ">"s;
   else
     return_text = ToTSType<RETURN, RETATTR>();
-  return std::string{prefix} + std::string{name} + "("s + types_text + "): "s + return_text + ";\n"s;
+  return std::string{prefix} + resolved_name + "("s + types_text + "): "s + return_text + ";\n"s;
 }
 
 // Second stage, 4 variants:
 // - regular, const, noexcept and const noexcept
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
-          RETURN (BASE::*FUNC)(ARGS...)>
-inline std::string MethodSignature(const char *name, const char *prefix,
+          RETURN (BASE::*FUNC)(ARGS...), typename NAME = const char *>
+inline std::string MethodSignature(NAME name, const char *prefix,
                                    std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
   return MethodSignature<RETATTR, BASE, RETURN, FUNC, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
-          RETURN (BASE::*FUNC)(ARGS...) const>
-inline std::string MethodSignature(const char *name, const char *prefix,
+          RETURN (BASE::*FUNC)(ARGS...) const, typename NAME = const char *>
+inline std::string MethodSignature(NAME name, const char *prefix,
                                    std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
   return MethodSignature<RETATTR, BASE, RETURN, FUNC, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
-          RETURN (BASE::*FUNC)(ARGS...) noexcept>
-inline std::string MethodSignature(const char *name, const char *prefix,
+          RETURN (BASE::*FUNC)(ARGS...) noexcept, typename NAME = const char *>
+inline std::string MethodSignature(NAME name, const char *prefix,
                                    std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
   return MethodSignature<RETATTR, BASE, RETURN, FUNC, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
-          RETURN (BASE::*FUNC)(ARGS...) const noexcept>
-inline std::string MethodSignature(const char *name, const char *prefix,
+          RETURN (BASE::*FUNC)(ARGS...) const noexcept, typename NAME = const char *>
+inline std::string MethodSignature(NAME name, const char *prefix,
                                    std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
   return MethodSignature<RETATTR, BASE, RETURN, FUNC, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 
 // First stage
-template <const ReturnAttribute &RET, auto FUNC> std::string MethodSignature(const char *name, const char *prefix) {
+template <const ReturnAttribute &RET, auto FUNC, typename NAME = const char *>
+std::string MethodSignature(NAME name, const char *prefix) {
   return MethodSignature<RET>(name, prefix, std::integral_constant<decltype(FUNC), FUNC>{});
 }
 
