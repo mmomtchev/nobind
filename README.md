@@ -143,7 +143,7 @@ public:
 Start by creating a module:
 
 ```cpp
-#include <nobind17.h>
+#include <nobind.h>
 
 // Define a new module
 NOBIND_MODULE(my_cpp_bindings, m) {
@@ -345,7 +345,7 @@ public:
 
 } // namespace Nobind
 
-#include <nobind17.h>
+#include <nobind.h>
 
 int add(int a, int b) {
   return a + b;
@@ -355,6 +355,10 @@ NOBIND_MODULE(override_tmaps, m) {
   m.def<&add>("add");
 }
 ```
+
+Note that `nooverrides.h` must be included first, then the custom typemaps, then the rest of the templates with `nobind.h`.
+
+A very good starting point for implementing a custom typemap are the standard number typemaps in [`nonumbermaps.h`](https://github.com/mmomtchev/nobind/blob/main/include/nonumbermaps.h), the string ones in [`nostringmaps.h`](https://github.com/mmomtchev/nobind/blob/main/include/nostringmaps.h) and the STL maps which are recursive in [`nostl.h`](https://github.com/mmomtchev/nobind/blob/main/include/nostl.h).
 
 ### Using `Buffer`s
 
@@ -366,7 +370,7 @@ Unless the C++ code has been designed for `nobind17`, using a `Buffer` will like
 // Nobind::Buffer is defined as follows:
 // using Buffer = std::pair<uint8_t *, size_t>;
 
-#include <nobind17.h>
+#include <nobind.h>
 
 // These are the underlying C++ functions that use buffers
 // We want to call them from JS
@@ -641,7 +645,7 @@ When encountering compilation errors, start with this quick checklist:
 
 * Is the custom typemap not being picked up?
 
-  *Custom typemaps must be included before `nobind17.h` but after `nooverrides.h`.*
+  *Custom typemaps must be included before `nobind.h` but after `nooverrides.h`.*
 
   *When overriding the builtin typemaps, you must use the special `Nobind::TypemapOverrides` namespace.*
 
