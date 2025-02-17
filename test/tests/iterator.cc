@@ -15,7 +15,8 @@ public:
     if (it == target.end()) {
       ret.Set("done", Napi::Boolean::New(env, true));
     } else {
-      ret.Set("value", Napi::Number::New(env, *it));
+      auto value = Nobind::ToJS<std::remove_reference_t<decltype(*it)>, Nobind::ReturnDefault>(env, *it);
+      ret.Set("value", value.Get());
       ret.Set("done", Napi::Boolean::New(env, false));
       it++;
     }
