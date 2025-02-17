@@ -37,20 +37,21 @@ public:
   }
 };
 
+using Iterable = Range<10, 20>;
+
 // Helper to construct it
+#if !defined(_MSC_VER) || _MSC_VER >= 1930
 template <typename T> JSIterator<T> IteratorWrapper(T &obj) { return JSIterator<T>{obj, obj.begin()}; }
+#else
+JSIterator<Iterable> IteratorWrapper(Iterable &obj) { return JSIterator<Iterable>{obj, obj.begin()}; }
+#endif
 
 NOBIND_MODULE(iterator, m) {
-  using Iterable = Range<10, 20>;
-
   m.def<JSIterator<Iterable>>("Range_10_20_iterator").def<&JSIterator<Iterable>::next>("next");
 
 #if !defined(_MSC_VER) || _MSC_VER >= 1930
   m.def<Iterable>("Range_10_20").cons<>().ext<&IteratorWrapper<Iterable>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 #else
-  m.def<Iterable>("Range_10_20")
-      .cons<>()
-      .ext<static_cast<Napi::Value (*)(Iterable &)>(&IteratorWrapper<Iterable>)>(
-          Napi::Symbol::WellKnown(m.Env(), "iterator"));
+  m.def<Iterable>("Range_10_20").cons<>().ext<&IteratorWrapper>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 #endif
 }
