@@ -15,6 +15,8 @@ std::string ToStringWithArg(Hello &obj, int id) {
   return r.str();
 }
 
+void NotIterable(Hello &) { throw std::runtime_error("Not iterable"); }
+
 NOBIND_MODULE(basic_class, m) {
   static constexpr bool False = false;
 
@@ -28,6 +30,8 @@ NOBIND_MODULE(basic_class, m) {
       .def<&Hello::Factory>("factory")
       .def<&Hello::StaticHello>("staticObject")
       .def<&False, Nobind::ReadOnly>(Napi::Symbol::WellKnown(m.Env(), "isConcatSpreadable"))
+      .def<&Hello::Greet>(Napi::Symbol::WellKnown(m.Env(), "split"))
+      .ext<&NotIterable>(Napi::Symbol::WellKnown(m.Env(), "iterator"))
       .ext<&ToString>("toString")
       .ext<&ToStringWithArg>("toStringWithArg");
 }
