@@ -27,10 +27,12 @@ describe('std::vector', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.put_ptr_array('comrade', 'invalid');
     }, /Expected an array/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.put_ptr_array('comrade', [{ field: 'value' }]);
     }, /Expected a Hello/);
   });

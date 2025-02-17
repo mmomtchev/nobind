@@ -8,10 +8,12 @@ describe('constructor', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       new dll.Hello;
     }, /No constructor with 0 arguments found/);
 
     assert.throws(() => {
+      // @ts-expect-error
       new dll.Hello(2);
     }, /Expected a string/);
   });
@@ -30,9 +32,11 @@ describe('methods', () => {
     const o = new dll.Hello('Garga');
 
     assert.throws(() => {
+      // @ts-expect-error
       o.get_id(2);
     }, /Expected 0 arguments, got 1/);
     assert.throws(() => {
+      // @ts-expect-error
       o.greet(2);
     }, /Expected a string/);
   });
@@ -55,6 +59,7 @@ describe('setters', () => {
   it('readOnly properties', () => {
     const o = new dll.Hello('Garga');
     assert.isNumber(o.id);
+    // @ts-expect-error
     o.id = 7777;
     assert.notEqual(o.id, 7777);
   });
@@ -63,6 +68,7 @@ describe('setters', () => {
     const o = new dll.Hello('Garga');
 
     assert.throws(() => {
+      // @ts-expect-error
       o.var = 'invalid';
     }, /Expected a number/);
   });
@@ -78,6 +84,7 @@ describe('extension', () => {
     const o = new dll.Hello('Garga');
 
     assert.throws(() => {
+      // @ts-expect-error
       o.toString(2);
     }, /Expected 0 arguments, got 1/);
 
@@ -97,10 +104,12 @@ describe('extension w/args', () => {
     const o = new dll.Hello('Garga');
 
     assert.throws(() => {
+      // @ts-expect-error
       o.toStringWithArg();
     }, /Expected a number/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.Hello.prototype.toStringWithArg();
     }, /Illegal invocation/);
   });
@@ -108,7 +117,7 @@ describe('extension w/args', () => {
 
 describe('Factory', () => {
   it('nominal', () => {
-    const o = new dll.Hello.factory('Garga');
+    const o = dll.Hello.factory('Garga');
     assert.instanceOf(o, dll.Hello);
     assert.isNumber(o.id);
   });
@@ -116,8 +125,8 @@ describe('Factory', () => {
 
 describe('Static object getter', () => {
   it('nominal', () => {
-    const o1 = new dll.Hello.staticObject();
-    const o2 = new dll.Hello.staticObject();
+    const o1 = dll.Hello.staticObject();
+    const o2 = dll.Hello.staticObject();
     assert.instanceOf(o1, dll.Hello);
     assert.instanceOf(o2, dll.Hello);
     assert.strictEqual(o1.id, o2.id);

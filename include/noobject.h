@@ -1,6 +1,14 @@
 #pragma once
+#ifndef NOBIND_PARENT_PROP
+#define NOBIND_PARENT_PROP "__nobind_parent_reference"
+#endif
+#ifndef NOBIND_NAME_NOT_INITIALIZED
+#define NOBIND_NAME_NOT_INITIALIZED "unknown /* may be missing a forward declaration */"
+#endif
+
 #include <assert.h>
 #include <functional>
+#include <iostream>
 #include <napi.h>
 #include <numeric>
 #include <tuple>
@@ -8,6 +16,7 @@
 
 #include <nofunction.h>
 #include <notypes.h>
+#include <notypescript.h>
 
 using namespace std::literals::string_literals;
 
@@ -86,7 +95,7 @@ public:
   // C++ convention constructors
   template <bool OWNED> static Napi::Value New(Napi::Env, CLASS *);
   template <bool OWNED> static Napi::Value New(Napi::Env, const CLASS *);
-  virtual ~NoObjectWrap();
+  virtual ~NoObjectWrap() override;
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
 
@@ -133,16 +142,19 @@ public:
     *MEMBER = FromJSValue<T>(val).Get();
   }
 
+  static void Declare(const char *jsname) { name = std::string{jsname}; }
+
   static void
   Configure(const std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> &constructors,
-            size_t idx, const char *jsname) {
+            size_t idx) {
     // (class_idx == 0) - first module initialization
     // (class_idx == idx) - subsequent initialization (worker_thread)
     assert(class_idx == 0 || class_idx == idx);
     class_idx = idx;
-    name = jsname;
     cons = constructors;
   }
+
+  static const std::string &GetName() { return name; }
 
 private:
   // The two remaining functions of the member method wrapper trio
@@ -326,7 +338,8 @@ private:
       if (returned.IsObject()) {
         // We simply attach the parent (this) as a hidden property in the nested object
         // This way the parent cannot be GCed until the nested objects is GCed
-        returned.ToObject().DefineProperty(Napi::PropertyDescriptor::Value("__nobind_parent_reference", this->Value()));
+        returned.ToObject().DefineProperty(
+            Napi::PropertyDescriptor::Value(NOBIND_PARENT_PROP, this->Value(), napi_default));
       }
     }
     return returned;
@@ -334,7 +347,7 @@ private:
 
   // To look up the class constructor in the per-instance data
   static size_t class_idx;
-  // Mainly for debug purposes
+  // For TypeScript
   static std::string name;
   // The class constructors
   static std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> cons;
@@ -345,13 +358,20 @@ private:
 };
 
 template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
-template <typename CLASS> std::string NoObjectWrap<CLASS>::name;
+template <typename CLASS> std::string NoObjectWrap<CLASS>::name = NOBIND_NAME_NOT_INITIALIZED;
 template <typename CLASS>
 std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> NoObjectWrap<CLASS>::cons;
 
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
-  if (owned && self != nullptr)
-    delete self;
+  if (owned && self != nullptr) {
+    if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
+      delete self;
+    } else {
+      // Abstract classes cannot be deleted
+      std::cerr << "Cannot delete an object of abstract or non destructible class "s + name << std::endl;
+      std::terminate();
+    }
+  }
 }
 
 // A constructor can be called in two ways:
@@ -368,6 +388,9 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
   }
   // From JS
   owned = true;
+  if constexpr (std::is_abstract_v<CLASS> || !std::is_destructible_v<CLASS>) {
+    throw Napi::TypeError::New(env, "Cannot create an object of abstract or non destructible class "s + name);
+  }
   if (cons.size() > info.Length() && cons[info.Length()].size() > 0) {
     std::vector<std::string> errors;
     for (auto ctor : cons[info.Length()]) {
@@ -434,19 +457,23 @@ template <typename CLASS> inline CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::V
   Napi::Object obj = val.ToObject();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   if (!obj.InstanceOf(instance->_Nobind_cons[class_idx].Value())) {
-    throw Napi::TypeError::New(env, "Expected a "s + (name.size() > 0 ? name : "<unknown to nobind17 class>"s));
+    throw Napi::TypeError::New(env, "Expected a "s +
+                                        (name != NOBIND_NAME_NOT_INITIALIZED ? name : "<unknown to nobind17 class>"s));
   }
   return NoObjectWrap<CLASS>::Unwrap(obj)->self;
 }
 
 // API class for defining a class binding
-template <class CLASS> class ClassDefinition {
+template <typename CLASS, typename BASE, typename... INTERFACES> class ClassDefinition {
   const char *name_;
   Napi::Env env_;
   Napi::Object exports_;
   std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> properties;
   std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> constructors;
   size_t class_idx_;
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+  std::string class_typescript_types_, &global_typescript_types_;
+#endif
 
 public:
   // Instance class method
@@ -461,6 +488,11 @@ public:
     }
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
 
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+    std::string typescript_types = MethodSignature<RET, MEMBER>(name, "  ");
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
@@ -474,6 +506,12 @@ public:
       setter = &NoObjectWrap<CLASS>::template SetterWrapper<decltype(getMemberPointerType(MEMBER)), MEMBER>;
     }
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceAccessor(name, getter, setter));
+
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+    std::string typescript_types = PropertySignature<PROP, decltype(getMemberPointerType(MEMBER))>(name, "  ");
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
@@ -487,6 +525,12 @@ public:
       wrapper = &FunctionWrapper<RET, MEMBER>;
     }
     properties.emplace_back(NoObjectWrap<CLASS>::StaticMethod(name, wrapper));
+
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+    std::string typescript_types = FunctionSignature<RET, MEMBER>(name, "  static ");
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
@@ -500,6 +544,12 @@ public:
       setter = &NoObjectWrap<CLASS>::template StaticSetterWrapper<std::remove_pointer_t<decltype(MEMBER)>, MEMBER>;
     }
     properties.emplace_back(NoObjectWrap<CLASS>::StaticAccessor(name, getter, setter));
+
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+    std::string typescript_types = PropertySignature<PROP, std::remove_pointer_t<decltype(MEMBER)>>(name, "  static ");
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
@@ -512,6 +562,11 @@ public:
     wrapper = &NoObjectWrap<CLASS>::template ExtensionWrapper<RET, FUNC>;
     properties.emplace_back(NoObjectWrap<CLASS>::InstanceMethod(name, wrapper));
 
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+    std::string typescript_types = ExtensionSignature<RET, FUNC>(name, "  ");
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
@@ -521,18 +576,66 @@ public:
     if (constructors.size() <= sizeof...(ARGS) + 1)
       constructors.resize(sizeof...(ARGS) + 1);
     constructors[sizeof...(ARGS)].push_back(wrapper);
+
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+    std::string typescript_types = "  " + ConstructorSignature<ARGS...>();
+    class_typescript_types_ += typescript_types;
+#endif
+
     return *this;
   }
 
-  ClassDefinition(const char *name, Napi::Env env, Napi::Object exports, size_t class_idx)
-      : name_(name), env_(env), exports_(exports), properties(), constructors(), class_idx_(class_idx) {}
+  explicit ClassDefinition(const char *name, Napi::Env env, Napi::Object exports, size_t class_idx
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+                           ,
+                           std::string &global_typescript_types
+#endif
+                           )
+      : name_(name), env_(env), exports_(exports), properties(), constructors(), class_idx_(class_idx)
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+        ,
+        class_typescript_types_(""), global_typescript_types_(global_typescript_types)
+#endif
+  {
+    NoObjectWrap<CLASS>::Declare(name);
+  }
 
-  ~ClassDefinition() {
+  ~ClassDefinition() noexcept(false) {
     Napi::Function ctor = NoObjectWrap<CLASS>::GetClass(env_, name_, properties);
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
-    NoObjectWrap<CLASS>::Configure(constructors, class_idx_, name_);
+    NoObjectWrap<CLASS>::Configure(constructors, class_idx_);
     instance->_Nobind_cons.emplace(instance->_Nobind_cons.begin() + class_idx_, Napi::Persistent(ctor));
     exports_.Set(name_, ctor);
+
+    if constexpr (!std::is_void_v<BASE>) {
+      auto base_constructor = exports_.Get(NoObjectWrap<BASE>::GetName());
+      if (base_constructor.IsUndefined()) {
+        throw Napi::Error::New(env_,
+                               "Base class "s + NoObjectWrap<BASE>::GetName() + " not found, is the class defined?"s);
+      }
+      auto base_prototype = base_constructor.ToObject().Get("prototype");
+      ctor.ToObject().Get("prototype").ToObject().Set("__proto__", base_prototype);
+    }
+
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+#ifdef NOBIND_TYPESCRIPT_LOCAL_DEFINITIONS
+    exports_.Get(name_).ToObject().DefineProperty(Napi::PropertyDescriptor::Value(
+        NOBIND_TYPESCRIPT_PROP, Napi::String::New(env_, class_typescript_types_), napi_default));
+#endif
+    global_typescript_types_ += "export ";
+    if constexpr (std::is_abstract_v<CLASS> || !std::is_destructible_v<CLASS>) {
+      global_typescript_types_ += "abstract ";
+    } else if (constructors.size() == 0) {
+      global_typescript_types_ += "abstract ";
+    }
+    global_typescript_types_ += " class "s + name_;
+    if constexpr (!std::is_void_v<BASE>)
+      global_typescript_types_ += " extends "s + NoObjectWrap<BASE>::GetName();
+    global_typescript_types_ += FromTSTInterfaces<INTERFACES...>();
+    global_typescript_types_ += " { \n"s;
+    global_typescript_types_ += class_typescript_types_;
+    global_typescript_types_ += "}\n"s;
+#endif
   }
 };
 
@@ -542,15 +645,17 @@ namespace Typemap {
 template <typename T> class FromJS<T &> {
   T *val_;
   Napi::ObjectReference persistent;
+  using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
-    using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
     val_ = OBJCLASS::CheckUnwrap(val);
     persistent = Napi::Persistent(val.ToObject());
   }
   inline T &Get() { return *val_; }
+
+  static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS<T &, RETATTR> {
@@ -565,21 +670,25 @@ public:
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
   inline Napi::Value Get() { return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_); }
+
+  static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
 
 // Generic object pointer typemap
 template <typename T> class FromJS<T *> {
   T *val_;
   Napi::ObjectReference persistent;
+  using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 public:
   inline explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
-    using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
     val_ = OBJCLASS::CheckUnwrap(val);
     persistent = Napi::Persistent(val.ToObject());
   }
   inline T *Get() { return val_; }
+
+  static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
@@ -595,8 +704,9 @@ public:
   // By default, the JS proxy will own this object
   inline Napi::Value Get() {
     if constexpr (!RETATTR.isReturnNullThrow()) {
-      if (val_ == nullptr)
+      if (val_ == nullptr) {
         return env_.Null();
+      }
     } else {
       if (val_ == nullptr) {
         throw Napi::Error::New(env_, "Returned nullptr");
@@ -604,6 +714,8 @@ public:
     }
     return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_);
   }
+
+  static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
 
 // Generic stack-allocated object typemaps
@@ -622,6 +734,8 @@ public:
   inline T Get() { return *object; }
 
   static const size_t Inputs = 1;
+
+  static const std::string &TSType() { return NoObjectWrap<T>::GetName(); };
 };
 
 template <typename T, const ReturnAttribute &RETATTR> class ToJS {
@@ -642,6 +756,8 @@ public:
   }
   // and wrapping it in a proxy, by default JS will own this new copy
   inline Napi::Value Get() { return NoObjectWrap<T>::template New<RETATTR.ShouldOwn<true>()>(env_, object); }
+
+  static const std::string &TSType() { return NoObjectWrap<T>::GetName(); };
 };
 
 } // namespace Typemap

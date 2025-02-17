@@ -18,6 +18,8 @@ inline void CheckArgLength(Napi::Env env, size_t expected, size_t actual) {
   }
 }
 
+const std::string boolean_tstype = "boolean"s;
+
 // https://stackoverflow.com/questions/22825512/get-type-of-member-memberpointer-points-to
 template <class C, typename T> T getMemberPointerType(T C::*v);
 
@@ -31,6 +33,8 @@ template <const ReturnAttribute &RETATTR> class ToJS<bool, RETATTR> {
 public:
   inline explicit ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
   inline Napi::Value Get() { return Napi::Boolean::New(env_, val_); }
+
+  static const std::string &TSType() { return boolean_tstype; };
 };
 
 template <> class FromJS<bool> {
@@ -44,6 +48,8 @@ public:
     val_ = val.ToBoolean().Value();
   }
   inline bool Get() { return val_; }
+
+  static const std::string &TSType() { return boolean_tstype; };
 };
 
 // native specializations (does not support async)
@@ -70,8 +76,12 @@ public:
 
 // never_void is a helper that allows to declare function arguments
 // that can potentially be a void type
-template <typename T> struct never_void { typedef T type; };
-template <> struct never_void<void> { typedef int type; };
+template <typename T> struct never_void {
+  typedef T type;
+};
+template <> struct never_void<void> {
+  typedef int type;
+};
 template <typename T> using never_void_t = typename never_void<T>::type;
 
 // Standard C++ detection idiom (SFINAE version)

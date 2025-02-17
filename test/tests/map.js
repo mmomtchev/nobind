@@ -29,10 +29,12 @@ describe('std::map', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.put_ptr_map('comrade', 'invalid');
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.put_ptr_map('comrade', { key: { field: 'value' } });
     }, /Expected a Hello/);
   });

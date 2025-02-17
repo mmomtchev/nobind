@@ -11,18 +11,22 @@ describe('reference', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ref(2);
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ref(new dll.TwoCons());
     }, /Expected a Hello/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ref({ a: 0 });
     }, /Expected a Hello/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ref();
     }, /Expected an object/);
   });
@@ -73,18 +77,22 @@ describe('pointer', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ptr(2);
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ptr(new dll.TwoCons());
     }, /Expected a Hello/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ptr({ a: 0 });
     }, /Expected a Hello/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_ptr();
     }, /Expected an object/);
   });
@@ -110,10 +118,12 @@ describe('const reference', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_const_ref(2);
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_const_ref();
     }, /Expected an object/);
   });
@@ -127,10 +137,12 @@ describe('const pointer', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_const_ptr(2);
     }, /Expected an object/);
 
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello_const_ptr();
     }, /Expected an object/);
   });

@@ -43,19 +43,21 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | Method of operation | Custom C++ header compiler, uses its own interface language, generates C++ code | Collection of C++ templates to be included in the project |
 | Method of using | Must write metaprogramming code | Must enumerate the binded methods using C++ syntax |
 | C++ requirements | C++11 | C++17 with some features such as wrapping of lambdas requiring C++20 |
-| C++ types | No function pointers | No `enum` and functions pointers |
+| C++ types | Almost all, nested classes support is very limited | No functions pointers, no nested classes, `enum`s are not automatic |
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
+| C++ namespaces | Can be exposed to JS with some limitations and manual work | Supported in C++ but not exposed to JS |
+| Optional arguments with default values | Yes | No, all arguments become mandatory |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
 | Async locking | Yes, with automatic dead-lock prevention | Not in 1.0 |
 | Smart pointers | Yes | Not in 1.0, but planned |
-| TypeScript support | Yes, automatic | No, must write the typings |
+| TypeScript support | Automatic | Automatic |
 | ES6 named exports for all C/C++ functions | Yes, automatic | No, must write it |
 | WASM/Browser support | Yes | Not in 1.0, but planned through `embind` compatibility |
 | Cross-platform | Yes | Yes |
 | Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind11` is planned in theory |
-| Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support | Yes, but no downcasting support and `instanceof` requires a small kludge in the JavaScript wrapper (see [here](https://github.com/mmomtchev/nobind17/blob/main/test/tests/inheritance.js)) |
+| Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support, diamond inheritance is not supported | Yes, but no automatic downcasting support and no diamond inheritance |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes, automatic | Yes, manual
 | Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `n`:`1` transformations of input arguments |
@@ -493,6 +495,31 @@ public:
 
 `DateTime` can returned a (non-`const`) reference to its member object `Time`. This reference should obviously use shared semantics as the newly created JS proxy object won't own the underlying C++ object. However, what will happen if the GC collects the parent object while JavaScript is still holding a reference to the returned nested object? This special case, which is somewhat common in the C++ world, requires special handling that can be enabled by using the `Nobind::ReturnNested` return attribute. In this case the returned reference will be bound the parent object which will be protected from the GC until the nested reference exists. This return attribute has a meaning only for class members and it is applied by default for class getters.
 
+### Recursive typemaps
+
+Typemaps can use recursion to reference other typemaps - this typemap for `std::map<std::string, T>` calls the existing typemaps for each contained object by using `FromJSValue<T>` and `ToJSValue<T>`.
+
+```cpp
+template <typename T> class FromJS<std::map<std::string, T>> {
+  std::map<std::string, T> val_;
+
+public:
+  inline explicit FromJS(const Napi::Value &val) {
+    if (!val.IsObject()) {
+      throw Napi::TypeError::New(val.Env(), "Expected an object");
+    }
+    Napi::Object object = val.ToObject();
+    for (auto prop : object) {
+      val_.insert({prop.first.ToString().Utf8Value(), FromJSValue<T>(prop.second).Get()});
+    }
+  }
+
+  inline M Get() { return val_; }
+  FromJS(const FromJS &) = delete;
+  FromJS(FromJS &&) = default;
+};
+```
+
 ### Storing custom per-isolate data
 
 Sometimes a module needs to store *"global"* data. With `node-addon-api` the proper way to store this data is in a per-isolate data structure - since Node.js is allowed to call the same instance from multiple independent isolates. To access the per-isolate storage with `nobind17`, declare the module specific structure and then use the standard `node-addon-api` calls to access it:
@@ -509,6 +536,88 @@ NOBIND_MODULE_DATA(native, m, PerIsolateData) {
 ```
 
 `nobind17` / `node-addon-api` will take care of creating and freeing this structure when new isolates are created and destroyed.
+
+### C++ inheritance
+
+Direct simple inheritance without virtual methods (*almost*) works out of the box. In order to properly set up the JavaScript `instanceof` operator, the class definitions must include the base class as a second template argument:
+
+```cpp
+m.def<Derived, Base>("Derived");
+```
+
+The only caveat is that this does not automatically inherit all the base class members. These must be declared separately for each class:
+
+```cpp
+m.def<Base>("Base").cons<int>().def<&Base::get>("get").def<&Base::base_get>("base_get");
+m.def<Derived, Base>("Derived").cons<int>().def<&Derived::get>("get").def<&Derived::base_get>("base_get");
+```
+
+In this case, `get()` is a virtual method overriden in `Derived` and there is a single `base_get()` in `Base` that must also be explicitly declared in `Derived`. Resolution of virtual methods is left to the C++ compiler and follows the usual rules.
+
+MSVC 2019, which is not fully C++17 compliant, requires a `static_cast` in this situation: see [here](https://github.com/mmomtchev/nobind17/blob/main/test/tests/inheritance.js). Later versions are fully compliant when using `/permissive-`.
+
+When having to transpose multiple inheritance in C++ to JavaScript, it is possible to declare multiple implemented interfaces:
+
+```cpp
+m.def<Derived, Base, Interface1, Interface2>("Derived");
+```
+
+Currently this has an effect only on the TypeScript definitions which will include the corresponding `implements` declarations. `instanceof` in JavaScript will work only with the first base class.
+
+### TypeScript support
+
+Version 2 adds support for built-in automatically generated TypeScript definitions. These will be available inside the binary module in a special read-only variable called `__typescript`. This behaviour can be disabled if the module is built with the macro `NOBIND_NO_TYPESCRIPT_GENERATOR` defined. The default property name can be modified by defining `NOBIND_TYPESCRIPT_PROP`. In order to generate custom types, custom typemaps must have an additional method called `TSType()` returning an `std::string` with the TypeScript type:
+
+```cpp
+template <> class FromJS<bool> {
+  bool val_;
+
+public:
+  inline explicit FromJS(const Napi::Value &val) {
+    if (!val.IsBoolean()) {
+      throw Napi::TypeError::New(val.Env(), "Expected a boolean");
+    }
+    val_ = val.ToBoolean().Value();
+  }
+  inline bool Get() { return val_; }
+
+  static const std::string TSType() { return "boolean"; };
+};
+```
+
+If the compiler supports RTTI and has the demangling ABI, defining `NOBIND_TYPESCRIPT_DEBUG` will produce type annotation comments with the original C++ types. 
+
+#### Forward declarations
+
+Generating TypeScript definitions may require the use of forward declarations - for example when two classes reference each other. In this case at least one of the classes must be declared before the other one is defined:
+
+```cpp
+m.decl<Base>("Base");
+m.def<Dependant>("Dependant").cons<const Hello &>();
+m.def<Base>("Base").cons<std::string &>();
+```
+
+The declaration and definition must use the same name. This allows the TypeScript generator to be able to correctly resolve `Base` objects when generating `Dependant`.
+
+#### Dynamic class name
+
+When creating generic typemaps, the current TypeScript name of the type can be obtained by calling `NoObjectWrap<T>::GetName()` - this requires that the class has at least been previously declared.
+
+```cpp
+static const std::string &TSType() { return NoObjectWrap<T>::::GetName(); };
+```
+
+#### Recursion
+
+Recursive typemaps with TypeScript support can use the `FromTSType<T>` and `ToTSType<T, RETATTR = ReturnNullThrow>` typemaps to obtain the TypeScript definitions of the nested objects. Additionnaly, `createTSRecord<T, U>` and `createTSArray<T>` can be used to create `Record<>` and `[]` definitions.
+
+#### Custom TypeScript fragments
+
+Inserting a custom TypeScript code fragment anywhere at the root level in the code is possible with:
+
+```cpp
+m.typescript_fragment("export class CustomClass {}");
+```
 
 ### Troubleshooting
 

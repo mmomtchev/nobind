@@ -32,8 +32,12 @@ template <typename T, const ReturnAttribute &RETATTR = ReturnDefault> class ToJS
 namespace TypemapOverrides {
 
 // Empty invalid overridden templates
-template <typename T> class FromJS { FromJS() = delete; };
-template <typename T, const ReturnAttribute &RETATTR = ReturnDefault> class ToJS { ToJS() = delete; };
+template <typename T> class FromJS {
+  FromJS() = delete;
+};
+template <typename T, const ReturnAttribute &RETATTR = ReturnDefault> class ToJS {
+  ToJS() = delete;
+};
 
 } // namespace TypemapOverrides
 } // namespace Nobind

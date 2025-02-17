@@ -32,7 +32,9 @@ describe('global method', () => {
 
 describe('per isolate data', () => {
   it('retrieve stored data', () => {
+    // @ts-ignore
     assert.isBoolean(dll.get_exports().debug_build);
+    // @ts-ignore
     assert.strictEqual(dll.get_exports(), dll);
   });
 });

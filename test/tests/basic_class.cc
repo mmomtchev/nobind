@@ -1,7 +1,6 @@
 #include <exception>
 #include <fixtures/basic_class.h>
 
-#include <napi.h>
 #include <nobind.h>
 
 std::string ToString(Hello &obj) {

@@ -8,6 +8,7 @@ describe('add with strings', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.add(2, 3);
     }, /Expected a string/);
   });
@@ -22,6 +23,7 @@ describe('hidden string arguments', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       dll.hello('invalid');
     }, /Expected 0 arguments, got 1/);
   });

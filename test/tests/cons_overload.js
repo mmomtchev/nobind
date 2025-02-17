@@ -23,6 +23,7 @@ describe('overloaded constructor', () => {
 
   it('exception', () => {
     assert.throws(() => {
+      // @ts-expect-error
       new dll.TwoCons(1, 2, 3);
     }, /No constructor with 3 arguments found/);
 

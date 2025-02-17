@@ -40,6 +40,9 @@ NOBIND_MODULE_DATA(native, m, PerIsolateData) {
       Napi::Persistent<Napi::Object>(m.Exports());
   m.Exports().Set("get_exports", Napi::Function::New(m.Env(), get_exports));
 
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+  m.typescript_fragment("export const debug_build;\n");
+#endif
   m.Exports().Set("debug_build", Napi::Boolean::New(m.Env(),
 #ifdef DEBUG
                                                     true

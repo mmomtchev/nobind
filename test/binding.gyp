@@ -1,11 +1,23 @@
 {
   'variables': {
-    'enable_asan%': 'false'
+    'enable_asan%': 'false',
+    'enable_typescript%': 'true',
+    'enable_typescript_debug%': 'false',
+    'test_output%': '<(test)'
   },
   'targets': [
     {
-      'target_name': '<(test)',
+      'target_name': '<(test_output)',
       'sources': [ 'tests/<(test).cc', '<@(fixtures)' ],
+      # RTTI is only for easier debugging of the templates
+      'cflags!': [ '-fno-rtti' ],
+      'cflags_cc!': [ '-fno-rtti' ],
+      'cflags_cc': [ '-frtti' ],
+      'xcode_settings': {
+        'OTHER_CPLUSPLUSFLAGS': [
+          '-frtti'
+        ]
+      },
       'include_dirs': [
         '.',
         '../include',
@@ -41,6 +53,12 @@
             '-fsanitize=address'
           ]
         }        
+      }],
+      ['enable_typescript == "false"', {
+        'defines': [ 'NOBIND_NO_TYPESCRIPT_GENERATOR' ]      
+      }],
+      ['enable_typescript_debug == "true"', {
+        'defines': [ 'NOBIND_TYPESCRIPT_DEBUG' ]      
       }]
     ]
   }

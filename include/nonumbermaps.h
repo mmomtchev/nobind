@@ -113,11 +113,13 @@ public:
   template <> class FromJS<CTYPE> : public FromJS##JSTYPE<CTYPE> {                                                     \
   public:                                                                                                              \
     using FromJS##JSTYPE<CTYPE>::FromJS##JSTYPE;                                                                       \
+    static const std::string TSType() { return "number"s; }                                                            \
   };                                                                                                                   \
                                                                                                                        \
   template <const ReturnAttribute &RETATTR> class ToJS<CTYPE, RETATTR> : public ToJS##JSTYPE<CTYPE, RETATTR> {         \
   public:                                                                                                              \
     using ToJS##JSTYPE<CTYPE, RETATTR>::ToJS##JSTYPE;                                                                  \
+    static const std::string TSType() { return "number"s; }                                                            \
   }
 
 TYPEMAPS_FOR_NUMBER(int, Int32);

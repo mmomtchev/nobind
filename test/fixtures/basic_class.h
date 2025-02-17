@@ -1,3 +1,4 @@
+#pragma once
 #include <sstream>
 
 class Hello {
