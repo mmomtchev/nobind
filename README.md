@@ -449,6 +449,8 @@ std::string HelloToString(const Hello &);
 m.def<Hello>("Hello").ext<&ToString>("toString");
 ```
 
+The first argument of the class extension must be `const CLASS &`, `CLASS &` or `Napi::Value` - it will contain the `this` object.
+
 Currently, there is no way to register a getter with a function in order to override the `[@@toStringTag]` property.
 
 ### Directly accessing the underlying `node-addon-api`

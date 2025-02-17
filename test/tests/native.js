@@ -14,6 +14,12 @@ describe('class method', () => {
       o.method_native(1337);
     }, /Expected a string/);
   });
+
+  it('native extension', () => {
+    const o = new dll.WithNative;
+    assert.isFunction(o.method_native);
+    assert.strictEqual(o.native_extension(), o);
+  });
 });
 
 describe('global method', () => {

@@ -3,18 +3,21 @@
 
 #include <nobind.h>
 
-std::string ToString(Hello &obj) {
+// This() is const CLASS &
+std::string ToString(const Hello &obj) {
   std::stringstream r;
   r << "Hello {id: " << obj.Id() << "}";
   return r.str();
 }
 
+// This() is CLASS &
 std::string ToStringWithArg(Hello &obj, int id) {
   std::stringstream r;
   r << "Hello {id: " << obj.Id() << ":" << id << "}";
   return r.str();
 }
 
+// This() is CLASS &
 void NotIterable(Hello &) { throw std::runtime_error("Not iterable"); }
 
 NOBIND_MODULE(basic_class, m) {

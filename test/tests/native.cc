@@ -22,6 +22,9 @@ Napi::Value get_exports(const Napi::CallbackInfo &info) {
 
 Napi::Value get_string(Napi::Env env) { return Napi::String::New(env, "hello from get_string"); }
 
+// Native extension function with This() as Napi::Value
+Napi::Value native_extension(Napi::Value val) { return val; }
+
 class WithNative {
 public:
   WithNative() {}
@@ -35,7 +38,10 @@ public:
 };
 
 NOBIND_MODULE_DATA(native, m, PerIsolateData) {
-  m.def<WithNative>("WithNative").cons<>().def<&WithNative::method_native>("method_native");
+  m.def<WithNative>("WithNative")
+      .cons<>()
+      .def<&WithNative::method_native>("method_native")
+      .ext<&native_extension>("native_extension");
   m.def<&global_native>("global_native");
   m.def<&get_string>("get_string");
 
