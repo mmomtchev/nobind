@@ -45,5 +45,12 @@ NOBIND_MODULE(iterator, m) {
 
   m.def<JSIterator<Iterable>>("Range_10_20_iterator").def<&JSIterator<Iterable>::next>("next");
 
+#if !defined(_MSC_VER) || _MSC_VER >= 1930
   m.def<Iterable>("Range_10_20").cons<>().ext<&IteratorWrapper<Iterable>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+#else
+  m.def<Iterable>("Range_10_20")
+      .cons<>()
+      .ext<static_cast<Napi::Value (*)(Iterable &)>(&IteratorWrapper<Iterable>)>(
+          Napi::Symbol::WellKnown(m.Env(), "iterator"));
+#endif
 }
