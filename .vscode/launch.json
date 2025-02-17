@@ -32,6 +32,22 @@
       ]
     },
     {
+      "name": "(lldb) Launch current test (run)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "/usr/local/bin/node",
+      "args": [
+        "single.js",
+        "run"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/test",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "setupCommands": []
+    },
+    {
       "name": "(lldb) Launch current test (types)",
       "type": "cppdbg",
       "request": "launch",

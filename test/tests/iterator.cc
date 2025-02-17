@@ -3,6 +3,7 @@
 #include <nobind.h>
 
 // This is the tricky part
+// This is a JS iterator
 template <typename T> class JSIterator {
   T &target;
   typename T::iterator it;
@@ -10,26 +11,25 @@ template <typename T> class JSIterator {
 public:
   JSIterator(T &obj, typename T::iterator begin) : target(obj), it(begin) {}
   Napi::Value next(Napi::Env env) {
-    Napi::Object ret;
+    Napi::Object ret = Napi::Object::New(env);
     if (it == target.end()) {
-      ret.Set("done", Napi::Boolean::New(env, "true"));
+      ret.Set("done", Napi::Boolean::New(env, true));
     } else {
       ret.Set("value", Napi::Number::New(env, *it));
-      ret.Set("done", Napi::Boolean::New(env, "false"));
+      ret.Set("done", Napi::Boolean::New(env, false));
       it++;
     }
     return ret;
   }
 };
 
+// Helper to construct it
 template <typename T> JSIterator<T> IteratorWrapper(T &obj) { return JSIterator<T>{obj, obj.begin()}; }
 
 NOBIND_MODULE(iterator, m) {
-  Range<10, 20> a;
+  using Iterable = Range<10, 20>;
 
-  // m.def<JSIterator<Range<10, 20>>>("Range_10_20_iterator").def<&JSIterator<Range<10, 20>>::next>("next");
+  m.def<JSIterator<Iterable>>("Range_10_20_iterator").def<&JSIterator<Iterable>::next>("next");
 
-  // m.def<Range<10, 20>>("Range_10_20")
-  //.cons<int>()
-  //.ext<&IteratorWrapper<Range<10, 20>>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+  m.def<Iterable>("Range_10_20").cons<>().ext<&IteratorWrapper<Iterable>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 }
