@@ -16,9 +16,9 @@ The unit tests run on:
   * MSVC 19.29 on Windows (Visual Studio 16.11 *aka* 2019)
 
 However because of edge cases when it comes to C++17 support, the recommended compiler versions are:
-  * g++ 10.5 on Linux (the alternative choice on Ubuntu 20.04)
+  * g++ 10.5 on Linux (the alternative choice on Ubuntu 20.04 and the default one on Ubuntu 22.04)
   * clang 13 on macOS (the default compiler on macOS 11)
-  * MSVC 19.37 on Windows (Visual Studio 17.7 *aka* 2022) on Windows
+  * MSVC 19.37 on Windows (Visual Studio 17.7 *aka* 2022)
 
 It is meant as an easy to use entry-level light-weight binding framework for simple projects that target only Node.js.
 
@@ -51,7 +51,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
 | Async locking | Yes, with automatic dead-lock prevention | Not at the moment, but planned |
-| Smart pointers | Yes | Not in at the moment, but planned |
+| Smart pointers | Yes | Not at the moment, but planned |
 | TypeScript support | Automatic | Automatic |
 | ES6 named exports for all C/C++ functions | Yes, automatic | No, must write it |
 | WASM/Browser support | Yes | Not at the moment, but planned through `embind` compatibility |
