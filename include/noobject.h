@@ -293,22 +293,38 @@ private:
     self = new CLASS(std::get<I>(args).Get()...);
   }
 
+  // The extension wrapper, it adds an additional first argument by converting info.This()
+  // Two stages, first stage, This() is CLASS &
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...)>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
                                       std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
-  // The extension wrapper, it adds an additional first argument by converting info.This()
-  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...),
-            std::size_t... I>
+  // First stage, This() is const CLASS &
+  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(const CLASS &, ARGS...)>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
-                                      std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>,
+                                      std::integral_constant<RETURN (*)(const CLASS &, ARGS...), FUNC>) {
+    return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
+                                     std::index_sequence_for<ARGS...>{});
+  }
+  // First stage, This() is Napi::Value
+  template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(Napi::Value, ARGS...)>
+  inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
+                                      std::integral_constant<RETURN (*)(Napi::Value, ARGS...), FUNC>) {
+    return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
+                                     std::index_sequence_for<ARGS...>{});
+  }
+  // Second stage
+  template <const ReturnAttribute &RETATTR, typename THIS, typename RETURN, typename... ARGS,
+            RETURN (*FUNC)(THIS, ARGS...), std::size_t... I>
+  inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
+                                      std::integral_constant<RETURN (*)(THIS, ARGS...), FUNC>,
                                       std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     try {
-      auto thisObj = FromJSValue<CLASS &>(info.This());
+      auto thisObj = FromJSValue<THIS>(info.This());
       // Call the FromJS constructors
       size_t idx = 0;
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
