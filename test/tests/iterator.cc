@@ -23,10 +23,10 @@ public:
       Napi::Value value;
       if constexpr (std::is_scalar_v<value_type_t>) {
         // Scalar types are simply copied
-        value = Nobind::ToJS<value_type_t, Nobind::ReturnDefault>(env, *it).Get();
+        value = Nobind::ToJS<value_type_t, Nobind::ReturnOwned>(env, *it).Get();
       } else if constexpr (std::is_copy_constructible_v<value_type_t>) {
         // If the object is copy-constructible the safest option is to copy it
-        value = Nobind::ToJS<value_type_t, Nobind::ReturnDefault>(env, *it).Get();
+        value = Nobind::ToJS<value_type_t, Nobind::ReturnOwned>(env, *it).Get();
       } else {
         // Other objects are returned as a shared reference
         // This assumes that their container won't get destroyed
