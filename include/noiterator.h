@@ -16,51 +16,60 @@ public:
   JSIteratorResult(const Napi::Object &obj) : Napi::Object(obj) {}
 };
 
-// This is the copying iterator
-template <typename T> class JSCopyIterator {
+template <typename T> class JSIterator {
+protected:
   T &target;
   typename T::iterator it;
   using value_type_t = typename T::iterator::value_type;
 
 public:
-  JSCopyIterator(T &obj, const typename T::iterator &begin) : target(obj), it(begin) {}
-  Nobind::JSIteratorResult<value_type_t> next(Napi::Env env) {
+  JSIterator(T &obj, const typename T::iterator &begin) : target(obj), it(begin) {}
+  virtual ~JSIterator() = default;
+  virtual Nobind::JSIteratorResult<value_type_t> next(Napi::Env env) = 0;
+};
+
+// This is the copying iterator
+template <typename T> class JSCopyIterator : public JSIterator<T> {
+  using value_type_t = typename JSIterator<T>::value_type_t;
+
+public:
+  JSCopyIterator(T &obj, const typename T::iterator &begin) : JSIterator<T>{obj, begin} {}
+  virtual JSIteratorResult<value_type_t> next(Napi::Env env) override {
     static_assert(std::is_copy_constructible_v<value_type_t>,
                   "JSCopyIterator works only with copy-constructible objects");
 
-    Nobind::JSIteratorResult<value_type_t> ret = Napi::Object::New(env);
-    if (it == target.end()) {
+    JSIteratorResult<value_type_t> ret = Napi::Object::New(env);
+    if (this->it == this->target.end()) {
       ret.Set("done", Napi::Boolean::New(env, true));
     } else {
-      ret.Set("value", Nobind::ToJS<value_type_t, Nobind::ReturnOwned>(env, *it).Get());
+      ret.Set("value", Nobind::ToJS<value_type_t, Nobind::ReturnOwned>(env, *this->it).Get());
       ret.Set("done", Napi::Boolean::New(env, false));
-      it++;
+      this->it++;
     }
     return ret;
   }
 };
 
 // This is the shared reference iterator
-template <typename T> class JSReferenceIterator {
-  T &target;
-  typename T::iterator it;
+template <typename T> class JSReferenceIterator : public JSIterator<T> {
+  using value_type_t = typename JSIterator<T>::value_type_t;
+
   // The iterator keeps a JS reference to his container to protect it
   // from the GC
   Napi::Reference<Napi::Value> persistent;
-  using value_type_t = typename T::iterator::value_type;
 
 public:
   JSReferenceIterator(T &) = delete;
   JSReferenceIterator(T &obj, const typename T::iterator &begin, Napi::Value jsobj)
-      : target(obj), it(begin), persistent(Napi::Persistent(jsobj)) {}
-  Nobind::JSIteratorResult<value_type_t> next(Napi::Env env) {
+      : JSIterator<T>{obj, begin}, persistent(Napi::Persistent(jsobj)) {}
+  JSIteratorResult<value_type_t> next(Napi::Env env) {
     static_assert(!std::is_scalar_v<value_type_t>, "JSReferenceIterator should not be used with scalar values");
 
-    Nobind::JSIteratorResult<value_type_t> ret = Napi::Object::New(env);
-    if (it == target.end()) {
+    JSIteratorResult<value_type_t> ret = Napi::Object::New(env);
+    if (this->it == this->target.end()) {
       ret.Set("done", Napi::Boolean::New(env, true));
     } else {
-      Napi::Value value = Nobind::ToJS<value_type_t &, Nobind::ReturnShared>(env, *it).Get();
+      Napi::Value value = Nobind::ToJS<value_type_t &, Nobind::ReturnShared>(env, *this->it).Get();
       // Every returned object receives a copy of the reference to his container
       // Thus, the container can be destroyed only after all returned objects and
       // the iterator have been GCed
@@ -68,7 +77,7 @@ public:
           Napi::PropertyDescriptor::Value(Napi::String::New(env, NOBIND_PARENT_PROP), persistent.Value()));
       ret.Set("value", value);
       ret.Set("done", Napi::Boolean::New(env, false));
-      it++;
+      this->it++;
     }
     return ret;
   }
