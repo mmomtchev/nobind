@@ -1,11 +1,25 @@
 const { assert } = require('chai');
 
-it('nominal', () => {
-  const o = new dll.Range_10_20;
-  const r = [];
-  // @ts-ignore
-  for (const i of o) {
-    r.push(i);
-  }
-  assert.sameOrderedMembers(r, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+describe('iteraros', () => {
+  it('scalar values', () => {
+    const o = new dll.Range_10_20;
+    const r = [];
+    // @ts-ignore
+    for (const i of o) {
+      r.push(i);
+    }
+    assert.sameOrderedMembers(r, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+  });
+
+  it('objects by reference', () => {
+    const o = new dll.HelloList;
+    const r = [];
+    o.push_back(new dll.Hello('Gargantua'));
+    o.push_back(new dll.Hello('Pantagruel'));
+    // @ts-ignore
+    for (const i of o) {
+      r.push(i.greet('Mr'));
+    }
+    assert.sameOrderedMembers(r, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
+  });
 });
