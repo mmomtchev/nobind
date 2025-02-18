@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [2.0.0]
 
 -   TypeScript support
+-   Fix [#30](https://github.com/mmomtchev/nobind/issues/30), `m.ext<T>(...)` accepts only functions with `T &` as first parameter
 
 ### [1.2.1]  2024-07-16
 
