@@ -60,7 +60,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support, diamond inheritance is not supported | Yes, but no automatic downcasting support and no diamond inheritance |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes, automatic | Yes, manual
-| Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `n`:`1` and `n`:`0` transformations of input arguments |
+| Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `1`:`1` and `1`:`0` transformations of input arguments |
 | Custom type casters | Yes | Yes |
 | Interfacing between multiple modules | Yes | No |
 
