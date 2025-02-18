@@ -121,6 +121,7 @@ template <typename T> auto inline FromJSValue(const Napi::Value &val) {
 template <typename T> auto inline FromJSArgs(const Napi::CallbackInfo &info, size_t &idx) {
   auto r = FromJSValue<std::remove_cv_t<T>>(info[idx]);
   if constexpr (FromJSTypemapHasInputs<decltype(r)>::value) {
+    static_assert(r.Inputs == 0 || r.Inputs == 1, "Only n:1 and n:O conversions are supported at the moment");
     idx += r.Inputs;
   } else {
     idx++;
