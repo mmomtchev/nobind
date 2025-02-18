@@ -78,7 +78,9 @@
     "queue": "cpp",
     "stack": "cpp",
     "variant": "cpp",
-    "__config": "cpp"
+    "__config": "cpp",
+    "list": "cpp",
+    "__availability": "cpp"
   },
   "editor.formatOnSave": true,
   "clang-format.executable": "clang-format",

@@ -29,6 +29,12 @@ template <typename T> class FromJS;
  */
 template <typename T, const ReturnAttribute &RETATTR = ReturnDefault> class ToJS;
 } // namespace Typemap
+
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+template <typename T, const ReturnAttribute &RETATTR = ReturnNullThrow> std::string ToTSType();
+template <typename T> std::string FromTSType();
+#endif
+
 namespace TypemapOverrides {
 
 // Empty invalid overridden templates

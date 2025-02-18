@@ -46,6 +46,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | C++ types | Almost all, nested classes support is very limited | No functions pointers, no nested classes, `enum`s are not automatic |
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | C++ namespaces | Can be exposed to JS with some limitations and manual work | Supported in C++ but not exposed to JS |
+| C++ iterators | manual | automatic |
 | Optional arguments with default values | Yes | No, all arguments become mandatory |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
@@ -437,6 +438,8 @@ The `Nobind::ReturnShared` signals `nobind17` that C++ objects returned by this 
 
 Also, be sure to check [#1](https://github.com/mmomtchev/nobind17/issues/1) for a very important warning about shared references and also read the section on nested references below.
 
+Eventually, as last resort, `Nobind::ReturnCopy` will copy the returned object. This might not be very efficient, but it will always be safe. The copy will be destroyed when the returned reference is GCed. `Nobind::ReturnCopy` works only for objects. Plain objects are always copied anyway, but it also allows to copy objects returned as references or pointers.
+
 ### Extending classes
 
 Sometimes it is very handy to be able to add an additional class method in JavaScript that does not directly correspond to a C++ method. For example, the standard way of providing a method returning a readable string representation of an object is to overload the global `operator<<`. In JavaScript, the standard method is to replace the `Object.toString()`. This cannot be achieved with a simple helper function, because it will have to be a member of the binded class. In this case `nobind17` allows to define a special function of the form `RETTYPE Method(CLASS &, ARGS...)` and to register it as a class extension:
@@ -635,6 +638,35 @@ Inserting a custom TypeScript code fragment anywhere at the root level in the co
 m.typescript_fragment("export class CustomClass {}");
 ```
 
+### Iterators
+
+Iterators are mostly automatic but you must be aware that C++ iterators return references to the objects inside the container. The ownership of these objects is not always clear, but generally they are considered to be owned by the container.
+
+`nobind17` offers two built-in interfaces to deal with iterable objects - one that copîes the returned objects to JavaScript and another one which returns shared references which prevent the container to be destroyed until the last returned object has been destroyed.
+
+To define an iterator for the C++ class `Iterable`, instantiate the built-in `JSIterator` classe specifying either `ReturnCopy` or `ReturnNested` to define a JS-compatible iterator that has a `next` method. For TypeScript support it should implement `Nobind::TSIterator<Iterable>` - this will automatically define its TypeScript to return whatever type the C++ iterator returns - which will be `Iterable::iterator::value_type` as per the C++17 specifications:
+
+```cpp
+m.def<Nobind::JSIterator<Iterable, Nobind::ReturnCopy>, void, Nobind::TSIterator<Iterable>>(
+      "_nobind_iterable_copy_iterator")
+    .def<&Nobind::JSIterator<Iterable, Nobind::ReturnCopy>::next>("next");
+```
+
+Then in the definition of the `Iterable` class add the built-in helper `MakeJSIterator` as a `Symbol.iterator` extension method for the class:
+
+```cpp
+m.def<Iterable, void, Nobind::TSIterable<Iterable>>("Iterable")
+    .ext<&Nobind::MakeJSIterator<Iterable1, Nobind::ReturnCopy>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+```
+
+There is no `ReturnDefault` when working with iterators to further stress the fact that there is a decision to make.
+
+Besides `ReturnNested` and `ReturnCopy` - which cover most cases, there are also cases where `ReturnShared` and `ReturnOwned` might be needed, but these are not completely safe and you should use them only if you understand the implications. `ReturnShared` means that the container does not own the returned object and it should never be freed - this is often the case for containers of pointers or containers of static objects. `ReturnOwned` is the most unusual - this means that the iterator is transfering the responsability of the returned object to its caller.
+
+This expects that `Iterable` implements `std::input_iterator_tag` which is the most basic C++17 iterator - implementing only the pointer advancement operation and the indirection.
+
+There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/main/test/tests/iterator.cc).
+
 ### R-value references
 
 `nobind17` does not support R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.
@@ -674,6 +706,10 @@ When encountering compilation errors, start with this quick checklist:
   *MSVC has a number of problems with template argument deduction in its default compilation mode. The `/permissive-` and `/Zc` flags can help in some cases, or you can also use a `static_cast` to explicitly type your function pointer. `node-ffmpeg` includes a few cases of this type.*
   
   *Also, MSVC 2019 has a number of problems such as *C1001: Internal Compiler Error* on `static constexpr` local function variables used as non-type template arguments and some complex SFINAE constructs such as this one: [MSVC fails to specialize template with `std::enable_if` and a non-type argument](https://stackoverflow.com/questions/77698129/msvc-fails-to-specialize-template-with-stdenable-if-and-a-non-type-argument).*
+
+* `assert(class_idx == 0 || class_idx == idx)` fails
+
+  You most probably have multiple definitions for the same class.
 
 ## WASM compatbility
 

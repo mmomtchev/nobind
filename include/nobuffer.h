@@ -51,10 +51,14 @@ public:
     // Node-API does not support external buffers (Electron)
     // C++ receives a copy with the original being freed immediately
     Napi::Buffer buffer = Napi::Buffer<uint8_t>::Copy(env_, val_.first, val_.second);
-    delete[] val->data;
+    delete[] val_.first;
     return buffer;
 #else
-    // Node-API supports external buffers (Node.js)
+    if constexpr (RETATTR.isCopy()) {
+      Napi::Buffer buffer = Napi::Buffer<uint8_t>::Copy(env_, val_.first, val_.second);
+      delete[] val_.first;
+      return buffer;
+    }
     // C++ receives ownership of the buffer which is freed upon collection of the JS Buffer object by the GC
     return Napi::Buffer<uint8_t>::New(env_, val_.first, val_.second, [](Napi::Env, uint8_t *data) { delete[] data; });
 #endif

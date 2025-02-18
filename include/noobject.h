@@ -1,7 +1,4 @@
 #pragma once
-#ifndef NOBIND_PARENT_PROP
-#define NOBIND_PARENT_PROP "__nobind_parent_reference"
-#endif
 #ifndef NOBIND_NAME_NOT_INITIALIZED
 #define NOBIND_NAME_NOT_INITIALIZED "unknown /* may be missing a forward declaration */"
 #endif
@@ -123,6 +120,7 @@ public:
     return MethodWrapperAsync<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
+  // Extension wrapper, 3 stages, this is the first one
   template <const ReturnAttribute &RET = ReturnDefault, auto FUNC>
   Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info) {
     return ExtensionWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
@@ -294,28 +292,28 @@ private:
   }
 
   // The extension wrapper, it adds an additional first argument by converting info.This()
-  // Two stages, first stage, This() is CLASS &
+  // Three stages, second stage, This() is CLASS &
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...)>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
                                       std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
-  // First stage, This() is const CLASS &
+  // Second stage, This() is const CLASS &
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(const CLASS &, ARGS...)>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
                                       std::integral_constant<RETURN (*)(const CLASS &, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
-  // First stage, This() is Napi::Value
+  // Second stage, This() is Napi::Value
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(Napi::Value, ARGS...)>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
                                       std::integral_constant<RETURN (*)(Napi::Value, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
-  // Second stage
+  // Third stage
   template <const ReturnAttribute &RETATTR, typename THIS, typename RETURN, typename... ARGS,
             RETURN (*FUNC)(THIS, ARGS...), std::size_t... I>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
@@ -644,7 +642,7 @@ public:
     } else if (constructors.size() == 0) {
       global_typescript_types_ += "abstract ";
     }
-    global_typescript_types_ += " class "s + name_;
+    global_typescript_types_ += "class "s + name_;
     if constexpr (!std::is_void_v<BASE>)
       global_typescript_types_ += " extends "s + NoObjectWrap<BASE>::GetName();
     global_typescript_types_ += FromTSTInterfaces<INTERFACES...>();
@@ -685,7 +683,12 @@ public:
   }
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
-  inline Napi::Value Get() { return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_); }
+  inline Napi::Value Get() {
+    if constexpr (RETATTR.isCopy()) {
+      return OBJCLASS::template New<true>(env_, new T{*val_});
+    }
+    return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_);
+  }
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -727,6 +730,9 @@ public:
       if (val_ == nullptr) {
         throw Napi::Error::New(env_, "Returned nullptr");
       }
+    }
+    if constexpr (RETATTR.isCopy()) {
+      return OBJCLASS::template New<true>(env_, new T{*val_});
     }
     return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_);
   }

@@ -11,7 +11,8 @@
 
 #if defined(NOBIND_TYPESCRIPT_DEBUG)
 #include <cxxabi.h>
-#define TSTYPE_DEBUG(T) ((T).empty() ? "" : "/* C++ type: "s + demangle<std::string>(typeid(T).name()) + " */ "s + (T))
+#define TSTYPE_DEBUG(S, T)                                                                                             \
+  ((S).empty() ? "" : "/* C++ type: "s + demangle<std::string>(typeid(T).name()) + " */ "s + (S))
 
 // https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
 // (templated to be able to include in a header file)
@@ -23,10 +24,15 @@ template <typename T> T demangle(const char *name) {
   return (status == 0) ? res.get() : name;
 }
 #else
-#define TSTYPE_DEBUG(T) T
+#define TSTYPE_DEBUG(S, T) S
 #endif
 
 namespace Nobind {
+
+namespace Typemap {} // namespace Typemap
+
+template <typename T> class TSIterable {};
+template <typename T> class TSIterator {};
 
 using namespace std::string_literals;
 
@@ -45,42 +51,42 @@ template <typename CLASS> class NoObjectWrap;
 template <typename T> std::string FromTSType() {
   if constexpr (std::is_constructible_v<TypemapOverrides::FromJS<std::remove_cv_t<T>>, const Napi::Value &>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::FromJS<std::remove_cv_t<T>>>::value) {
-      return TSTYPE_DEBUG(TypemapOverrides::FromJS<std::remove_cv_t<T>>::TSType());
+      return TSTYPE_DEBUG(TypemapOverrides::FromJS<std::remove_cv_t<T>>::TSType(), T);
     } else {
-      return TSTYPE_DEBUG("unknown"s);
+      return TSTYPE_DEBUG("unknown"s, T);
     }
   } else {
     if constexpr (JSTypemapHasTSType<Typemap::FromJS<std::remove_cv_t<T>>>::value) {
-      return TSTYPE_DEBUG(Typemap::FromJS<std::remove_cv_t<T>>::TSType());
+      return TSTYPE_DEBUG(Typemap::FromJS<std::remove_cv_t<T>>::TSType(), T);
     } else {
-      return TSTYPE_DEBUG("unknown"s);
+      return TSTYPE_DEBUG("unknown"s, T);
     }
   }
 }
 
 // Resolve a C++ return type to a TS return type
-template <typename T, const ReturnAttribute &RETATTR = ReturnNullThrow> std::string ToTSType() {
+template <typename T, const ReturnAttribute &RETATTR> std::string ToTSType() {
   if constexpr (std::is_void_v<T>) {
-    return TSTYPE_DEBUG("void"s);
+    return TSTYPE_DEBUG("void"s, T);
   } else if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>>, const Napi::Env &, T>) {
     if constexpr (JSTypemapHasTSType<TypemapOverrides::ToJS<std::remove_cv_t<T>>>::value) {
       if constexpr (RETATTR.isReturnNullAccept()) {
-        return TSTYPE_DEBUG(TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType() + " | null");
+        return TSTYPE_DEBUG(TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType() + " | null", T);
       } else {
-        return TSTYPE_DEBUG(TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType());
+        return TSTYPE_DEBUG(TypemapOverrides::ToJS<std::remove_cv_t<T>>::TSType(), T);
       }
     } else {
-      return TSTYPE_DEBUG("unknown"s);
+      return TSTYPE_DEBUG("unknown"s, T);
     }
   } else {
     if constexpr (JSTypemapHasTSType<Typemap::ToJS<std::remove_cv_t<T>>>::value) {
       if constexpr (RETATTR.isReturnNullAccept()) {
-        return TSTYPE_DEBUG(Typemap::ToJS<std::remove_cv_t<T>>::TSType() + " | null");
+        return TSTYPE_DEBUG(Typemap::ToJS<std::remove_cv_t<T>>::TSType() + " | null", T);
       } else {
-        return TSTYPE_DEBUG(Typemap::ToJS<std::remove_cv_t<T>>::TSType());
+        return TSTYPE_DEBUG(Typemap::ToJS<std::remove_cv_t<T>>::TSType(), T);
       }
     } else {
-      return TSTYPE_DEBUG("unknown"s);
+      return TSTYPE_DEBUG("unknown"s, T);
     }
   }
 }
@@ -264,4 +270,26 @@ template <typename T, typename U> std::string createTSRecord() {
 }
 
 template <typename T> std::string createTSArray() { return FromTSType<T>() + "[]"s; }
+
+namespace Typemap {
+template <typename T> class FromJS<TSIterable<T>> {
+public:
+  static std::string TSType() { return "Iterable<"s + FromTSType<typename T::iterator::value_type>() + ">"s; }
+};
+
+template <typename T> class FromJS<TSIterator<T>> {
+public:
+  static std::string TSType() { return "Iterator<"s + FromTSType<typename T::iterator::value_type>() + ">"s; }
+};
+
+// IteratorResult follows the Napi::Value conversion rules
+template <typename T> class ToJS<JSIteratorResult<T>> : public ToJS<Napi::Value> {
+  Napi::Value val_;
+
+public:
+  inline explicit ToJS(Napi::Env env, JSIteratorResult<T> val) : ToJS<Napi::Value>(env, val) {}
+  static std::string TSType() { return "IteratorResult<"s + FromTSType<T>() + ">"s; }
+};
+
+} // namespace Typemap
 } // namespace Nobind
