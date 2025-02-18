@@ -20,7 +20,7 @@ template <typename T> class JSIteratorCopy {
   typename T::iterator it;
 
 public:
-  JSIteratorCopy(T &obj, typename T::iterator begin) : target(obj), it(begin) {}
+  JSIteratorCopy(T &obj, const typename T::iterator &begin) : target(obj), it(begin) {}
   Napi::Value next(Napi::Env env) {
     using value_type_t = typename T::iterator::value_type;
     static_assert(std::is_copy_constructible_v<value_type_t>,
@@ -47,7 +47,8 @@ template <typename T> class JSIteratorReference {
   Napi::Reference<Napi::Value> persistent;
 
 public:
-  JSIteratorReference(T &obj, typename T::iterator begin, Napi::Value jsobj)
+  JSIteratorReference(T &) = delete;
+  JSIteratorReference(T &obj, const typename T::iterator &begin, Napi::Value jsobj)
       : target(obj), it(begin), persistent(Napi::Persistent(jsobj)) {}
   Napi::Value next(Napi::Env env) {
     using value_type_t = typename T::iterator::value_type;
@@ -81,11 +82,13 @@ using Iterable2 = std::list<Hello>;
 // Helpers to construct the iterators
 // The safe iterator does not need anything
 template <typename T> JSIteratorCopy<T> IteratorCopyWrapper(T &obj) { return JSIteratorCopy<T>{obj, obj.begin()}; }
+
 // The "dangerous" iterator keeps a JS reference to the container to protect it from the GC
-template <typename T> JSIteratorReference<T> IteratorReferenceWrapper(Napi::Value jsobj) {
+// This iterator is not copy-constructible and must be allocated on the heap
+template <typename T> JSIteratorReference<T> *IteratorReferenceWrapper(Napi::Value jsobj) {
   // Unwrap the JS value to get the C++ object
-  T &obj = Nobind::FromJSValue<T>(jsobj).Get();
-  return JSIteratorReference<T>{obj, obj.begin(), jsobj};
+  T &obj = Nobind::FromJSValue<T &>(jsobj).Get();
+  return new JSIteratorReference<T>{obj, obj.begin(), jsobj};
 }
 
 NOBIND_MODULE(iterator, m) {
@@ -95,7 +98,7 @@ NOBIND_MODULE(iterator, m) {
   // JS needs to know about their operator next() and the templates must be instantiated to be used
   // from JS as a C++ template can be instantiated only by the compiler - no runtime instantiation
   m.def<JSIteratorCopy<Iterable1>>("_nobind_range_copy_iterator").def<&JSIteratorCopy<Iterable1>::next>("next");
-  m.def<JSIteratorCopy<Iterable2>>("_nobind_list_ref_iterator").def<&JSIteratorCopy<Iterable2>::next>("next");
+  m.def<JSIteratorReference<Iterable2>>("_nobind_list_ref_iterator").def<&JSIteratorReference<Iterable2>::next>("next");
 
   // Expose the iterables to JS with a the helper that constructs a JS-compatible iterator
   // attached to [Symbol.iterator]
@@ -105,5 +108,5 @@ NOBIND_MODULE(iterator, m) {
   m.def<Iterable2>("HelloList")
       .cons<>()
       .def<static_cast<void (Iterable2::*)(const Hello &)>(&Iterable2::push_back)>("push_back")
-      .ext<&IteratorCopyWrapper<Iterable2>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+      .ext<&IteratorReferenceWrapper<Iterable2>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 }

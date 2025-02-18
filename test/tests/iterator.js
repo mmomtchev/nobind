@@ -3,6 +3,7 @@ const { assert } = require('chai');
 describe('iteraros', () => {
   it('scalar values', () => {
     const o = new dll.Range_10_20;
+    assert.isFunction(o[Symbol.iterator]);
     const r = [];
     // @ts-ignore
     for (const i of o) {
@@ -13,6 +14,7 @@ describe('iteraros', () => {
 
   it('objects by reference', () => {
     const o = new dll.HelloList;
+    assert.isFunction(o[Symbol.iterator]);
     const r = [];
     o.push_back(new dll.Hello('Gargantua'));
     o.push_back(new dll.Hello('Pantagruel'));
