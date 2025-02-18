@@ -640,22 +640,24 @@ m.typescript_fragment("export class CustomClass {}");
 
 Iterators are mostly automatic but you must be aware that C++ iterators return references to the objects inside the container. The ownership of these objects is not always clear, but generally they are considered to be owned by the container.
 
-`nobind17` offers two built-in interfaces to deal with iterable objects - one that copîes the returned objects to JavaScript and it is always safe to use and another one which returns shared references which prevent the container to be destroyed until the last returned object has been destroyed.
+`nobind17` offers two built-in interfaces to deal with iterable objects - one that copîes the returned objects to JavaScript and another one which returns shared references which prevent the container to be destroyed until the last returned object has been destroyed.
 
-To define an iterator for the C++ class `Iterable`, instantiate the built-in `JSCopyIterator` and `JSReferenceIterator` classes to define a JS-compatible iterator that has a `next` method. For TypeScript support it should implement `Nobind::TSIterator<Iterable::iterator::value_type>>` - this will automatically define its TypeScript to return whatever type the C++ iterator returns - which will be `Iterable::iterator::value_type` as per the C++17 specifications:
+To define an iterator for the C++ class `Iterable`, instantiate the built-in `JSIterator` classe specifying either `ReturnOwned` or `ReturnNested` to define a JS-compatible iterator that has a `next` method. For TypeScript support it should implement `Nobind::TSIterator<Iterable>` - this will automatically define its TypeScript to return whatever type the C++ iterator returns - which will be `Iterable::iterator::value_type` as per the C++17 specifications:
 
 ```cpp
-m.def<Nobind::JSCopyIterator<Iterable>, void, Nobind::TSIterator<Iterable>>(
+m.def<Nobind::JSIterator<Iterable, Nobind::ReturnOwned>, void, Nobind::TSIterator<Iterable>>(
       "_nobind_iterable_copy_iterator")
-    .def<&Nobind::JSReferenceIterator<Iterable>::next>("next");
+    .def<&Nobind::JSIterator<Iterable, Nobind::ReturnOwned>::next>("next");
 ```
 
-Then in the definition of the `Iterable` class add the built-in helper `MakeJSCopyIterator` or `MakeJSReferenceIterator` as a `Symbol.iterator` extension method for the class:
+Then in the definition of the `Iterable` class add the built-in helper `MakeJSIterator` as a `Symbol.iterator` extension method for the class:
 
 ```cpp
 m.def<Iterable, void, Nobind::TSIterable<Iterable>>("Iterable")
-    .ext<&Nobind::MakeJSCopyIterator<Iterable>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+    .ext<&Nobind::MakeJSIterator<Iterable1, Nobind::ReturnOwned>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 ```
+
+There is no `ReturnDefault` when working with iterators to further stress the fact that there is a decision to make.
 
 This expects that `Iterable` implements `std::input_iterator_tag` which is the most basic C++17 iterator - implementing only the pointer advancement operation and the indirection.
 

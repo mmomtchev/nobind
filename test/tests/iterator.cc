@@ -22,8 +22,8 @@ using Iterable1 = Range<10, 20>;
 using Iterable2 = std::list<Hello>;
 
 // This is needed only to force MSVC from VS 2019 to instantiate the templates
-constexpr auto *IteratorCopyWrapper_Iterable1 = &Nobind::MakeJSCopyIterator<Iterable1>;
-constexpr auto *IteratorReferenceWrapper_Iterable2 = &Nobind::MakeJSReferenceIterator<Iterable2>;
+constexpr auto *CopyIteratorIterable1 = &Nobind::MakeJSIterator<Iterable1, Nobind::ReturnOwned>;
+constexpr auto *ReferenceIteratorIterable2 = &Nobind::MakeJSIterator<Iterable2, Nobind::ReturnNested>;
 
 NOBIND_MODULE(iterator, m) {
   m.def<Hello>("Hello").cons<const std::string &>().def<&Hello::Greet>("greet");
@@ -34,18 +34,20 @@ NOBIND_MODULE(iterator, m) {
   // Wrap the JS-compatible iterators to be exposed as abstract classes (no constructor) to JS
   // JS needs to know about their operator next() and the templates must be instantiated to be used
   // from JS as a C++ template can be instantiated only by the compiler - no runtime instantiation
-  m.def<Nobind::JSCopyIterator<Iterable1>, void, Nobind::TSIterator<Iterable1>>("_nobind_range_copy_iterator")
-      .def<&Nobind::JSCopyIterator<Iterable1>::next>("next");
-  m.def<Nobind::JSReferenceIterator<Iterable2>, void, Nobind::TSIterator<Iterable2>>("_nobind_list_ref_iterator")
-      .def<&Nobind::JSReferenceIterator<Iterable2>::next>("next");
+  m.def<Nobind::JSIterator<Iterable1, Nobind::ReturnOwned>, void, Nobind::TSIterator<Iterable1>>(
+       "_nobind_range_copy_iterator")
+      .def<&Nobind::JSIterator<Iterable1, Nobind::ReturnOwned>::next>("next");
+  m.def<Nobind::JSIterator<Iterable2, Nobind::ReturnNested>, void, Nobind::TSIterator<Iterable2>>(
+       "_nobind_list_ref_iterator")
+      .def<&Nobind::JSIterator<Iterable2, Nobind::ReturnNested>::next>("next");
 
   // Expose the iterables to JS with a the helper that constructs a JS-compatible iterator
   // attached to [Symbol.iterator]
   m.def<Iterable1, void, Nobind::TSIterable<Iterable1>>("Range_10_20")
       .cons<>()
-      .ext<IteratorCopyWrapper_Iterable1>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+      .ext<CopyIteratorIterable1>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
   m.def<Iterable2, void, Nobind::TSIterable<Iterable2>>("HelloList")
       .cons<>()
       .def<static_cast<void (Iterable2::*)(const Hello &)>(&Iterable2::push_back)>("push_back")
-      .ext<IteratorReferenceWrapper_Iterable2>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+      .ext<ReferenceIteratorIterable2>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 }
