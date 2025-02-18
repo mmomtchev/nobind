@@ -34,19 +34,17 @@ NOBIND_MODULE(iterator, m) {
   // Wrap the JS-compatible iterators to be exposed as abstract classes (no constructor) to JS
   // JS needs to know about their operator next() and the templates must be instantiated to be used
   // from JS as a C++ template can be instantiated only by the compiler - no runtime instantiation
-  m.def<Nobind::JSCopyIterator<Iterable1>, void, Nobind::TSIterator<Iterable1::iterator::value_type>>(
-       "_nobind_range_copy_iterator")
+  m.def<Nobind::JSCopyIterator<Iterable1>, void, Nobind::TSIterator<Iterable1>>("_nobind_range_copy_iterator")
       .def<&Nobind::JSCopyIterator<Iterable1>::next>("next");
-  m.def<Nobind::JSReferenceIterator<Iterable2>, void, Nobind::TSIterator<Iterable2::iterator::value_type>>(
-       "_nobind_list_ref_iterator")
+  m.def<Nobind::JSReferenceIterator<Iterable2>, void, Nobind::TSIterator<Iterable2>>("_nobind_list_ref_iterator")
       .def<&Nobind::JSReferenceIterator<Iterable2>::next>("next");
 
   // Expose the iterables to JS with a the helper that constructs a JS-compatible iterator
   // attached to [Symbol.iterator]
-  m.def<Iterable1, void, Nobind::TSIterable<Iterable1::iterator::value_type>>("Range_10_20")
+  m.def<Iterable1, void, Nobind::TSIterable<Iterable1>>("Range_10_20")
       .cons<>()
       .ext<IteratorCopyWrapper_Iterable1>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
-  m.def<Iterable2, void, Nobind::TSIterable<Iterable2::iterator::value_type>>("HelloList")
+  m.def<Iterable2, void, Nobind::TSIterable<Iterable2>>("HelloList")
       .cons<>()
       .def<static_cast<void (Iterable2::*)(const Hello &)>(&Iterable2::push_back)>("push_back")
       .ext<IteratorReferenceWrapper_Iterable2>(Napi::Symbol::WellKnown(m.Env(), "iterator"));

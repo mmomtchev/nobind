@@ -645,7 +645,7 @@ Iterators are mostly automatic but you must be aware that C++ iterators return r
 To define an iterator for the C++ class `Iterable`, instantiate the built-in `JSCopyIterator` and `JSReferenceIterator` classes to define a JS-compatible iterator that has a `next` method. For TypeScript support it should implement `Nobind::TSIterator<Iterable::iterator::value_type>>` - this will automatically define its TypeScript to return whatever type the C++ iterator returns - which will be `Iterable::iterator::value_type` as per the C++17 specifications:
 
 ```cpp
-m.def<Nobind::JSCopyIterator<Iterable>, void, Nobind::TSIterator<Iterable::iterator::value_type>>(
+m.def<Nobind::JSCopyIterator<Iterable>, void, Nobind::TSIterator<Iterable>>(
       "_nobind_iterable_copy_iterator")
     .def<&Nobind::JSReferenceIterator<Iterable>::next>("next");
 ```
@@ -653,7 +653,7 @@ m.def<Nobind::JSCopyIterator<Iterable>, void, Nobind::TSIterator<Iterable::itera
 Then in the definition of the `Iterable` class add the built-in helper `MakeJSCopyIterator` or `MakeJSReferenceIterator` as a `Symbol.iterator` extension method for the class:
 
 ```cpp
-m.def<Iterable, void, Nobind::TSIterable<Iterable::iterator::value_type>>("Iterable")
+m.def<Iterable, void, Nobind::TSIterable<Iterable>>("Iterable")
     .ext<&Nobind::MakeJSCopyIterator<Iterable>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 ```
 

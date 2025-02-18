@@ -274,12 +274,12 @@ template <typename T> std::string createTSArray() { return FromTSType<T>() + "[]
 namespace Typemap {
 template <typename T> class FromJS<TSIterable<T>> {
 public:
-  static std::string TSType() { return "Iterable<"s + FromTSType<T>() + ">"s; }
+  static std::string TSType() { return "Iterable<"s + FromTSType<typename T::iterator::value_type>() + ">"s; }
 };
 
 template <typename T> class FromJS<TSIterator<T>> {
 public:
-  static std::string TSType() { return "Iterator<"s + FromTSType<T>() + ">"s; }
+  static std::string TSType() { return "Iterator<"s + FromTSType<typename T::iterator::value_type>() + ">"s; }
 };
 
 // IteratorResult follows the Napi::Value conversion rules
