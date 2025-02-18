@@ -72,15 +72,13 @@ public:
 };
 
 // Example 1: Iterating over scalar values
+// (this includes iterating over object pointers)
 using Iterable1 = Range<10, 20>;
 
 // Example 2: Iterating over objects
 using Iterable2 = std::list<Hello>;
 
-// Helpers to construct them
-// MSVC from VS 2019 is not fully C++17 compliant and has problems with using
-// pointers to templated functions as non-type template arguments
-#if !defined(_MSC_VER) || _MSC_VER >= 1930
+// Helpers to construct the iterators
 // The safe iterator does not need anything
 template <typename T> JSIteratorCopy<T> IteratorCopyWrapper(T &obj) { return JSIteratorCopy<T>{obj, obj.begin()}; }
 // The "dangerous" iterator keeps a JS reference to the container to protect it from the GC
@@ -89,12 +87,6 @@ template <typename T> JSIteratorReference<T> IteratorReferenceWrapper(Napi::Valu
   T &obj = Nobind::FromJSValue<T>(jsobj).Get();
   return JSIteratorReference<T>{obj, obj.begin(), jsobj};
 }
-#else
-JSIteratorCopy<Iterable> IteratorCopyWrapper(Iterable1 &obj) { return JSIteratorCopy<Iterable1>{obj, obj.begin()}; }
-JSIteratorCopy<Iterable> IteratorReferenceWrapper(Iterable2 &obj) {
-  return JSIteratorCopy<Iterable2>{obj, obj.begin()};
-}
-#endif
 
 NOBIND_MODULE(iterator, m) {
   m.def<Hello>("Hello").cons<const std::string &>().def<&Hello::Greet>("greet");
@@ -107,7 +99,6 @@ NOBIND_MODULE(iterator, m) {
 
   // Expose the iterables to JS with a the helper that constructs a JS-compatible iterator
   // attached to [Symbol.iterator]
-#if !defined(_MSC_VER) || _MSC_VER >= 1930
   m.def<Iterable1>("Range_10_20")
       .cons<>()
       .ext<&IteratorCopyWrapper<Iterable1>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
@@ -115,7 +106,4 @@ NOBIND_MODULE(iterator, m) {
       .cons<>()
       .def<static_cast<void (Iterable2::*)(const Hello &)>(&Iterable2::push_back)>("push_back")
       .ext<&IteratorCopyWrapper<Iterable2>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
-#else
-  m.def<Iterable>("Range_10_20").cons<>().ext<&IteratorWrapper>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
-#endif
 }
