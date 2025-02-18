@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   New `Nobind::ReturnCopy` return attribute allows to always copy the returned object
 -   Fix [#30](https://github.com/mmomtchev/nobind/issues/30), `m.ext<T>(...)` accepts only functions with `T &` as first parameter
 
-### [1.2.1]  2024-07-16
+### [1.2.1] 2024-07-16
 
 -   Fix [#21](https://github.com/mmomtchev/nobind/issues/21), the default typemaps do not accept C++ POD objects
 

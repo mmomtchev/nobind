@@ -22,4 +22,16 @@ describe('iterators', () => {
     }
     assert.sameOrderedMembers(r, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
   });
+
+  it('pointers', () => {
+    const o = new dll.HelloPtrList;
+    assert.isFunction(o[Symbol.iterator]);
+    const r = [];
+    o.push_back(new dll.Hello('Gargantua'));
+    o.push_back(new dll.Hello('Pantagruel'));
+    for (const i of o) {
+      r.push(i.greet('Mr'));
+    }
+    assert.sameOrderedMembers(r, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
+  });
 });

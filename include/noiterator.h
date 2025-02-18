@@ -41,19 +41,18 @@ public:
     }
   };
   Nobind::JSIteratorResult<value_type_t> next(Napi::Env env) {
-    static_assert(!RETATTR.isCopy() || std::is_copy_constructible_v<value_type_t>,
-                  "JSIterator<ReturnCopy> works only with copy-constructible objects");
-    static_assert(!RETATTR.isNested() || !std::is_scalar_v<value_type_t>,
-                  "JSIterator<ReturnNested> should not be used with scalar values");
+    if constexpr (RETATTR.isCopy()) {
+      static_assert(std::is_copy_constructible_v<value_type_t>,
+                    "JSIterator<ReturnCopy> works only with copy-constructible objects");
+    } else if constexpr (RETATTR.isNested()) {
+      static_assert(!std::is_scalar_v<value_type_t>, "JSIterator<ReturnNested> should not be used with scalar values");
+    }
 
     JSIteratorResult<value_type_t> ret = Napi::Object::New(env);
     if (this->it == this->target.end()) {
       ret.Set("done", Napi::Boolean::New(env, true));
     } else {
       Napi::Value value;
-      if constexpr (RETATTR.isCopy()) {
-        value = Nobind::ToJS<value_type_t, Nobind::ReturnCopy>(env, *it).Get();
-      }
       if constexpr (RETATTR.isNested()) {
         value = Nobind::ToJS<value_type_t &, Nobind::ReturnShared>(env, *it).Get();
         // Every returned object receives a copy of the reference to his container
@@ -61,6 +60,8 @@ public:
         // the iterator have been GCed
         value.ToObject().DefineProperty(
             Napi::PropertyDescriptor::Value(Napi::String::New(env, NOBIND_PARENT_PROP), persistent->Value()));
+      } else {
+        value = Nobind::ToJS<value_type_t, RETATTR>(env, *it).Get();
       }
       ret.Set("value", value);
       ret.Set("done", Napi::Boolean::New(env, false));
@@ -72,8 +73,8 @@ public:
 
 // Helper to construct the iterators
 template <typename T, const ReturnAttribute &RETATTR> JSIterator<T, RETATTR> *MakeJSIterator(Napi::Value jsobj) {
-  static_assert(RETATTR.isCopy() || RETATTR.isNested(),
-                "JSMakeIterator supports only explicit ReturnNested or ReturnCopy, "
+  static_assert(RETATTR.isCopy() || RETATTR.isNested() || RETATTR.isOwned() || RETATTR.isShared(),
+                "JSMakeIterator supports only explicit return type, "
                 "refer to the documentation to see why");
   T &obj = FromJSValue<T &>(jsobj).Get();
   return new JSIterator<T, RETATTR>{obj, obj.begin(), jsobj};

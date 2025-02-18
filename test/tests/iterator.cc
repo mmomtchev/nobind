@@ -21,9 +21,18 @@ using Iterable1 = Range<10, 20>;
 // Example 2: Iterating over objects
 using Iterable2 = std::list<Hello>;
 
+// Example 3: Iterating over pointers (the objects are not owned by the container)
+// (using Nobind::ReturnCopy will copy them, here we simply use the pointers)
+using Iterable3 = std::list<Hello *>;
+
+// For Iterable3, the built-in std::list::push_back won't work for us, nobind17 does not
+// support rvalue references
+void push_back_ptr(Iterable3 &list, Hello *el) { return list.push_back(el); }
+
 // This is needed only to force MSVC from VS 2019 to instantiate the templates
 constexpr auto *CopyIteratorIterable1 = &Nobind::MakeJSIterator<Iterable1, Nobind::ReturnCopy>;
 constexpr auto *ReferenceIteratorIterable2 = &Nobind::MakeJSIterator<Iterable2, Nobind::ReturnNested>;
+constexpr auto *SharedIteratorIterable3 = &Nobind::MakeJSIterator<Iterable3, Nobind::ReturnShared>;
 
 NOBIND_MODULE(iterator, m) {
   m.def<Hello>("Hello").cons<const std::string &>().def<&Hello::Greet>("greet");
@@ -40,6 +49,9 @@ NOBIND_MODULE(iterator, m) {
   m.def<Nobind::JSIterator<Iterable2, Nobind::ReturnNested>, void, Nobind::TSIterator<Iterable2>>(
        "_nobind_list_ref_iterator")
       .def<&Nobind::JSIterator<Iterable2, Nobind::ReturnNested>::next>("next");
+  m.def<Nobind::JSIterator<Iterable3, Nobind::ReturnShared>, void, Nobind::TSIterator<Iterable3>>(
+       "_nobind_list_shared_iterator")
+      .def<&Nobind::JSIterator<Iterable3, Nobind::ReturnShared>::next>("next");
 
   // Expose the iterables to JS with a the helper that constructs a JS-compatible iterator
   // attached to [Symbol.iterator]
@@ -50,4 +62,8 @@ NOBIND_MODULE(iterator, m) {
       .cons<>()
       .def<static_cast<void (Iterable2::*)(const Hello &)>(&Iterable2::push_back)>("push_back")
       .ext<ReferenceIteratorIterable2>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+  m.def<Iterable3, void, Nobind::TSIterable<Iterable3>>("HelloPtrList")
+      .cons<>()
+      .ext<&push_back_ptr>("push_back")
+      .ext<SharedIteratorIterable3>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 }

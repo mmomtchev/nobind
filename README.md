@@ -661,6 +661,8 @@ m.def<Iterable, void, Nobind::TSIterable<Iterable>>("Iterable")
 
 There is no `ReturnDefault` when working with iterators to further stress the fact that there is a decision to make.
 
+Besides `ReturnNested` and `ReturnCopy` - which cover most cases, there are also cases where `ReturnShared` and `ReturnOwned` might be needed, but these are not completely safe and you should use them only if you understand the implications. `ReturnShared` means that the container does not own the returned object and it should never be freed - this is often the case for containers of pointers or containers of static objects. `ReturnOwned` is the most unusual - this means that the iterator is transfering the responsability of the returned object to its caller.
+
 This expects that `Iterable` implements `std::input_iterator_tag` which is the most basic C++17 iterator - implementing only the pointer advancement operation and the indirection.
 
 There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/main/test/tests/iterator.cc).
@@ -704,6 +706,10 @@ When encountering compilation errors, start with this quick checklist:
   *MSVC has a number of problems with template argument deduction in its default compilation mode. The `/permissive-` and `/Zc` flags can help in some cases, or you can also use a `static_cast` to explicitly type your function pointer. `node-ffmpeg` includes a few cases of this type.*
   
   *Also, MSVC 2019 has a number of problems such as *C1001: Internal Compiler Error* on `static constexpr` local function variables used as non-type template arguments and some complex SFINAE constructs such as this one: [MSVC fails to specialize template with `std::enable_if` and a non-type argument](https://stackoverflow.com/questions/77698129/msvc-fails-to-specialize-template-with-stdenable-if-and-a-non-type-argument).*
+
+* `assert(class_idx == 0 || class_idx == idx)` fails
+
+  You most probably have multiple definitions for the same class.
 
 ## WASM compatbility
 
