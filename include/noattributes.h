@@ -13,7 +13,7 @@ namespace Nobind {
 
 class Attribute {
 public:
-  constexpr Attribute(){};
+  constexpr Attribute() {};
 };
 
 class PropertyAttribute : public Attribute {
@@ -40,7 +40,7 @@ constexpr PropertyAttribute ReadWrite = PropertyAttribute();
 
 class ReturnAttribute : public Attribute {
 public:
-  enum Return { Shared = 0x1, Owned = 0x2, Nested = 0x40 };
+  enum Return { Shared = 0x1, Owned = 0x2, Nested = 0x40, Copy = 0x80 };
   enum Execution { Sync = 0x4, Async = 0x8 };
   enum Null { Allowed = 0x10, Forbidden = 0x20 };
 
@@ -54,6 +54,7 @@ public:
   constexpr bool isShared() const { return (flags & Shared) == Shared; }
   constexpr bool isOwned() const { return (flags & Owned) == Owned; }
   constexpr bool isNested() const { return (flags & Nested) == Nested; }
+  constexpr bool isCopy() const { return (flags & Copy) == Copy; }
   constexpr bool isReturnNullAccept() const { return (flags & Allowed) == Allowed; }
   constexpr bool isReturnNullThrow() const { return (flags & Forbidden) == Forbidden; }
   constexpr bool isAsync() const { return (flags & Async) == Async; }
@@ -64,6 +65,8 @@ public:
       return true;
     if (isNested())
       return false;
+    if (isCopy())
+      return true;
     return DEFAULT;
   }
 
@@ -87,6 +90,11 @@ constexpr ReturnAttribute ReturnShared = ReturnAttribute(ReturnAttribute::Shared
  * only for class methods
  */
 constexpr ReturnAttribute ReturnNested = ReturnAttribute(ReturnAttribute::Nested);
+
+/**
+ * Returned objects are to be copied, valid only for non-scalar objects
+ */
+constexpr ReturnAttribute ReturnCopy = ReturnAttribute(ReturnAttribute::Copy);
 
 /**
  * Returned pointers will be freed and returned references won't be freed (this is the default)

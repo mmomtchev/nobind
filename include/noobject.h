@@ -683,7 +683,12 @@ public:
   }
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
-  inline Napi::Value Get() { return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_); }
+  inline Napi::Value Get() {
+    if constexpr (RETATTR.isCopy()) {
+      return OBJCLASS::template New<true>(env_, new T{*val_});
+    }
+    return OBJCLASS::template New<RETATTR.ShouldOwn<false>()>(env_, val_);
+  }
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -725,6 +730,9 @@ public:
       if (val_ == nullptr) {
         throw Napi::Error::New(env_, "Returned nullptr");
       }
+    }
+    if constexpr (RETATTR.isCopy()) {
+      return OBJCLASS::template New<true>(env_, new T{*val_});
     }
     return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_);
   }

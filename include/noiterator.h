@@ -41,8 +41,8 @@ public:
     }
   };
   Nobind::JSIteratorResult<value_type_t> next(Napi::Env env) {
-    static_assert(!RETATTR.isOwned() || std::is_copy_constructible_v<value_type_t>,
-                  "JSIterator<ReturnOwned> works only with copy-constructible objects");
+    static_assert(!RETATTR.isCopy() || std::is_copy_constructible_v<value_type_t>,
+                  "JSIterator<ReturnCopy> works only with copy-constructible objects");
     static_assert(!RETATTR.isNested() || !std::is_scalar_v<value_type_t>,
                   "JSIterator<ReturnNested> should not be used with scalar values");
 
@@ -51,8 +51,8 @@ public:
       ret.Set("done", Napi::Boolean::New(env, true));
     } else {
       Napi::Value value;
-      if constexpr (RETATTR.isOwned()) {
-        value = Nobind::ToJS<value_type_t, Nobind::ReturnOwned>(env, *it).Get();
+      if constexpr (RETATTR.isCopy()) {
+        value = Nobind::ToJS<value_type_t, Nobind::ReturnCopy>(env, *it).Get();
       }
       if constexpr (RETATTR.isNested()) {
         value = Nobind::ToJS<value_type_t &, Nobind::ReturnShared>(env, *it).Get();
@@ -72,8 +72,8 @@ public:
 
 // Helper to construct the iterators
 template <typename T, const ReturnAttribute &RETATTR> JSIterator<T, RETATTR> *MakeJSIterator(Napi::Value jsobj) {
-  static_assert(RETATTR.isOwned() || RETATTR.isNested(),
-                "JSMakeIterator supports only explicit ReturnNested or ReturnOwned, "
+  static_assert(RETATTR.isCopy() || RETATTR.isNested(),
+                "JSMakeIterator supports only explicit ReturnNested or ReturnCopy, "
                 "refer to the documentation to see why");
   T &obj = FromJSValue<T &>(jsobj).Get();
   return new JSIterator<T, RETATTR>{obj, obj.begin(), jsobj};

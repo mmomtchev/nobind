@@ -22,7 +22,7 @@ using Iterable1 = Range<10, 20>;
 using Iterable2 = std::list<Hello>;
 
 // This is needed only to force MSVC from VS 2019 to instantiate the templates
-constexpr auto *CopyIteratorIterable1 = &Nobind::MakeJSIterator<Iterable1, Nobind::ReturnOwned>;
+constexpr auto *CopyIteratorIterable1 = &Nobind::MakeJSIterator<Iterable1, Nobind::ReturnCopy>;
 constexpr auto *ReferenceIteratorIterable2 = &Nobind::MakeJSIterator<Iterable2, Nobind::ReturnNested>;
 
 NOBIND_MODULE(iterator, m) {
@@ -34,9 +34,9 @@ NOBIND_MODULE(iterator, m) {
   // Wrap the JS-compatible iterators to be exposed as abstract classes (no constructor) to JS
   // JS needs to know about their operator next() and the templates must be instantiated to be used
   // from JS as a C++ template can be instantiated only by the compiler - no runtime instantiation
-  m.def<Nobind::JSIterator<Iterable1, Nobind::ReturnOwned>, void, Nobind::TSIterator<Iterable1>>(
+  m.def<Nobind::JSIterator<Iterable1, Nobind::ReturnCopy>, void, Nobind::TSIterator<Iterable1>>(
        "_nobind_range_copy_iterator")
-      .def<&Nobind::JSIterator<Iterable1, Nobind::ReturnOwned>::next>("next");
+      .def<&Nobind::JSIterator<Iterable1, Nobind::ReturnCopy>::next>("next");
   m.def<Nobind::JSIterator<Iterable2, Nobind::ReturnNested>, void, Nobind::TSIterator<Iterable2>>(
        "_nobind_list_ref_iterator")
       .def<&Nobind::JSIterator<Iterable2, Nobind::ReturnNested>::next>("next");

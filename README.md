@@ -438,6 +438,8 @@ The `Nobind::ReturnShared` signals `nobind17` that C++ objects returned by this 
 
 Also, be sure to check [#1](https://github.com/mmomtchev/nobind17/issues/1) for a very important warning about shared references and also read the section on nested references below.
 
+Eventually, as last resort, `Nobind::ReturnCopy` will copy the returned object. This might not be very efficient, but it will always be safe. The copy will be destroyed when the returned reference is GCed. `Nobind::ReturnCopy` works only for objects. Plain objects are always copied anyway, but it also allows to copy objects returned as references or pointers.
+
 ### Extending classes
 
 Sometimes it is very handy to be able to add an additional class method in JavaScript that does not directly correspond to a C++ method. For example, the standard way of providing a method returning a readable string representation of an object is to overload the global `operator<<`. In JavaScript, the standard method is to replace the `Object.toString()`. This cannot be achieved with a simple helper function, because it will have to be a member of the binded class. In this case `nobind17` allows to define a special function of the form `RETTYPE Method(CLASS &, ARGS...)` and to register it as a class extension:
@@ -642,19 +644,19 @@ Iterators are mostly automatic but you must be aware that C++ iterators return r
 
 `nobind17` offers two built-in interfaces to deal with iterable objects - one that copîes the returned objects to JavaScript and another one which returns shared references which prevent the container to be destroyed until the last returned object has been destroyed.
 
-To define an iterator for the C++ class `Iterable`, instantiate the built-in `JSIterator` classe specifying either `ReturnOwned` or `ReturnNested` to define a JS-compatible iterator that has a `next` method. For TypeScript support it should implement `Nobind::TSIterator<Iterable>` - this will automatically define its TypeScript to return whatever type the C++ iterator returns - which will be `Iterable::iterator::value_type` as per the C++17 specifications:
+To define an iterator for the C++ class `Iterable`, instantiate the built-in `JSIterator` classe specifying either `ReturnCopy` or `ReturnNested` to define a JS-compatible iterator that has a `next` method. For TypeScript support it should implement `Nobind::TSIterator<Iterable>` - this will automatically define its TypeScript to return whatever type the C++ iterator returns - which will be `Iterable::iterator::value_type` as per the C++17 specifications:
 
 ```cpp
-m.def<Nobind::JSIterator<Iterable, Nobind::ReturnOwned>, void, Nobind::TSIterator<Iterable>>(
+m.def<Nobind::JSIterator<Iterable, Nobind::ReturnCopy>, void, Nobind::TSIterator<Iterable>>(
       "_nobind_iterable_copy_iterator")
-    .def<&Nobind::JSIterator<Iterable, Nobind::ReturnOwned>::next>("next");
+    .def<&Nobind::JSIterator<Iterable, Nobind::ReturnCopy>::next>("next");
 ```
 
 Then in the definition of the `Iterable` class add the built-in helper `MakeJSIterator` as a `Symbol.iterator` extension method for the class:
 
 ```cpp
 m.def<Iterable, void, Nobind::TSIterable<Iterable>>("Iterable")
-    .ext<&Nobind::MakeJSIterator<Iterable1, Nobind::ReturnOwned>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+    .ext<&Nobind::MakeJSIterator<Iterable1, Nobind::ReturnCopy>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 ```
 
 There is no `ReturnDefault` when working with iterators to further stress the fact that there is a decision to make.
