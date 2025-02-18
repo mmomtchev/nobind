@@ -635,6 +635,10 @@ Inserting a custom TypeScript code fragment anywhere at the root level in the co
 m.typescript_fragment("export class CustomClass {}");
 ```
 
+### R-value references
+
+`nobind17` does not support R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.
+
 ### Troubleshooting
 
 Most of the work that `nobind17` does happens during the C++ compilation of the project. It is at that moment that the templates will be instantiated.
