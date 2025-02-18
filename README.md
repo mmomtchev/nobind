@@ -361,8 +361,6 @@ Note that `nooverrides.h` must be included first, then the custom typemaps, then
 
 A very good starting point for implementing a custom typemap are the standard number typemaps in [`nonumbermaps.h`](https://github.com/mmomtchev/nobind/blob/main/include/nonumbermaps.h), the string ones in [`nostringmaps.h`](https://github.com/mmomtchev/nobind/blob/main/include/nostringmaps.h) and the STL maps which are recursive in [`nostl.h`](https://github.com/mmomtchev/nobind/blob/main/include/nostl.h).
 
-A very advanced example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/main/test/tests/iterator.cc) contains a typemap that implements `Symbol.iterator` from a C++17 iterator. Currently, it is not part of the standard typemaps, as using it has some caveats.
-
 ### Using `Buffer`s
 
 Unless the C++ code has been designed for `nobind17`, using a `Buffer` will likely require creating custom wrappers to convert from and to `std::pair<uint8_t*, size_t>`:
@@ -637,6 +635,31 @@ Inserting a custom TypeScript code fragment anywhere at the root level in the co
 ```cpp
 m.typescript_fragment("export class CustomClass {}");
 ```
+
+### Iterators
+
+Iterators are mostly automatic but you must be aware that C++ iterators return references to the objects inside the container. The ownership of these objects is not always clear, but generally they are considered to be owned by the container.
+
+`nobind17` offers two built-in interfaces to deal with iterable objects - one that copîes the returned objects to JavaScript and it is always safe to use and another one which returns shared references which prevent the container to be destroyed until the last returned object has been destroyed.
+
+To define an iterator for the C++ class `Iterable`, instantiate the built-in `JSCopyIterator` and `JSReferenceIterator` classes to define a JS-compatible iterator that has a `next` method. For TypeScript support it should implement `Nobind::TSIterator<Iterable::iterator::value_type>>` - this will automatically define its TypeScript to return whatever type the C++ iterator returns - which will be `Iterable::iterator::value_type` as per the C++17 specifications:
+
+```cpp
+m.def<Nobind::JSCopyIterator<Iterable>, void, Nobind::TSIterator<Iterable::iterator::value_type>>(
+      "_nobind_iterable_copy_iterator")
+    .def<&Nobind::JSReferenceIterator<Iterable>::next>("next");
+```
+
+Then in the definition of the `Iterable` class add the built-in helper `MakeJSCopyIterator` or `MakeJSReferenceIterator` as a `Symbol.iterator` extension method for the class:
+
+```cpp
+m.def<Iterable, void, Nobind::TSIterable<Iterable::iterator::value_type>>("Iterable")
+    .ext<&Nobind::MakeJSCopyIterator<Iterable>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+```
+
+This expects that `Iterable` implements `std::input_iterator_tag` which is the most basic C++17 iterator - implementing only the pointer advancement operation and the indirection.
+
+There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/main/test/tests/iterator.cc).
 
 ### R-value references
 

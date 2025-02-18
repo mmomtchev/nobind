@@ -6,8 +6,7 @@
 //   std::cout << l << ' '; // 3 4 5
 //
 
-#include <algorithm>
-#include <iostream>
+#include <iterator>
 
 template <long FROM, long TO> class Range {
   int d;
@@ -18,7 +17,7 @@ public:
     long num = FROM;
 
   public:
-    using iterator_category = std::forward_iterator_tag;
+    using iterator_category = std::input_iterator_tag;
     using value_type = long;
     using difference_type = long;
     using pointer = long *;
