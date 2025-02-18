@@ -123,6 +123,7 @@ public:
     return MethodWrapperAsync<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
   }
 
+  // Extension wrapper, 3 stages, this is the first one
   template <const ReturnAttribute &RET = ReturnDefault, auto FUNC>
   Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info) {
     return ExtensionWrapper<RET>(info, std::integral_constant<decltype(FUNC), FUNC>{});
@@ -294,28 +295,28 @@ private:
   }
 
   // The extension wrapper, it adds an additional first argument by converting info.This()
-  // Two stages, first stage, This() is CLASS &
+  // Three stages, second stage, This() is CLASS &
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...)>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
                                       std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
-  // First stage, This() is const CLASS &
+  // Second stage, This() is const CLASS &
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(const CLASS &, ARGS...)>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
                                       std::integral_constant<RETURN (*)(const CLASS &, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
-  // First stage, This() is Napi::Value
+  // Second stage, This() is Napi::Value
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(Napi::Value, ARGS...)>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
                                       std::integral_constant<RETURN (*)(Napi::Value, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
-  // Second stage
+  // Third stage
   template <const ReturnAttribute &RETATTR, typename THIS, typename RETURN, typename... ARGS,
             RETURN (*FUNC)(THIS, ARGS...), std::size_t... I>
   inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,

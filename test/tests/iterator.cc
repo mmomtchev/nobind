@@ -85,12 +85,16 @@ template <typename T> JSIteratorCopy<T> IteratorCopyWrapper(T &obj) { return JSI
 
 // The "dangerous" iterator keeps a JS reference to the container to protect it from the GC
 // This iterator is not copy-constructible and must be allocated on the heap
-// (Nobind will recognize the pointer type and it will take care of the destruction)
+// (Nobind will recognize the pointer type and it will take care of the destruction
+// because with pointers, Nobind::ReturnDefault considers it a dynamically allocated object)
 template <typename T> JSIteratorReference<T> *IteratorReferenceWrapper(Napi::Value jsobj) {
   // Unwrap the JS value to get the C++ object
   T &obj = Nobind::FromJSValue<T &>(jsobj).Get();
   return new JSIteratorReference<T>{obj, obj.begin(), jsobj};
 }
+
+constexpr auto *IteratorCopyWrapper_Iterable1 = &IteratorCopyWrapper<Iterable1>;
+constexpr auto *IteratorReferenceWrapper_Iterable2 = &IteratorReferenceWrapper<Iterable2>;
 
 NOBIND_MODULE(iterator, m) {
   m.def<Hello>("Hello").cons<const std::string &>().def<&Hello::Greet>("greet");
@@ -105,9 +109,9 @@ NOBIND_MODULE(iterator, m) {
   // attached to [Symbol.iterator]
   m.def<Iterable1>("Range_10_20")
       .cons<>()
-      .ext<&IteratorCopyWrapper<Iterable1>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+      .ext<IteratorCopyWrapper_Iterable1>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
   m.def<Iterable2>("HelloList")
       .cons<>()
       .def<static_cast<void (Iterable2::*)(const Hello &)>(&Iterable2::push_back)>("push_back")
-      .ext<&IteratorReferenceWrapper<Iterable2>>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
+      .ext<IteratorReferenceWrapper_Iterable2>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
 }
