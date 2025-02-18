@@ -85,6 +85,7 @@ template <typename T> JSIteratorCopy<T> IteratorCopyWrapper(T &obj) { return JSI
 
 // The "dangerous" iterator keeps a JS reference to the container to protect it from the GC
 // This iterator is not copy-constructible and must be allocated on the heap
+// (Nobind will recognize the pointer type and it will take care of the destruction)
 template <typename T> JSIteratorReference<T> *IteratorReferenceWrapper(Napi::Value jsobj) {
   // Unwrap the JS value to get the C++ object
   T &obj = Nobind::FromJSValue<T &>(jsobj).Get();
