@@ -645,7 +645,7 @@ public:
     } else if (constructors.size() == 0) {
       global_typescript_types_ += "abstract ";
     }
-    global_typescript_types_ += " class "s + name_;
+    global_typescript_types_ += "class "s + name_;
     if constexpr (!std::is_void_v<BASE>)
       global_typescript_types_ += " extends "s + NoObjectWrap<BASE>::GetName();
     global_typescript_types_ += FromTSTInterfaces<INTERFACES...>();

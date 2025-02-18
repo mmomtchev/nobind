@@ -18,15 +18,15 @@
 template <typename T> class JSIteratorCopy {
   T &target;
   typename T::iterator it;
+  using value_type_t = typename T::iterator::value_type;
 
 public:
   JSIteratorCopy(T &obj, const typename T::iterator &begin) : target(obj), it(begin) {}
-  Napi::Value next(Napi::Env env) {
-    using value_type_t = typename T::iterator::value_type;
+  Nobind::TSIteratorResult<value_type_t> next(Napi::Env env) {
     static_assert(std::is_copy_constructible_v<value_type_t>,
                   "JSIteratorCopy works only with copy-constructible objects");
 
-    Napi::Object ret = Napi::Object::New(env);
+    Nobind::TSIteratorResult<value_type_t> ret = Napi::Object::New(env);
     if (it == target.end()) {
       ret.Set("done", Napi::Boolean::New(env, true));
     } else {
@@ -45,16 +45,16 @@ template <typename T> class JSIteratorReference {
   // The iterator keeps a JS reference to his container to protect it
   // from the GC
   Napi::Reference<Napi::Value> persistent;
+  using value_type_t = typename T::iterator::value_type;
 
 public:
   JSIteratorReference(T &) = delete;
   JSIteratorReference(T &obj, const typename T::iterator &begin, Napi::Value jsobj)
       : target(obj), it(begin), persistent(Napi::Persistent(jsobj)) {}
-  Napi::Value next(Napi::Env env) {
-    using value_type_t = typename T::iterator::value_type;
+  Nobind::TSIteratorResult<value_type_t> next(Napi::Env env) {
     static_assert(!std::is_scalar_v<value_type_t>, "JSIteratorReference should not be used with scalar values");
 
-    Napi::Object ret = Napi::Object::New(env);
+    Nobind::TSIteratorResult<value_type_t> ret = Napi::Object::New(env);
     if (it == target.end()) {
       ret.Set("done", Napi::Boolean::New(env, true));
     } else {
@@ -93,6 +93,7 @@ template <typename T> JSIteratorReference<T> *IteratorReferenceWrapper(Napi::Val
   return new JSIteratorReference<T>{obj, obj.begin(), jsobj};
 }
 
+// This is needed only to force MSVC from VS 2019 to instantiate the templates
 constexpr auto *IteratorCopyWrapper_Iterable1 = &IteratorCopyWrapper<Iterable1>;
 constexpr auto *IteratorReferenceWrapper_Iterable2 = &IteratorReferenceWrapper<Iterable2>;
 
@@ -107,10 +108,11 @@ NOBIND_MODULE(iterator, m) {
 
   // Expose the iterables to JS with a the helper that constructs a JS-compatible iterator
   // attached to [Symbol.iterator]
-  m.def<Iterable1>("Range_10_20")
+  // These classes do not inherit (use void) but they implement the TS Iterable<> interface
+  m.def<Iterable1, void, Nobind::TSIterable<Iterable1::iterator::value_type>>("Range_10_20")
       .cons<>()
       .ext<IteratorCopyWrapper_Iterable1>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
-  m.def<Iterable2>("HelloList")
+  m.def<Iterable2, void, Nobind::TSIterable<Iterable2::iterator::value_type>>("HelloList")
       .cons<>()
       .def<static_cast<void (Iterable2::*)(const Hello &)>(&Iterable2::push_back)>("push_back")
       .ext<IteratorReferenceWrapper_Iterable2>(Napi::Symbol::WellKnown(m.Env(), "iterator"));
