@@ -32,6 +32,7 @@ namespace Nobind {
 namespace Typemap {} // namespace Typemap
 
 template <typename T> class TSIterable {};
+template <typename T> class TSIterator {};
 
 using namespace std::string_literals;
 
@@ -273,7 +274,12 @@ template <typename T> std::string createTSArray() { return FromTSType<T>() + "[]
 namespace Typemap {
 template <typename T> class FromJS<TSIterable<T>> {
 public:
-  static std::string TSType() { return "Iterable<"s + FromTSType<T>() + ">"s; } // namespace Typemap
+  static std::string TSType() { return "Iterable<"s + FromTSType<T>() + ">"s; }
+};
+
+template <typename T> class FromJS<TSIterator<T>> {
+public:
+  static std::string TSType() { return "Iterator<"s + FromTSType<T>() + ">"s; }
 };
 
 // IteratorResult follows the Napi::Value conversion rules
