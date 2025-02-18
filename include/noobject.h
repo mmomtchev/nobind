@@ -1,7 +1,4 @@
 #pragma once
-#ifndef NOBIND_PARENT_PROP
-#define NOBIND_PARENT_PROP "__nobind_parent_reference"
-#endif
 #ifndef NOBIND_NAME_NOT_INITIALIZED
 #define NOBIND_NAME_NOT_INITIALIZED "unknown /* may be missing a forward declaration */"
 #endif

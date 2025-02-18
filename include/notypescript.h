@@ -33,12 +33,6 @@ namespace Typemap {} // namespace Typemap
 
 template <typename T> class TSIterable {};
 
-// An IteratorResult is a Napi::Object with a special TypeScript type
-template <typename T> class TSIteratorResult : public Napi::Object {
-public:
-  TSIteratorResult(const Napi::Object &obj) : Napi::Object(obj) {}
-};
-
 using namespace std::string_literals;
 
 // Helpers to determine if the typemap contains a TSType
@@ -283,11 +277,11 @@ public:
 };
 
 // IteratorResult follows the Napi::Value conversion rules
-template <typename T> class ToJS<TSIteratorResult<T>> : public ToJS<Napi::Value> {
+template <typename T> class ToJS<JSIteratorResult<T>> : public ToJS<Napi::Value> {
   Napi::Value val_;
 
 public:
-  inline explicit ToJS(Napi::Env env, TSIteratorResult<T> val) : ToJS<Napi::Value>(env, val) {}
+  inline explicit ToJS(Napi::Env env, JSIteratorResult<T> val) : ToJS<Napi::Value>(env, val) {}
   static std::string TSType() { return "IteratorResult<"s + FromTSType<T>() + ">"s; }
 };
 

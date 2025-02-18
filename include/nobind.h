@@ -14,6 +14,7 @@
 #include <nofunction.h>
 
 #include <nobuffer.h>
+#include <noiterator.h>
 #include <nonumbermaps.h>
 #include <noobject.h>
 #include <nostl.h>

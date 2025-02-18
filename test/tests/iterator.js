@@ -1,6 +1,6 @@
 const { assert } = require('chai');
 
-describe('iteraros', () => {
+describe('iterators', () => {
   it('scalar values', () => {
     const o = new dll.Range_10_20;
     assert.isFunction(o[Symbol.iterator]);

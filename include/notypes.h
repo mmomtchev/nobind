@@ -4,6 +4,10 @@
 #include <tuple>
 #include <type_traits>
 
+#ifndef NOBIND_PARENT_PROP
+#define NOBIND_PARENT_PROP "__nobind_parent_reference"
+#endif
+
 using namespace std::literals::string_literals;
 
 #include <noattributes.h>
