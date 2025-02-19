@@ -33,8 +33,9 @@ template <typename T> class ObjectStore {
 public:
   template <typename U> bool Has(U *ptr) { return object_store.count(ptr) > 0; }
   template <typename U> Napi::Value Get(U *ptr) {
-    if (object_store.count(static_cast<T>(ptr)) == 0)
+    if (object_store.count(static_cast<T>(ptr)) == 0) {
       return Napi::Value{};
+    }
 
     Napi::Reference<Napi::Value> &ref = object_store.at(static_cast<T>(ptr));
     if (ref.IsEmpty()) {
@@ -53,8 +54,9 @@ public:
 
   template <typename U> inline void Expire(U *ptr, Napi::Value js) {
     Napi::Value stored = Get(ptr);
-    if (stored.IsEmpty())
+    if (stored.IsEmpty()) {
       return;
+    }
     // Are we expiring the right object?
     if (stored == js) {
       object_store.erase(static_cast<T>(ptr));
@@ -67,3 +69,5 @@ public:
   template <typename U> inline void Expire(const U *ptr, Napi::Value js) { Expire(const_cast<U *>(ptr), js); }
 };
 } // namespace Nobind
+
+#undef VERBOSE

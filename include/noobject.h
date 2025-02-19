@@ -421,10 +421,12 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
     throw Napi::TypeError::New(env, "Cannot create an object of abstract or non destructible class "s + name);
   }
   if (cons.size() > info.Length() && cons[info.Length()].size() > 0) {
+    auto instance = env.GetInstanceData<BaseEnvInstanceData>();
     std::vector<std::string> errors;
     for (auto ctor : cons[info.Length()]) {
       try {
         (this->*ctor)(info);
+        instance->_Nobind_object_store.Put(self, this->Value());
         return;
       } catch (const Napi::Error &e) {
         // If there is only one constructor for the given number of arguments,
