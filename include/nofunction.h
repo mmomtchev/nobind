@@ -1,6 +1,6 @@
 #pragma once
-#include <napi.h>
 #include <noattributes.h>
+#include <nonapi.h>
 
 namespace Nobind {
 

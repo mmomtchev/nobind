@@ -12,7 +12,7 @@
   "author": "Momtchil Momtchev <momthchil@momtchev.com>",
   "license": "ISC",
   "dependencies": {
-    "node-addon-api": ">=5.0.0"
+    "node-addon-api": ">=8.3.0"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

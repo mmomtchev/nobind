@@ -1,6 +1,5 @@
 #include <fixtures/basic_class.h>
 
-#include <napi.h>
 #include <nobind.h>
 
 Napi::Value global_native(Napi::Value val) {
@@ -37,6 +36,14 @@ public:
   }
 };
 
+constexpr bool BasicFinalizers =
+#ifdef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER
+    true
+#else
+    false
+#endif
+    ;
+
 NOBIND_MODULE_DATA(native, m, PerIsolateData) {
   m.def<WithNative>("WithNative")
       .cons<>()
@@ -48,6 +55,8 @@ NOBIND_MODULE_DATA(native, m, PerIsolateData) {
   m.Env().GetInstanceData<Nobind::EnvInstanceData<PerIsolateData>>()->exports =
       Napi::Persistent<Napi::Object>(m.Exports());
   m.Exports().Set("get_exports", Napi::Function::New(m.Env(), get_exports));
+
+  m.def<&BasicFinalizers, Nobind::ReadOnly>("basic_finalizers");
 
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
   m.typescript_fragment("export const debug_build;\n");
