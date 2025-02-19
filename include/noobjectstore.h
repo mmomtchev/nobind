@@ -44,7 +44,11 @@ namespace Nobind {
 //   struct A { int a; };
 //   struct B { A obj; } b;
 // Pointers to b and b.obj will have the same value, but will be
-// treated differently depending on the type
+// treated differently depending on the type.
+// Another case is a function which returns an object as being
+// of its base type and another one, which returns the same object but
+// as its derived type. We don't want to set the type in stone after
+// the first time the object has been returned.
 
 template <typename T> class ObjectStore {
   // Is this really needed?
