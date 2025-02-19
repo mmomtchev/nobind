@@ -93,9 +93,9 @@ public:
   template <typename U> inline void Expire(size_t class_idx, U *ptr, Napi::Value js) {
     std::lock_guard guard{lock};
 
+    Napi::Value stored = GetLocked(class_idx, ptr);
     NOBIND_OBJECT_STORE_TYPE(U);
     NOBIND_OBJECT_STORE_VERBOSE("Expire %p: ", ptr);
-    Napi::Value stored = GetLocked(class_idx, ptr);
     if (stored.IsEmpty()) {
       NOBIND_OBJECT_STORE_VERBOSE("already expired\n");
       return;
