@@ -1,5 +1,4 @@
 #pragma once
-#define NOBIND_OBJECT_STORE_DEBUG
 
 #if !defined(NAPI_EXPERIMENTAL) && !defined(NOBIND_NO_BASIC_FINALIZERS)
 #define NAPI_EXPERIMENTAL

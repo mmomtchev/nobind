@@ -1,7 +1,7 @@
 const { assert } = require('chai');
 
 describe('forward declaration', () => {
-  it.only('construct', () => {
+  it('construct', () => {
     const h = new dll.Hello('Pantagruel');
     assert.instanceOf(h, dll.Hello);
     const d = new dll.Dependant(h);
