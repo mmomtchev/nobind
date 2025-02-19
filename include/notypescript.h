@@ -10,19 +10,7 @@
 #include <vector>
 
 #if defined(NOBIND_TYPESCRIPT_DEBUG)
-#include <cxxabi.h>
-#define TSTYPE_DEBUG(S, T)                                                                                             \
-  ((S).empty() ? "" : "/* C++ type: "s + demangle<std::string>(typeid(T).name()) + " */ "s + (S))
-
-// https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
-// (templated to be able to include in a header file)
-template <typename T> T demangle(const char *name) {
-
-  int status = -4;
-  std::unique_ptr<char, void (*)(void *)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
-
-  return (status == 0) ? res.get() : name;
-}
+#define TSTYPE_DEBUG(S, T) ((S).empty() ? "" : "/* C++ type: "s + TYPENAME(T) + " */ "s + (S))
 #else
 #define TSTYPE_DEBUG(S, T) S
 #endif

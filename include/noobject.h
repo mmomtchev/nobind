@@ -389,7 +389,7 @@ template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env)
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 #endif
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  instance->_Nobind_object_store.Expire(self, this->Value());
+  instance->_Nobind_object_store.Expire(class_idx, self, this->Value());
 
   if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
@@ -426,7 +426,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
     for (auto ctor : cons[info.Length()]) {
       try {
         (this->*ctor)(info);
-        instance->_Nobind_object_store.Put(self, this->Value());
+        instance->_Nobind_object_store.Put(class_idx, self, this->Value());
         return;
       } catch (const Napi::Error &e) {
         // If there is only one constructor for the given number of arguments,
@@ -463,7 +463,7 @@ NoObjectWrap<CLASS>::GetClass(Napi::Env env, const char *name,
 
 template <typename CLASS> template <bool OWNED> inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  Napi::Value stored = instance->_Nobind_object_store.Get(obj);
+  Napi::Value stored = instance->_Nobind_object_store.Get(class_idx, obj);
   if (!stored.IsEmpty())
     return stored;
 
@@ -471,7 +471,7 @@ template <typename CLASS> template <bool OWNED> inline Napi::Value NoObjectWrap<
   napi_value own = Napi::Boolean::New(env, OWNED);
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
 
-  instance->_Nobind_object_store.Put(obj, r);
+  instance->_Nobind_object_store.Put(class_idx, obj, r);
   return r;
 }
 
@@ -479,7 +479,7 @@ template <typename CLASS>
 template <bool OWNED>
 inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  Napi::Value stored = instance->_Nobind_object_store.Get(obj);
+  Napi::Value stored = instance->_Nobind_object_store.Get(class_idx, obj);
   if (!stored.IsEmpty())
     return stored;
 
@@ -488,7 +488,7 @@ inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
   napi_value own = Napi::Boolean::New(env, false);
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
 
-  instance->_Nobind_object_store.Put(obj, r);
+  instance->_Nobind_object_store.Put(class_idx, obj, r);
   return r;
 }
 
