@@ -53,7 +53,7 @@ namespace Nobind {
 template <typename T> class ObjectStore {
   // Is this really needed?
   std::mutex lock;
-  std::vector<std::map<T, Napi::Reference<Napi::Value>>> object_store;
+  std::vector<std::map<T, Napi::Reference<Napi::Value> *>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
     NOBIND_OBJECT_STORE_TYPE(U);
@@ -63,14 +63,15 @@ template <typename T> class ObjectStore {
       return Napi::Value{};
     }
 
-    Napi::Reference<Napi::Value> &ref = object_store.at(class_idx).at(static_cast<T>(ptr));
-    if (ref.IsEmpty()) {
+    auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
+    if (ref->IsEmpty()) {
       NOBIND_OBJECT_STORE_VERBOSE("expired\n");
       // The chain is still here but the goat is nowhere to be found
       object_store.at(class_idx).erase(static_cast<T>(ptr));
+      delete ref;
       return Napi::Value{};
     }
-    Napi::Value js = ref.Value();
+    Napi::Value js = ref->Value();
 
     NOBIND_OBJECT_STORE_VERBOSE("found\n");
     return js;
@@ -87,7 +88,9 @@ public:
 
     NOBIND_OBJECT_STORE_TYPE(U);
     NOBIND_OBJECT_STORE_VERBOSE("Create %p\n", ptr);
-    object_store.at(class_idx).emplace(static_cast<T>(ptr), Napi::Reference<Napi::Value>::New(js));
+    auto ref = new Napi::Reference<Napi::Value>;
+    *ref = Napi::Reference<Napi::Value>::New(js);
+    object_store.at(class_idx).insert({static_cast<T>(ptr), ref});
   }
 
   template <typename U> inline void Expire(size_t class_idx, U *ptr, Napi::Value js) {
@@ -103,7 +106,9 @@ public:
     // Are we expiring the right object?
     if (stored == js) {
       NOBIND_OBJECT_STORE_VERBOSE("expiring\n");
+      auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
       object_store.at(class_idx).erase(static_cast<T>(ptr));
+      delete ref;
     } else {
       NOBIND_OBJECT_STORE_VERBOSE("new object present\n");
     }
