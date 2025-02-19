@@ -1,6 +1,8 @@
 #include <nonapi.h>
 
 #include <map>
+#include <mutex>
+#include <vector>
 
 #ifdef NOBIND_OBJECT_STORE_DEBUG
 #define NOBIND_OBJECT_STORE_TYPE(T) printf("[%s] ", TYPENAME(T).c_str());
@@ -45,10 +47,13 @@ namespace Nobind {
 // treated differently depending on the type
 
 template <typename T> class ObjectStore {
+  std::mutex lock;
   std::vector<std::map<T, Napi::Reference<Napi::Value>>> object_store;
 
 public:
   template <typename U> Napi::Value Get(size_t class_idx, U *ptr) {
+    std::lock_guard guard{lock};
+
     NOBIND_OBJECT_STORE_TYPE(U);
     NOBIND_OBJECT_STORE_VERBOSE("Get %p: ", ptr);
     if (object_store.at(class_idx).count(static_cast<T>(ptr)) == 0) {
@@ -70,12 +75,16 @@ public:
   }
 
   template <typename U> inline void Put(size_t class_idx, U *ptr, Napi::Value js) {
+    std::lock_guard guard{lock};
+
     NOBIND_OBJECT_STORE_TYPE(U);
     NOBIND_OBJECT_STORE_VERBOSE("Create %p\n", ptr);
     object_store.at(class_idx).emplace(static_cast<T>(ptr), Napi::Reference<Napi::Value>::New(js));
   }
 
   template <typename U> inline void Expire(size_t class_idx, U *ptr, Napi::Value js) {
+    std::lock_guard guard{lock};
+
     NOBIND_OBJECT_STORE_TYPE(U);
     NOBIND_OBJECT_STORE_VERBOSE("Expire %p: ", ptr);
     Napi::Value stored = Get(class_idx, ptr);
