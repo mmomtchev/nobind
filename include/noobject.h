@@ -387,6 +387,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == 
 template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
+  Napi::Env env{Env()};
 #endif
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   instance->_Nobind_object_store.Expire(class_idx, self, this->Value());
