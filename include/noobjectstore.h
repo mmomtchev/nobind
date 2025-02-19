@@ -6,12 +6,14 @@ namespace Nobind {
 
 // An object store keeps weak references to the already constructed JS wrappers
 // for C++ objects. When a new object needs to be wrapped, it can be searched
-// byt the C++ pointer value. When the JS wrapper is GCed, the ObjectStore
-// entry is deleted.
+// by the C++ pointer value. When the JS wrapper is GCed, the ObjectStore
+// entry is invalidated. The element is deleted either when someone checks for
+// it, or in the NoObjectWrap destructor.
+//
 // There are three benefits of the ObjectStore:
 // * it avoids recreating wrappers for existing objects (ie performance)
 // * is ensures that only a single wrapper exists for a single object,
-//   avoiding memory manager problems when one wrapper owns the object,
+//   avoiding memory management problems when one wrapper owns the object,
 //   while another one has a ReturnShared type
 // * it allows the user to check for object equality
 //
