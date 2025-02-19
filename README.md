@@ -57,7 +57,8 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | ES6 named exports for all C/C++ functions | Yes, automatic | No, must write it |
 | WASM/Browser support | Yes | Not at the moment, but planned through `embind` compatibility |
 | Cross-platform | Yes | Yes |
-| Cross-language | Yes, most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind11` is planned in theory |
+| Input language | Both C and C++ | Mostly C++, many usual C API semantics are not well supported |
+| Target language | Most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind11` is planned in theory |
 | Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support, diamond inheritance is not supported | Yes, but no automatic downcasting support and no diamond inheritance |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
 | Optional arguments | Yes, automatic | Yes, manual
