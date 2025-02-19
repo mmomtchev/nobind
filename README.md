@@ -47,7 +47,6 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | C++ preprocessing integration | Yes, can expose macros to JS | No |
 | C++ namespaces | Can be exposed to JS with some limitations and manual work | Supported in C++ but not exposed to JS |
 | C++ iterators | manual | automatic |
-| Optional arguments with default values | Yes | No, all arguments become mandatory |
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
@@ -61,7 +60,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | Target language | Most dynamic languages | An eventual abstraction layer between `nobind17`, `embind` and `pybind11` is planned in theory |
 | Exposing C++ inheritance to JavaScript | Yes, automatic with implicit downcasting support, diamond inheritance is not supported | Yes, but no automatic downcasting support and no diamond inheritance |
 | Overloading | Yes | Only for constructors, overloaded methods must be renamed to be usable in JS |
-| Optional arguments | Yes, automatic | Yes, manual
+| Optional arguments with default values | Yes, automatic | No, all arguments become mandatory |
 | Complex argument transformations (for example C++ expects (`char**, size_t*`) as input argument, JS expects `Buffer` as returned type) | Yes | Only `1`:`1` and `1`:`0` transformations of input arguments |
 | Custom type casters | Yes | Yes |
 | Interfacing between multiple modules | Yes | No |
