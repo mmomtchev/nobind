@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <functional>
 #include <iostream>
-#include <napi.h>
+#include <nonapi.h>
 #include <numeric>
 #include <tuple>
 #include <type_traits>
@@ -93,6 +93,9 @@ public:
   template <bool OWNED> static Napi::Value New(Napi::Env, CLASS *);
   template <bool OWNED> static Napi::Value New(Napi::Env, const CLASS *);
   virtual ~NoObjectWrap() override;
+#ifdef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER
+  virtual void Finalize(Napi::BasicEnv) override;
+#endif
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
 
@@ -376,7 +379,13 @@ template <typename CLASS> std::string NoObjectWrap<CLASS>::name = NOBIND_NAME_NO
 template <typename CLASS>
 std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback>> NoObjectWrap<CLASS>::cons;
 
+#ifdef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER
+template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == nullptr); }
+
+template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
+#else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
+#endif
   if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
       delete self;
@@ -386,6 +395,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
       std::terminate();
     }
   }
+  self = nullptr;
 }
 
 // A constructor can be called in two ways:

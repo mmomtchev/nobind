@@ -12,7 +12,7 @@
   "author": "Momtchil Momtchev <momthchil@momtchev.com>",
   "license": "ISC",
   "dependencies": {
-    "node-addon-api": ">=5.0.0"
+    "node-addon-api": ">=8.3.0"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -21,6 +21,7 @@
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "mocha": "^10.2.0",
+    "node-gyp": "^11.1.0",
     "typescript": "^5.7.3"
   },
   "repository": {

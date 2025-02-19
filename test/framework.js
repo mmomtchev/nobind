@@ -9,6 +9,10 @@ const env = { ...process.env };
 // Do not pass asan when spawning processes
 delete env.LD_PRELOAD;
 
+const test_basic_fiinalizers = !!process.env.MOCHA_TEST_BASIC_FINALIZERS;
+if (test_basic_fiinalizers)
+  console.log('Require basic finalizers is', test_basic_fiinalizers);
+
 function list() {
   return fs.readdirSync(path.resolve(__dirname, 'tests'))
     .filter((t) => t.endsWith('.cc'))
@@ -30,6 +34,9 @@ function configure(test, stdio, opts, output) {
     const source = fs.readFileSync(path.resolve(__dirname, 'tests', `${test}.cc`), 'utf-8');
     while (include = match.exec(source)) {
       fixtures.push(include[1]);
+    }
+    if (test_basic_fiinalizers) {
+      opts = ['--enable_require_basic_finalizers', ...(opts || [])];
     }
     execFileSync(npx, [
       'node-gyp',

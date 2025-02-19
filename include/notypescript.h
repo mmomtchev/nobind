@@ -3,8 +3,8 @@
 #define NOBIND_TYPESCRIPT_PROP "__typescript"
 #endif
 
-#include <napi.h>
 #include <noattributes.h>
+#include <nonapi.h>
 #include <ostream>
 #include <string>
 #include <vector>

@@ -55,3 +55,8 @@ describe('per isolate data', () => {
 it('manually set constant', () => {
   assert.isBoolean(dll.debug_build);
 });
+
+it('basic finalizers', () => {
+  assert.isBoolean(dll.basic_finalizers);
+  console.log('::notice title=Basic Finalizers::Synchronous finalizers are', dll.basic_finalizers ? 'enabled' : 'disabled');
+});

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <napi.h>
+#include <nonapi.h>
+
 #include <tuple>
 #include <type_traits>
 #include <typeindex>

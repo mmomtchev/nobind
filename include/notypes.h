@@ -1,5 +1,5 @@
 #pragma once
-#include <napi.h>
+#include <nonapi.h>
 #include <string>
 #include <tuple>
 #include <type_traits>
