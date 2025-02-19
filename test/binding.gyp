@@ -28,7 +28,7 @@
   ],
   'target_defaults': {
     'includes': [ '../except.gypi' ],
-    'defines': [ 'NOBIND_REQUIRE_BASIC_FINALIZERS' ],
+    'defines': [ 'NODE_ADDON_API_REQUIRE_BASIC_FINALIZERS' ],
     'cflags': [
       '-fvisibility=hidden',
       '-std=c++17'

@@ -1,11 +1,5 @@
 #pragma once
 
-#ifdef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER
-#if !defined(NODE_ADDON_API_REQUIRE_BASIC_FINALIZERS) && defined(NOBIND_REQUIRE_BASIC_FINALIZERS)
-#define NODE_ADDON_API_REQUIRE_BASIC_FINALIZERS
-#endif
-#endif
-
 #if !defined(NAPI_EXPERIMENTAL) && !defined(NOBIND_NO_BASIC_FINALIZERS)
 #define NAPI_EXPERIMENTAL
 #endif
@@ -21,3 +15,15 @@
 #endif
 
 #include <napi.h>
+
+#if defined(NODE_ADDON_API_REQUIRE_BASIC_FINALIZERS)
+#warning require basic finalizers is enabled
+#endif
+
+#if defined(NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER)
+#warning post finalizer enabled
+#endif
+
+#if defined(NAPI_EXPERIMENTAL)
+#warning experimental enabled
+#endif
