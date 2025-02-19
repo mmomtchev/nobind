@@ -3,6 +3,7 @@
     'enable_asan%': 'false',
     'enable_typescript%': 'true',
     'enable_typescript_debug%': 'false',
+    'enable_require_basic_finalizers%': 'false',
     'test_output%': '<(test)'
   },
   'targets': [
@@ -28,7 +29,6 @@
   ],
   'target_defaults': {
     'includes': [ '../except.gypi' ],
-    'defines': [ 'NODE_ADDON_API_REQUIRE_BASIC_FINALIZERS' ],
     'cflags': [
       '-fvisibility=hidden',
       '-std=c++17'
@@ -54,6 +54,9 @@
             '-fsanitize=address'
           ]
         }        
+      }],
+      ['enable_require_basic_finalizers == "true"', {
+        'defines': [ 'NODE_ADDON_API_REQUIRE_BASIC_FINALIZERS' ]
       }],
       ['enable_typescript == "false"', {
         'defines': [ 'NOBIND_NO_TYPESCRIPT_GENERATOR' ]      

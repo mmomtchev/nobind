@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ubuntu-20.04, windows-2019, windows-2022, macos-15]
+        platform: [ubuntu-latest, ubuntu-20.04, windows-2019, windows-2022, macos-latest]
         node-version: ['18.17', 18, 20, 22, 23]
         exclude:
           - platform: ubuntu-20.04
@@ -30,6 +30,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
+      - name: Enable REQUIRE_BASIC_FINALIZERS
+        run: echo MOCHA_TEST_BASIC_FINALIZERS=1 >> $GITHUB_ENV
+        if: matrix.platform == 'ubuntu-latest'
       - run: npm test
 
 
