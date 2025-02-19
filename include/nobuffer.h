@@ -61,13 +61,7 @@ public:
     }
     // C++ receives ownership of the buffer which is freed upon collection of the JS Buffer object by the GC
     return Napi::Buffer<uint8_t>::New(env_, val_.first, val_.second,
-                                      [](
-#ifdef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER
-                                          Napi::BasicEnv,
-#else
-            Napi::Env,
-#endif
-                                          uint8_t *data) { delete[] data; });
+                                      [](Napi::BasicEnv, uint8_t *data) { delete[] data; });
 #endif
   }
 
