@@ -12,6 +12,7 @@
 #include <type_traits>
 
 #include <nofunction.h>
+#include <noobjectstore.h>
 #include <notypes.h>
 #include <notypescript.h>
 
@@ -22,6 +23,7 @@ namespace Nobind {
 struct EmptyEnvInstanceData {};
 
 struct BaseEnvInstanceData {
+  ObjectStore<void *> _Nobind_object_store;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
 };
@@ -386,6 +388,9 @@ template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env)
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 #endif
+  auto instance = env.GetInstanceData<BaseEnvInstanceData>();
+  instance->_Nobind_object_store.Expire(self, this->Value());
+
   if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
       delete self;
@@ -455,21 +460,33 @@ NoObjectWrap<CLASS>::GetClass(Napi::Env env, const char *name,
 }
 
 template <typename CLASS> template <bool OWNED> inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
+  auto instance = env.GetInstanceData<BaseEnvInstanceData>();
+  Napi::Value stored = instance->_Nobind_object_store.Get(obj);
+  if (!stored.IsEmpty())
+    return stored;
+
   napi_value ext = Napi::External<CLASS>::New(env, obj);
   napi_value own = Napi::Boolean::New(env, OWNED);
-  auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
+
+  instance->_Nobind_object_store.Put(obj, r);
   return r;
 }
 
 template <typename CLASS>
 template <bool OWNED>
 inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
+  auto instance = env.GetInstanceData<BaseEnvInstanceData>();
+  Napi::Value stored = instance->_Nobind_object_store.Get(obj);
+  if (!stored.IsEmpty())
+    return stored;
+
   static_assert(OWNED == false, "Cannot create an owned object from a const object, use Nobind::ReturnShared");
   napi_value ext = Napi::External<CLASS>::New(env, const_cast<CLASS *>(obj));
   napi_value own = Napi::Boolean::New(env, false);
-  auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
+
+  instance->_Nobind_object_store.Put(obj, r);
   return r;
 }
 

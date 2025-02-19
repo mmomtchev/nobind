@@ -16,7 +16,8 @@
       'cflags_cc': [ '-frtti' ],
       'xcode_settings': {
         'OTHER_CPLUSPLUSFLAGS': [
-          '-frtti'
+          '-frtti',
+          '-ftemplate-backtrace-limit=0'
         ]
       },
       'include_dirs': [

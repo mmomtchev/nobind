@@ -62,6 +62,24 @@
       "externalConsole": false,
       "MIMode": "lldb",
       "setupCommands": []
+    },
+    {
+      "name": "(lldb) Launch all tests",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "/usr/local/bin/node",
+      "args": [
+        "--expose-gc",
+        "${workspaceFolder}/node_modules/mocha/lib/cli/cli.js",
+        "--timeout 0",
+        "test/*.test.ts"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "setupCommands": []
     }
   ]
 }
