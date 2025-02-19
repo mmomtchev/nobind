@@ -47,13 +47,11 @@ namespace Nobind {
 // treated differently depending on the type
 
 template <typename T> class ObjectStore {
+  // Is this really needed?
   std::mutex lock;
   std::vector<std::map<T, Napi::Reference<Napi::Value>>> object_store;
 
-public:
-  template <typename U> Napi::Value Get(size_t class_idx, U *ptr) {
-    std::lock_guard guard{lock};
-
+  template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
     NOBIND_OBJECT_STORE_TYPE(U);
     NOBIND_OBJECT_STORE_VERBOSE("Get %p: ", ptr);
     if (object_store.at(class_idx).count(static_cast<T>(ptr)) == 0) {
@@ -74,6 +72,12 @@ public:
     return js;
   }
 
+public:
+  template <typename U> Napi::Value Get(size_t class_idx, U *ptr) {
+    std::lock_guard guard{lock};
+    return GetLocked(class_idx, ptr);
+  }
+
   template <typename U> inline void Put(size_t class_idx, U *ptr, Napi::Value js) {
     std::lock_guard guard{lock};
 
@@ -87,7 +91,7 @@ public:
 
     NOBIND_OBJECT_STORE_TYPE(U);
     NOBIND_OBJECT_STORE_VERBOSE("Expire %p: ", ptr);
-    Napi::Value stored = Get(class_idx, ptr);
+    Napi::Value stored = GetLocked(class_idx, ptr);
     if (stored.IsEmpty()) {
       NOBIND_OBJECT_STORE_VERBOSE("already expired\n");
       return;
