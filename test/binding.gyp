@@ -9,6 +9,7 @@
     {
       'target_name': '<(test_output)',
       'sources': [ 'tests/<(test).cc', '<@(fixtures)' ],
+      'defines': [ 'NODE_ADDON_API_REQUIRE_BASIC_FINALIZERS' ],
       # RTTI is only for easier debugging of the templates
       'cflags!': [ '-fno-rtti' ],
       'cflags_cc!': [ '-fno-rtti' ],
