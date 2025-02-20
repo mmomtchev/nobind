@@ -123,6 +123,7 @@ public:
       for (auto &element : type) {
         delete element.second;
       }
+      type.clear();
     }
   }
 };
