@@ -116,5 +116,14 @@ public:
   }
 
   void Init(size_t s) { object_store.resize(s); }
+
+  void Flush() {
+    NOBIND_VERBOSE(STORE, "flushing object store\n");
+    for (auto &type : object_store) {
+      for (auto &element : type) {
+        delete element.second;
+      }
+    }
+  }
 };
 } // namespace Nobind

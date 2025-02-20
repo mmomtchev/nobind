@@ -47,10 +47,20 @@ public:
   {
   }
 
-  ~Module() {
+  ~Module() noexcept(false) {
 #ifndef NOBIND_NO_OBJECT_STORE
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
     instance->_Nobind_object_store.Init(class_idx_);
+    auto r = napi_add_env_cleanup_hook(
+        env_,
+        [](void *arg) {
+          auto instance = static_cast<BaseEnvInstanceData *>(arg);
+          instance->_Nobind_object_store.Flush();
+        },
+        instance);
+    if (r != napi_ok) {
+      throw Napi::Error::New(env_, "Failed to register Object Store cleanup hook");
+    }
 #endif
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
