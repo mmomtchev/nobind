@@ -24,7 +24,9 @@ namespace Nobind {
 struct EmptyEnvInstanceData {};
 
 struct BaseEnvInstanceData {
+#ifndef NOBIND_NO_OBJECT_STORE
   ObjectStore<void *> _Nobind_object_store;
+#endif
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
 };
@@ -392,8 +394,10 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   Napi::Env env{this->Env()};
   NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "asynchronous delete for %p\n", self);
 #endif
+#ifndef NOBIND_NO_OBJECT_STORE
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   instance->_Nobind_object_store.Expire(class_idx, self, this->Value());
+#endif
 
   if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
@@ -427,13 +431,17 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
     throw Napi::TypeError::New(env, "Cannot create an object of abstract or non destructible class "s + name);
   }
   if (cons.size() > info.Length() && cons[info.Length()].size() > 0) {
+#ifndef NOBIND_NO_OBJECT_STORE
     auto instance = env.GetInstanceData<BaseEnvInstanceData>();
+#endif
     std::vector<std::string> errors;
     for (auto ctor : cons[info.Length()]) {
       try {
         (this->*ctor)(info);
+#ifndef NOBIND_NO_OBJECT_STORE
         instance->_Nobind_object_store.Put(class_idx, self, this->Value());
         NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "create new JS object with C++ object %p\n", self);
+#endif
         return;
       } catch (const Napi::Error &e) {
         // If there is only one constructor for the given number of arguments,
@@ -472,15 +480,19 @@ template <typename CLASS>
 template <bool OWNED>
 NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
+#ifndef NOBIND_NO_OBJECT_STORE
   Napi::Value stored = instance->_Nobind_object_store.Get(class_idx, obj);
   if (!stored.IsEmpty())
     return stored;
+#endif
 
   napi_value ext = Napi::External<CLASS>::New(env, obj);
   napi_value own = Napi::Boolean::New(env, OWNED);
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
 
+#ifndef NOBIND_NO_OBJECT_STORE
   instance->_Nobind_object_store.Put(class_idx, obj, r);
+#endif
   return r;
 }
 
@@ -488,16 +500,20 @@ template <typename CLASS>
 template <bool OWNED>
 NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
+#ifndef NOBIND_NO_OBJECT_STORE
   Napi::Value stored = instance->_Nobind_object_store.Get(class_idx, obj);
   if (!stored.IsEmpty())
     return stored;
+#endif
 
   static_assert(OWNED == false, "Cannot create an owned object from a const object, use Nobind::ReturnShared");
   napi_value ext = Napi::External<CLASS>::New(env, const_cast<CLASS *>(obj));
   napi_value own = Napi::Boolean::New(env, false);
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
 
+#ifndef NOBIND_NO_OBJECT_STORE
   instance->_Nobind_object_store.Put(class_idx, obj, r);
+#endif
   return r;
 }
 

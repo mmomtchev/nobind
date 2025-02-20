@@ -36,6 +36,9 @@ switch (process.argv[2]) {
   case 'configure-nots':
     framework.configure(test, 'inherit', ['--debug', '--enable_typescript=false']);
     break;
+  case 'configure-noos':
+    framework.configure(test, 'inherit', ['--debug', '--enable_object_store=false']);
+    break;
   case 'configure-asan':
     framework.configure(test, 'inherit', ['--debug', '--enable_asan']);
     break;

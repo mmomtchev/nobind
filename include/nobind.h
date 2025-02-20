@@ -48,8 +48,10 @@ public:
   }
 
   ~Module() {
+#ifndef NOBIND_NO_OBJECT_STORE
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
     instance->_Nobind_object_store.Init(class_idx_);
+#endif
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
                                                             Napi::String::New(env_, typescript_types_), napi_default));
