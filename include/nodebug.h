@@ -30,10 +30,11 @@ template <const char *...OPTS> struct NobindDebug {
 
     return (status == 0) ? res.get() : name;
   }
+  template <const char *OPT, size_t... Ints> static inline bool Enabled(std::integer_sequence<size_t, Ints...> i) {
+    return r = (... || ((OPT == OPTS) && debug_opt_enabled[Ints]));
+  }
   template <const char *OPT> static inline bool Enabled() {
-    size_t i = 0;
-    //(debug_opt_names[0] && OPT == OPTS0) || (debug_opts_names[1] && OPT == OPTS1);
-    return ((debug_opt_names[i++] && OPT == OPTS) || ...);
+    return Enabled<OPT>(std::make_integer_sequence<size_t, sizeof...(OPTS)>{});
   }
 };
 template <const char *...OPTS> bool NobindDebug<OPTS...>::debug_opt_enabled[sizeof...(OPTS)];
