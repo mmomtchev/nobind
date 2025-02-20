@@ -7,24 +7,12 @@ using namespace std::literals::string_literals;
 
 namespace Nobind {
 
-#define NOBIND_STR(x) #x ""
+template <const char *...OPTS> struct NobindDebug {
+  static constexpr const char *const debug_opt_names[] = {OPTS...};
+  static bool debug_opt_enabled[sizeof...(OPTS)];
 
-#define NOBIND_DEBUG_OPTS(V) V(OBJECT), V(STORE)
-
-// Templated to be able to include in a header file
-template <typename T> struct NobindDebug {
-#define V(X) X
-  enum debug_opt { NOBIND_DEBUG_OPTS(V) };
-#undef V
-
-#define V(X) NOBIND_STR(X)
-  static constexpr const char *const debug_opt_names[] = {NOBIND_DEBUG_OPTS(V)};
-#undef V
-
-  static bool debug_opt_enabled[];
-
-  static T Init() {
-    for (size_t i = 0; i < sizeof(debug_opt_names) / sizeof(debug_opt_names[0]); i++) {
+  static void Init() {
+    for (size_t i = 0; i < sizeof...(OPTS); i++) {
       std::string var_name = "NOBIND_DEBUG_"s + debug_opt_names[i];
       if (std::getenv(var_name.c_str())) {
         printf("%s debug enabled\n", debug_opt_names[i]);
@@ -42,28 +30,37 @@ template <typename T> struct NobindDebug {
 
     return (status == 0) ? res.get() : name;
   }
+  template <const char *OPT> static inline bool Enabled() {
+    size_t i = 0;
+    //(debug_opt_names[0] && OPT == OPTS0) || (debug_opts_names[1] && OPT == OPTS1);
+    return ((debug_opt_names[i++] && OPT == OPTS) || ...);
+  }
 };
+template <const char *...OPTS> bool NobindDebug<OPTS...>::debug_opt_enabled[sizeof...(OPTS)];
 
-template struct Nobind::NobindDebug<void>;
-template <typename T> bool Nobind::NobindDebug<T>::debug_opt_enabled[2];
+// String literals as template arguments requires C++20
+constexpr const char _nobind_debug_opt_STORE[] = "STORE";
+constexpr const char _nobind_debug_opt_OBJECT[] = "OBJECT";
+using NobindDebugInstance = struct NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT>;
 
 #define NOBIND_INLINE
 #define NOBIND_ASSERT(x) assert(x)
-#define NOBIND_DEBUG_INIT Nobind::NobindDebug<void>::Init()
+#define NOBIND_DEBUG_INIT Nobind::NobindDebugInstance::Init()
 
 #define NOBIND_VERBOSE(sys, ...)                                                                                       \
   do {                                                                                                                 \
-    if (NobindDebug<void>::debug_opt_enabled[NobindDebug<void>::debug_opt::sys])                                       \
+    if (NobindDebugInstance::Enabled<_nobind_debug_opt_##sys>())                                                       \
       printf(__VA_ARGS__);                                                                                             \
   } while (0)
 
 #define NOBIND_VERBOSE_TYPE(sys, T, FMT, ...)                                                                          \
   do {                                                                                                                 \
-    if (NobindDebug<void>::debug_opt_enabled[NobindDebug<void>::debug_opt::sys]) {                                     \
-      printf("[%s]" FMT, NobindDebug<void>::Demangle<T>().c_str(), __VA_ARGS__);                                       \
-    }                                                                                                                  \
+    if (NobindDebugInstance::Enabled<_nobind_debug_opt_##sys>())                                                       \
+      printf("[%s]" FMT, NobindDebugInstance::Demangle<T>().c_str(), __VA_ARGS__);                                     \
   } while (0)
+
 } // namespace Nobind
+
 #else
 
 #define NOBIND_INLINE inline
