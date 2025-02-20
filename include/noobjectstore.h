@@ -4,11 +4,10 @@
 #include <mutex>
 #include <vector>
 
+#define NOBIND_OBJECT_STORE_DEBUG
 #ifdef NOBIND_OBJECT_STORE_DEBUG
-#define NOBIND_OBJECT_STORE_TYPE(T) printf("[%s] ", TYPENAME(T).c_str());
 #define NOBIND_OBJECT_STORE_VERBOSE(...) printf(__VA_ARGS__);
 #else
-#define NOBIND_OBJECT_STORE_TYPE(T)
 #define NOBIND_OBJECT_STORE_VERBOSE(...)
 #endif
 
@@ -56,8 +55,8 @@ template <typename T> class ObjectStore {
   std::vector<std::map<T, Napi::Reference<Napi::Value> *>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
-    NOBIND_OBJECT_STORE_TYPE(U);
-    NOBIND_OBJECT_STORE_VERBOSE("Get %p: ", ptr);
+    NOBIND_TYPE_VERBOSE(U);
+    NOBIND_OBJECT_STORE_VERBOSE("Get %p from object store: ", ptr);
     if (object_store.at(class_idx).count(static_cast<T>(ptr)) == 0) {
       NOBIND_OBJECT_STORE_VERBOSE("not there\n");
       return Napi::Value{};
@@ -84,10 +83,11 @@ public:
   }
 
   template <typename U> inline void Put(size_t class_idx, U *ptr, Napi::Value js) {
+    return;
     std::lock_guard guard{lock};
 
-    NOBIND_OBJECT_STORE_TYPE(U);
-    NOBIND_OBJECT_STORE_VERBOSE("Create %p\n", ptr);
+    NOBIND_TYPE_VERBOSE(U);
+    NOBIND_OBJECT_STORE_VERBOSE("Create %p in object store\n", ptr);
     auto ref = new Napi::Reference<Napi::Value>;
     *ref = Napi::Reference<Napi::Value>::New(js);
     object_store.at(class_idx).insert({static_cast<T>(ptr), ref});
@@ -97,8 +97,8 @@ public:
     std::lock_guard guard{lock};
 
     Napi::Value stored = GetLocked(class_idx, ptr);
-    NOBIND_OBJECT_STORE_TYPE(U);
-    NOBIND_OBJECT_STORE_VERBOSE("Expire %p: ", ptr);
+    NOBIND_TYPE_VERBOSE(U);
+    NOBIND_OBJECT_STORE_VERBOSE("Expire %p from object store: ", ptr);
     if (stored.IsEmpty()) {
       NOBIND_OBJECT_STORE_VERBOSE("already expired\n");
       return;

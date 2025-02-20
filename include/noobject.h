@@ -16,6 +16,13 @@
 #include <notypes.h>
 #include <notypescript.h>
 
+#define NOBIND_OBJECT_ALLOC_DEBUG
+#ifdef NOBIND_OBJECT_ALLOC_DEBUG
+#define NOBIND_OBJECT_ALLOC_VERBOSE(...) printf(__VA_ARGS__);
+#else
+#define NOBIND_OBJECT_ALLOC_VERBOSE(...)
+#endif
+
 using namespace std::literals::string_literals;
 
 namespace Nobind {
@@ -385,9 +392,13 @@ std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == nullptr); }
 
 template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
+  NOBIND_TYPE_VERBOSE(CLASS);
+  NOBIND_OBJECT_ALLOC_VERBOSE("synchronous delete for %p\n", self);
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   Napi::Env env{this->Env()};
+  NOBIND_TYPE_VERBOSE(CLASS);
+  NOBIND_OBJECT_ALLOC_VERBOSE("asynchronous delete for %p\n", self);
 #endif
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   instance->_Nobind_object_store.Expire(class_idx, self, this->Value());
@@ -410,10 +421,13 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info) {
   Napi::Env env{info.Env()};
+  NOBIND_TYPE_VERBOSE(CLASS);
+
   if (info.Length() == 2 && info[0].IsExternal()) {
     // From C++
     owned = info[1].ToBoolean().Value();
     self = info[0].As<Napi::External<CLASS>>().Data();
+    NOBIND_OBJECT_ALLOC_VERBOSE("create wrapper for C++ object %p\n", self);
     return;
   }
   // From JS
@@ -428,6 +442,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
       try {
         (this->*ctor)(info);
         instance->_Nobind_object_store.Put(class_idx, self, this->Value());
+        NOBIND_OBJECT_ALLOC_VERBOSE("create new JS object with C++ object %p\n", self);
         return;
       } catch (const Napi::Error &e) {
         // If there is only one constructor for the given number of arguments,
