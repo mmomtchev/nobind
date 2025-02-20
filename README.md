@@ -440,8 +440,6 @@ The `Nobind::ReturnShared` signals `nobind17` that C++ objects returned by this 
 
 `.create()` is a method that creates new objects. The `Nobind::ReturnOwned` signals `nobind17` that C++ objects returned by this method should be considered new objects and should be freed when the GC destroys the JS proxy.
 
-Also, be sure to check [#1](https://github.com/mmomtchev/nobind17/issues/1) for a very important warning about shared references and also read the section on nested references below.
-
 Eventually, as last resort, `Nobind::ReturnCopy` will copy the returned object. This might not be very efficient, but it will always be safe. The copy will be destroyed when the returned reference is GCed. `Nobind::ReturnCopy` works only for objects. Plain objects are always copied anyway, but it also allows to copy objects returned as references or pointers.
 
 ### Extending classes
@@ -542,6 +540,14 @@ public:
   FromJS(FromJS &&) = default;
 };
 ```
+
+### The Object Store
+
+Starting from version 2, `nobind17` uses an object store. Each time a C++ object is wrapped, `nobind17` will remember this reference and as longer as the object is not garbage-collected, it will continue returning the same JS reference. This means that objects preserve their equality even if they cross multiple times the JS/C++ language barrier.
+
+This is particularly important for `ReturnShared` objects and allows to avoid memory management issues related to having multiple JS wrappers for the same C++ object.
+
+The Object Store can be disabled by defining the `NOBIND_NO_OBJECT_STORE` macro.
 
 ### Storing custom per-isolate data
 
