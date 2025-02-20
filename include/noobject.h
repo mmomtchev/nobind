@@ -11,17 +11,11 @@
 #include <tuple>
 #include <type_traits>
 
+#include <nodebug.h>
 #include <nofunction.h>
 #include <noobjectstore.h>
 #include <notypes.h>
 #include <notypescript.h>
-
-#define NOBIND_OBJECT_ALLOC_DEBUG
-#ifdef NOBIND_OBJECT_ALLOC_DEBUG
-#define NOBIND_OBJECT_ALLOC_VERBOSE(...) printf(__VA_ARGS__);
-#else
-#define NOBIND_OBJECT_ALLOC_VERBOSE(...)
-#endif
 
 using namespace std::literals::string_literals;
 
@@ -172,33 +166,33 @@ private:
   // - regular, const, noexcept and const noexcept
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...)>
-  inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
+  NOBIND_INLINE Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
+                                          std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
     return MethodWrapper<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) const>
-  inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
+  NOBIND_INLINE Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
+                                          std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
     return MethodWrapper<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) noexcept>
-  inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
+  NOBIND_INLINE Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
+                                          std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
     return MethodWrapper<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) const noexcept>
-  inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
+  NOBIND_INLINE Napi::Value MethodWrapper(const Napi::CallbackInfo &info,
+                                          std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
     return MethodWrapper<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
   // The last one of the trio
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS,
             std::size_t... I>
-  inline Napi::Value MethodWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
+  NOBIND_INLINE Napi::Value MethodWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     size_t idx = 0;
@@ -229,33 +223,33 @@ private:
   // (BASE == CLASS unless calling an inherited method, in this case it is the class defining it)
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...)>
-  inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
+  NOBIND_INLINE Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
+                                               std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
     return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) const>
-  inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
+  NOBIND_INLINE Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
+                                               std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
     return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) noexcept>
-  inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
+  NOBIND_INLINE Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
+                                               std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
     return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
             RETURN (BASE::*FUNC)(ARGS...) const noexcept>
-  inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
+  NOBIND_INLINE Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info,
+                                               std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
     return MethodWrapperAsync<RETATTR, BASE, RETURN, FUNC, ARGS...>(info, std::index_sequence_for<ARGS...>{});
   }
 
   // The actual wrapper for async class methods
   template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS,
             std::size_t... I>
-  inline Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
+  NOBIND_INLINE Napi::Value MethodWrapperAsync(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
 #if _MSC_VER && !__INTEL_COMPILER
@@ -291,7 +285,7 @@ private:
 
   // The constructor wrapper implementation
   template <typename... ARGS, std::size_t... I>
-  inline void ConsWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
+  NOBIND_INLINE void ConsWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     // Call the FromJS constructors
@@ -306,31 +300,31 @@ private:
   // The extension wrapper, it adds an additional first argument by converting info.This()
   // Three stages, second stage, This() is CLASS &
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(CLASS &, ARGS...)>
-  inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
-                                      std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
+  NOBIND_INLINE Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
+                                             std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
   // Second stage, This() is const CLASS &
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(const CLASS &, ARGS...)>
-  inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
-                                      std::integral_constant<RETURN (*)(const CLASS &, ARGS...), FUNC>) {
+  NOBIND_INLINE Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
+                                             std::integral_constant<RETURN (*)(const CLASS &, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
   // Second stage, This() is Napi::Value
   template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(Napi::Value, ARGS...)>
-  inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
-                                      std::integral_constant<RETURN (*)(Napi::Value, ARGS...), FUNC>) {
+  NOBIND_INLINE Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
+                                             std::integral_constant<RETURN (*)(Napi::Value, ARGS...), FUNC>) {
     return ExtensionWrapper<RETATTR>(info, std::integral_constant<decltype(FUNC), FUNC>{},
                                      std::index_sequence_for<ARGS...>{});
   }
   // Third stage
   template <const ReturnAttribute &RETATTR, typename THIS, typename RETURN, typename... ARGS,
             RETURN (*FUNC)(THIS, ARGS...), std::size_t... I>
-  inline Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
-                                      std::integral_constant<RETURN (*)(THIS, ARGS...), FUNC>,
-                                      std::index_sequence<I...>) {
+  NOBIND_INLINE Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
+                                             std::integral_constant<RETURN (*)(THIS, ARGS...), FUNC>,
+                                             std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     try {
@@ -359,7 +353,7 @@ private:
   }
 
   // Setup nested objects
-  template <const ReturnAttribute &RETATTR> inline Napi::Value SetupNested(Napi::Value returned) {
+  template <const ReturnAttribute &RETATTR> NOBIND_INLINE Napi::Value SetupNested(Napi::Value returned) {
     if constexpr (RETATTR.isNested()) {
       if (returned.IsObject()) {
         // We simply attach the parent (this) as a hidden property in the nested object
@@ -392,13 +386,11 @@ std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == nullptr); }
 
 template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
-  NOBIND_TYPE_VERBOSE(CLASS);
-  NOBIND_OBJECT_ALLOC_VERBOSE("synchronous delete for %p\n", self);
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "synchronous delete for %p\n", self);
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   Napi::Env env{this->Env()};
-  NOBIND_TYPE_VERBOSE(CLASS);
-  NOBIND_OBJECT_ALLOC_VERBOSE("asynchronous delete for %p\n", self);
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "asynchronous delete for %p\n", self);
 #endif
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   instance->_Nobind_object_store.Expire(class_idx, self, this->Value());
@@ -421,13 +413,12 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info) {
   Napi::Env env{info.Env()};
-  NOBIND_TYPE_VERBOSE(CLASS);
 
   if (info.Length() == 2 && info[0].IsExternal()) {
     // From C++
     owned = info[1].ToBoolean().Value();
     self = info[0].As<Napi::External<CLASS>>().Data();
-    NOBIND_OBJECT_ALLOC_VERBOSE("create wrapper for C++ object %p\n", self);
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "create wrapper for C++ object %p\n", self);
     return;
   }
   // From JS
@@ -442,7 +433,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
       try {
         (this->*ctor)(info);
         instance->_Nobind_object_store.Put(class_idx, self, this->Value());
-        NOBIND_OBJECT_ALLOC_VERBOSE("create new JS object with C++ object %p\n", self);
+        NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "create new JS object with C++ object %p\n", self);
         return;
       } catch (const Napi::Error &e) {
         // If there is only one constructor for the given number of arguments,
@@ -477,7 +468,9 @@ NoObjectWrap<CLASS>::GetClass(Napi::Env env, const char *name,
   return Napi::ObjectWrap<NoObjectWrap<CLASS>>::DefineClass(env, name, properties, nullptr);
 }
 
-template <typename CLASS> template <bool OWNED> inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
+template <typename CLASS>
+template <bool OWNED>
+NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   Napi::Value stored = instance->_Nobind_object_store.Get(class_idx, obj);
   if (!stored.IsEmpty())
@@ -493,7 +486,7 @@ template <typename CLASS> template <bool OWNED> inline Napi::Value NoObjectWrap<
 
 template <typename CLASS>
 template <bool OWNED>
-inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
+NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   Napi::Value stored = instance->_Nobind_object_store.Get(class_idx, obj);
   if (!stored.IsEmpty())
@@ -508,7 +501,7 @@ inline Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
   return r;
 }
 
-template <typename CLASS> inline CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::Value val) {
+template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::Value val) {
   Napi::Env env(val.Env());
   if (!val.IsObject()) {
     throw Napi::TypeError::New(env, "Expected an object");
@@ -707,12 +700,12 @@ template <typename T> class FromJS<T &> {
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 public:
-  inline explicit FromJS(const Napi::Value &val) {
+  NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     val_ = OBJCLASS::CheckUnwrap(val);
     persistent = Napi::Persistent(val.ToObject());
   }
-  inline T &Get() { return *val_; }
+  NOBIND_INLINE T &Get() { return *val_; }
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -723,12 +716,12 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS<T &, RETATTR> {
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 public:
-  inline explicit ToJS(Napi::Env env, T &val) : env_(env), val_(&val) {
+  NOBIND_INLINE explicit ToJS(Napi::Env env, T &val) : env_(env), val_(&val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a ToJS typemap");
   }
   // C++ returned a reference, we consider this function to return a static object
   // By default, the JS proxy will not own this object
-  inline Napi::Value Get() {
+  NOBIND_INLINE Napi::Value Get() {
     if constexpr (RETATTR.isCopy()) {
       return OBJCLASS::template New<true>(env_, new T{*val_});
     }
@@ -745,12 +738,12 @@ template <typename T> class FromJS<T *> {
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 public:
-  inline explicit FromJS(const Napi::Value &val) {
+  NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     val_ = OBJCLASS::CheckUnwrap(val);
     persistent = Napi::Persistent(val.ToObject());
   }
-  inline T *Get() { return val_; }
+  NOBIND_INLINE T *Get() { return val_; }
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -761,12 +754,12 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS<T *, RETATTR> {
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 public:
-  inline explicit ToJS(Napi::Env env, T *val) : env_(env), val_(val) {
+  NOBIND_INLINE explicit ToJS(Napi::Env env, T *val) : env_(env), val_(val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a ToJS typemap");
   }
   // We consider this to be a factory function, it has returned a pointer
   // By default, the JS proxy will own this object
-  inline Napi::Value Get() {
+  NOBIND_INLINE Napi::Value Get() {
     if constexpr (!RETATTR.isReturnNullThrow()) {
       if (val_ == nullptr) {
         return env_.Null();
@@ -791,14 +784,14 @@ template <typename T> class FromJS {
   Napi::ObjectReference persistent;
 
 public:
-  inline explicit FromJS(const Napi::Value &val) {
+  NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     // C++ asks for a regular stack-allocated object
     object = NoObjectWrap<T>::CheckUnwrap(val);
     persistent = Napi::Persistent(val.ToObject());
   }
   // will return a copy by value
-  inline T Get() { return *object; }
+  NOBIND_INLINE T Get() { return *object; }
 
   static const size_t Inputs = 1;
 
@@ -810,7 +803,7 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJS {
   T *object;
 
 public:
-  inline explicit ToJS(Napi::Env env, T &val) : env_(env) {
+  NOBIND_INLINE explicit ToJS(Napi::Env env, T &val) : env_(env) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a ToJS typemap");
     // C++ returned regular object
     if constexpr (RETATTR.isNested()) {
@@ -822,7 +815,7 @@ public:
     }
   }
   // and wrapping it in a proxy, by default JS will own this new copy
-  inline Napi::Value Get() { return NoObjectWrap<T>::template New<RETATTR.ShouldOwn<true>()>(env_, object); }
+  NOBIND_INLINE Napi::Value Get() { return NoObjectWrap<T>::template New<RETATTR.ShouldOwn<true>()>(env_, object); }
 
   static const std::string &TSType() { return NoObjectWrap<T>::GetName(); };
 };

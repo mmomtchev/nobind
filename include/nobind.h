@@ -2,6 +2,8 @@
 
 #include <nonapi.h>
 
+#include <nodebug.h>
+
 #include <tuple>
 #include <type_traits>
 #include <typeindex>
@@ -130,6 +132,7 @@ public:
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env, Napi::Object);                                           \
   NODE_API_MODULE(MODULE_NAME, Nobind_##MODULE_NAME##_Init_Wrapper)                                                    \
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                              \
+    NOBIND_DEBUG_INIT;                                                                                                 \
     env.SetInstanceData(new Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>);                                              \
     Nobind::Module<Nobind_##MODULE_NAME##_name> m{env, exports};                                                       \
     Nobind_##MODULE_NAME##_Init_Wrapper(m);                                                                            \

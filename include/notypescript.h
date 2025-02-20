@@ -27,7 +27,7 @@ using namespace std::string_literals;
 // Helpers to determine if the typemap contains a TSType
 template <typename T> class JSTypemapHasTSType {
   template <typename U> static constexpr decltype(std::declval<U &>().TSType, bool()) test(int) { return true; }
-  template <typename U> static constexpr inline bool test(...) { return false; }
+  template <typename U> static constexpr NOBIND_INLINE bool test(...) { return false; }
 
 public:
   static constexpr bool value = test<T>(int());
@@ -80,7 +80,7 @@ template <typename T, const ReturnAttribute &RETATTR> std::string ToTSType() {
 }
 
 // Construct a string with all function argument
-template <typename... ARGS> inline std::string FromTSTypes() {
+template <typename... ARGS> NOBIND_INLINE std::string FromTSTypes() {
   std::vector<std::string> types{FromTSType<ARGS>()...};
   std::string types_text;
   for (size_t i = 0; i < types.size(); i++) {
@@ -94,7 +94,7 @@ template <typename... ARGS> inline std::string FromTSTypes() {
 }
 
 // Construct a string with all implements arguments
-template <typename... INTERFACES> inline std::string FromTSTInterfaces() {
+template <typename... INTERFACES> NOBIND_INLINE std::string FromTSTInterfaces() {
   std::vector<std::string> types{FromTSType<INTERFACES>()...};
   std::string types_text;
   for (size_t i = 0; i < types.size(); i++) {
@@ -112,7 +112,7 @@ template <typename... INTERFACES> inline std::string FromTSTInterfaces() {
 // Third stage
 template <const ReturnAttribute &RETATTR, auto *FUNC, typename RETURN, typename... ARGS, std::size_t... I,
           typename NAME = const char *>
-inline std::string FunctionSignature(NAME name, const char *prefix, std::index_sequence<I...>) {
+NOBIND_INLINE std::string FunctionSignature(NAME name, const char *prefix, std::index_sequence<I...>) {
   std::string types_text = FromTSTypes<ARGS...>();
   std::string return_text;
   std::string resolved_name;
@@ -131,13 +131,14 @@ inline std::string FunctionSignature(NAME name, const char *prefix, std::index_s
 // Second stage, two variants (except and noexcept)
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...),
           typename NAME = const char *>
-inline std::string FunctionSignature(NAME name, const char *prefix, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+NOBIND_INLINE std::string FunctionSignature(NAME name, const char *prefix,
+                                            std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
   return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...) noexcept,
           typename NAME = const char *>
-inline std::string FunctionSignature(NAME name, const char *prefix,
-                                     std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
+NOBIND_INLINE std::string FunctionSignature(NAME name, const char *prefix,
+                                            std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
   return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 
@@ -151,15 +152,15 @@ std::string FunctionSignature(NAME name, const char *prefix) {
 // Variant 1, This() is CLASS & or const CLASS &
 template <const ReturnAttribute &RETATTR, typename RETURN, typename CLASS, typename... ARGS,
           RETURN (*FUNC)(CLASS &, ARGS...), typename NAME = const char *>
-inline std::string ExtensionSignature(NAME name, const char *prefix,
-                                      std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
+NOBIND_INLINE std::string ExtensionSignature(NAME name, const char *prefix,
+                                             std::integral_constant<RETURN (*)(CLASS &, ARGS...), FUNC>) {
   return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 // Variant 2, This() is Napi::Value
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(Napi::Value, ARGS...),
           typename NAME = const char *>
-inline std::string ExtensionSignature(NAME name, const char *prefix,
-                                      std::integral_constant<RETURN (*)(Napi::Value, ARGS...), FUNC>) {
+NOBIND_INLINE std::string ExtensionSignature(NAME name, const char *prefix,
+                                             std::integral_constant<RETURN (*)(Napi::Value, ARGS...), FUNC>) {
   return FunctionSignature<RETATTR, FUNC, RETURN, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 // Class extension, first stage
@@ -178,7 +179,7 @@ template <typename... ARGS> std::string ConstructorSignature() {
 // Third stage
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, auto FUNC, typename... ARGS, std::size_t... I,
           typename NAME = const char *>
-inline std::string MethodSignature(NAME name, const char *prefix, std::index_sequence<I...>) {
+NOBIND_INLINE std::string MethodSignature(NAME name, const char *prefix, std::index_sequence<I...>) {
   std::string types_text = FromTSTypes<ARGS...>();
   std::string return_text;
   std::string resolved_name;
@@ -198,26 +199,26 @@ inline std::string MethodSignature(NAME name, const char *prefix, std::index_seq
 // - regular, const, noexcept and const noexcept
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
           RETURN (BASE::*FUNC)(ARGS...), typename NAME = const char *>
-inline std::string MethodSignature(NAME name, const char *prefix,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
+NOBIND_INLINE std::string MethodSignature(NAME name, const char *prefix,
+                                          std::integral_constant<RETURN (BASE::*)(ARGS...), FUNC>) {
   return MethodSignature<RETATTR, BASE, RETURN, FUNC, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
           RETURN (BASE::*FUNC)(ARGS...) const, typename NAME = const char *>
-inline std::string MethodSignature(NAME name, const char *prefix,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
+NOBIND_INLINE std::string MethodSignature(NAME name, const char *prefix,
+                                          std::integral_constant<RETURN (BASE::*)(ARGS...) const, FUNC>) {
   return MethodSignature<RETATTR, BASE, RETURN, FUNC, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
           RETURN (BASE::*FUNC)(ARGS...) noexcept, typename NAME = const char *>
-inline std::string MethodSignature(NAME name, const char *prefix,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
+NOBIND_INLINE std::string MethodSignature(NAME name, const char *prefix,
+                                          std::integral_constant<RETURN (BASE::*)(ARGS...) noexcept, FUNC>) {
   return MethodSignature<RETATTR, BASE, RETURN, FUNC, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 template <const ReturnAttribute &RETATTR, typename BASE, typename RETURN, typename... ARGS,
           RETURN (BASE::*FUNC)(ARGS...) const noexcept, typename NAME = const char *>
-inline std::string MethodSignature(NAME name, const char *prefix,
-                                   std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
+NOBIND_INLINE std::string MethodSignature(NAME name, const char *prefix,
+                                          std::integral_constant<RETURN (BASE::*)(ARGS...) const noexcept, FUNC>) {
   return MethodSignature<RETATTR, BASE, RETURN, FUNC, ARGS...>(name, prefix, std::index_sequence_for<ARGS...>{});
 }
 
@@ -275,7 +276,7 @@ template <typename T> class ToJS<JSIteratorResult<T>> : public ToJS<Napi::Value>
   Napi::Value val_;
 
 public:
-  inline explicit ToJS(Napi::Env env, JSIteratorResult<T> val) : ToJS<Napi::Value>(env, val) {}
+  NOBIND_INLINE explicit ToJS(Napi::Env env, JSIteratorResult<T> val) : ToJS<Napi::Value>(env, val) {}
   static std::string TSType() { return "IteratorResult<"s + FromTSType<T>() + ">"s; }
 };
 

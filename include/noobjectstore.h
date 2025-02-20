@@ -1,15 +1,9 @@
+#include <nodebug.h>
 #include <nonapi.h>
 
 #include <map>
 #include <mutex>
 #include <vector>
-
-#define NOBIND_OBJECT_STORE_DEBUG
-#ifdef NOBIND_OBJECT_STORE_DEBUG
-#define NOBIND_OBJECT_STORE_VERBOSE(...) printf(__VA_ARGS__);
-#else
-#define NOBIND_OBJECT_STORE_VERBOSE(...)
-#endif
 
 namespace Nobind {
 
@@ -55,16 +49,15 @@ template <typename T> class ObjectStore {
   std::vector<std::map<T, Napi::Reference<Napi::Value> *>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
-    NOBIND_TYPE_VERBOSE(U);
-    NOBIND_OBJECT_STORE_VERBOSE("Get %p from object store: ", ptr);
+    NOBIND_VERBOSE_TYPE(STORE, U, "Get %p from object store: ", ptr);
     if (object_store.at(class_idx).count(static_cast<T>(ptr)) == 0) {
-      NOBIND_OBJECT_STORE_VERBOSE("not there\n");
+      NOBIND_VERBOSE(STORE, "not there\n");
       return Napi::Value{};
     }
 
     auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
     if (ref->IsEmpty()) {
-      NOBIND_OBJECT_STORE_VERBOSE("expired\n");
+      NOBIND_VERBOSE(STORE, "expired\n");
       // The chain is still here but the goat is nowhere to be found
       object_store.at(class_idx).erase(static_cast<T>(ptr));
       delete ref;
@@ -72,7 +65,7 @@ template <typename T> class ObjectStore {
     }
     Napi::Value js = ref->Value();
 
-    NOBIND_OBJECT_STORE_VERBOSE("found\n");
+    NOBIND_VERBOSE(STORE, "found\n");
     return js;
   }
 
@@ -82,49 +75,46 @@ public:
     return GetLocked(class_idx, ptr);
   }
 
-  template <typename U> inline void Put(size_t class_idx, U *ptr, Napi::Value js) {
-    return;
+  template <typename U> NOBIND_INLINE void Put(size_t class_idx, U *ptr, Napi::Value js) {
     std::lock_guard guard{lock};
 
-    NOBIND_TYPE_VERBOSE(U);
-    NOBIND_OBJECT_STORE_VERBOSE("Create %p in object store\n", ptr);
+    NOBIND_VERBOSE_TYPE(STORE, U, "create %p in object store\n", ptr);
     auto ref = new Napi::Reference<Napi::Value>;
     *ref = Napi::Reference<Napi::Value>::New(js);
     object_store.at(class_idx).insert({static_cast<T>(ptr), ref});
   }
 
-  template <typename U> inline void Expire(size_t class_idx, U *ptr, Napi::Value js) {
+  template <typename U> NOBIND_INLINE void Expire(size_t class_idx, U *ptr, Napi::Value js) {
     std::lock_guard guard{lock};
 
     Napi::Value stored = GetLocked(class_idx, ptr);
-    NOBIND_TYPE_VERBOSE(U);
-    NOBIND_OBJECT_STORE_VERBOSE("Expire %p from object store: ", ptr);
+    NOBIND_VERBOSE_TYPE(STORE, U, "Expire %p from object store: ", ptr);
     if (stored.IsEmpty()) {
-      NOBIND_OBJECT_STORE_VERBOSE("already expired\n");
+      NOBIND_VERBOSE(STORE, "already expired\n");
       return;
     }
     // Are we expiring the right object?
     if (stored == js) {
-      NOBIND_OBJECT_STORE_VERBOSE("expiring\n");
+      NOBIND_VERBOSE(STORE, "expiring\n");
       auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
       object_store.at(class_idx).erase(static_cast<T>(ptr));
       delete ref;
     } else {
-      NOBIND_OBJECT_STORE_VERBOSE("new object present\n");
+      NOBIND_VERBOSE(STORE, "new object present\n");
     }
   }
 
   // We don't care for const, no two objects of the same type can have the same pointer anyway
-  template <typename U> inline Napi::Value Get(size_t idx, const U *ptr) { return Get(idx, const_cast<U *>(ptr)); }
-  template <typename U> inline void Put(size_t idx, const U *ptr, Napi::Value js) {
+  template <typename U> NOBIND_INLINE Napi::Value Get(size_t idx, const U *ptr) {
+    return Get(idx, const_cast<U *>(ptr));
+  }
+  template <typename U> NOBIND_INLINE void Put(size_t idx, const U *ptr, Napi::Value js) {
     return Put(idx, const_cast<U *>(ptr), js);
   }
-  template <typename U> inline void Expire(size_t idx, const U *ptr, Napi::Value js) {
+  template <typename U> NOBIND_INLINE void Expire(size_t idx, const U *ptr, Napi::Value js) {
     Expire(idx, const_cast<U *>(ptr), js);
   }
 
   void Init(size_t s) { object_store.resize(s); }
 };
 } // namespace Nobind
-
-#undef NOBIND_OBJECT_STORE_VERBOSE

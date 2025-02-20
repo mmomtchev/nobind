@@ -14,22 +14,5 @@
 #error C++17 is required to build with nobind17
 #endif
 
-#if defined(DEBUG)
-#include <cxxabi.h>
-#define TYPENAME(T) demangle<std::string>(typeid(T).name())
-#define NOBIND_TYPE_VERBOSE(T) printf("[%s] ", TYPENAME(T).c_str());
-
-// https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
-// (templated to be able to include in a header file)
-template <typename T> T demangle(const char *name) {
-
-  int status = -4;
-  std::unique_ptr<char, void (*)(void *)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
-
-  return (status == 0) ? res.get() : name;
-}
-#else
-#define NOBIND_TYPE_VERBOSE(T)
-#endif
-
 #include <napi.h>
+// #undef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER

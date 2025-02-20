@@ -37,6 +37,7 @@
       "request": "launch",
       "program": "/usr/local/bin/node",
       "args": [
+        "--expose-gc",
         "single.js",
         "run"
       ],
