@@ -3,7 +3,7 @@
     'enable_asan%': 'false',
     'enable_typescript%': 'true',
     'enable_typescript_debug%': 'false',
-    'enable_object_store%': 'true',
+    'enable_object_store%': 'false',
     'enable_require_basic_finalizers%': 'false',
     'test_output%': '<(test)'
   },
