@@ -32,4 +32,10 @@ NOBIND_MODULE(inheritance, m) {
 
   m.def<Abstract>("Abstract");
   m.def<DerivedAbstract, Abstract>("DerivedAbstract").cons<int>().def<&DerivedAbstract::Id>("id");
+
+  m.def<&require_Base>("requireBase");
+  // Automatic upcasting with multiple inheritance is still not supported
+  // (it works only with the first class which is the JS parent)
+  m.def<&require_IF1>("requireIF1");
+  m.def<&return_Base>("returnBase");
 }
