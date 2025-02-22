@@ -21,7 +21,7 @@ template <> class FromJS<Buffer> {
   Napi::ObjectReference persistent;
 
 public:
-  inline explicit FromJS(Napi::Value val) {
+  NOBIND_INLINE explicit FromJS(Napi::Value val) {
     if (!val.IsBuffer()) {
       throw Napi::TypeError::New(val.Env(), "Expected a Buffer");
     }
@@ -30,10 +30,10 @@ public:
     persistent = Napi::Persistent(val.As<Napi::Object>());
   }
 
-  inline Buffer Get() { return val_; }
+  NOBIND_INLINE Buffer Get() { return val_; }
 
   FromJS(const FromJS &) = delete;
-  inline FromJS(FromJS &&) = default;
+  NOBIND_INLINE FromJS(FromJS &&) = default;
 
   static const std::string &TSType() { return Buffer_tstype; }
 };
@@ -45,8 +45,8 @@ template <const ReturnAttribute &RETATTR> class ToJS<Buffer, RETATTR> {
   Buffer val_;
 
 public:
-  inline explicit ToJS(Napi::Env env, Buffer val) : env_(env), val_(val) {}
-  inline Napi::Value Get() {
+  NOBIND_INLINE explicit ToJS(Napi::Env env, Buffer val) : env_(env), val_(val) {}
+  NOBIND_INLINE Napi::Value Get() {
 #ifdef NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED
     // Node-API does not support external buffers (Electron)
     // C++ receives a copy with the original being freed immediately

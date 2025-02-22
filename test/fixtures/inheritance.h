@@ -13,12 +13,12 @@ public:
 
 class IF1 {
 public:
-  int ret1();
+  int ret1() const;
 };
 
 class IF2 {
 public:
-  int ret2();
+  int ret2() const;
 };
 
 class Derived : public Base, public IF1, public IF2 {
@@ -41,3 +41,7 @@ public:
   virtual std::string GetName() override;
   virtual int Id() override;
 };
+
+int require_Base(const Base &);
+int require_IF1(const IF1 &);
+const Base &return_Base(const Base &);

@@ -8,7 +8,7 @@ namespace Nobind {
 // https://stackoverflow.com/questions/77404330/function-template-with-variable-argument-function-as-template-argument
 // (this is the 3rd stage)
 template <const ReturnAttribute &RETATTR, auto *FUNC, typename RETURN, typename... ARGS, std::size_t... I>
-inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
+NOBIND_INLINE Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::index_sequence<I...>) {
   Napi::Env env = info.Env();
 
   try {
@@ -83,8 +83,8 @@ public:
 
 // Second stage, async, w/except (async has 2 stages + tasklet)
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
-inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+NOBIND_INLINE Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
+                                               std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
   Napi::Env env = info.Env();
 
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -113,8 +113,8 @@ inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
 
 // Second stage, async, noexcept (async has 2 stages + tasklet)
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...) noexcept>
-inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
-                                        std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
+NOBIND_INLINE Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
+                                               std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
   Napi::Env env = info.Env();
 
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -143,12 +143,13 @@ inline Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info,
 
 // Second stage, sync, two variants (except and noexcept)
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...)>
-inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
+NOBIND_INLINE Napi::Value FunctionWrapper(const Napi::CallbackInfo &info,
+                                          std::integral_constant<RETURN (*)(ARGS...), FUNC>) {
   return FunctionWrapper<RETATTR, FUNC, RETURN, ARGS...>(info, std::index_sequence_for<ARGS...>{});
 }
 template <const ReturnAttribute &RETATTR, typename RETURN, typename... ARGS, RETURN (*FUNC)(ARGS...) noexcept>
-inline Napi::Value FunctionWrapper(const Napi::CallbackInfo &info,
-                                   std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
+NOBIND_INLINE Napi::Value FunctionWrapper(const Napi::CallbackInfo &info,
+                                          std::integral_constant<RETURN (*)(ARGS...) noexcept, FUNC>) {
   return FunctionWrapper<RETATTR, FUNC, RETURN, ARGS...>(info, std::index_sequence_for<ARGS...>{});
 }
 

@@ -9,13 +9,13 @@ template <typename T> class FromJSString {
   std::remove_cv_t<std::remove_reference_t<T>> val_;
 
 public:
-  inline explicit FromJSString(const Napi::Value &val) {
+  NOBIND_INLINE explicit FromJSString(const Napi::Value &val) {
     if (!val.IsString()) {
       throw Napi::TypeError::New(val.Env(), "Expected a string");
     }
     val_ = val.ToString().Utf8Value();
   }
-  inline T Get() { return val_; }
+  NOBIND_INLINE T Get() { return val_; }
   FromJSString(const FromJSString &) = delete;
   FromJSString(FromJSString &&) = default;
 };
@@ -25,8 +25,8 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJSString {
   T val_;
 
 public:
-  inline explicit ToJSString(Napi::Env env, T val) : env_(env), val_(val) {}
-  inline Napi::Value Get() { return Napi::String::New(env_, val_); }
+  NOBIND_INLINE explicit ToJSString(Napi::Env env, T val) : env_(env), val_(val) {}
+  NOBIND_INLINE Napi::Value Get() { return Napi::String::New(env_, val_); }
   ToJSString(const ToJSString &) = delete;
   ToJSString(ToJSString &&) = default;
 };
@@ -35,7 +35,7 @@ template <typename T> class FromJSChar {
   char *val_;
 
 public:
-  inline explicit FromJSChar(const Napi::Value &val) {
+  NOBIND_INLINE explicit FromJSChar(const Napi::Value &val) {
     if (!val.IsString()) {
       throw Napi::TypeError::New(val.Env(), "Expected a string");
     }
@@ -45,7 +45,7 @@ public:
     val_[s.size()] = 0;
   }
 
-  inline T Get() { return val_; }
+  NOBIND_INLINE T Get() { return val_; }
 
   ~FromJSChar() { delete val_; }
   FromJSChar(const FromJSChar &) = delete;
@@ -57,8 +57,8 @@ template <typename T, const ReturnAttribute &RETATTR> class ToJSChar {
   T val_;
 
 public:
-  inline explicit ToJSChar(Napi::Env env, T val) : env_(env), val_(val) {}
-  inline Napi::Value Get() { return Napi::String::New(env_, val_); }
+  NOBIND_INLINE explicit ToJSChar(Napi::Env env, T val) : env_(env), val_(val) {}
+  NOBIND_INLINE Napi::Value Get() { return Napi::String::New(env_, val_); }
   ToJSChar(const ToJSChar &) = delete;
   ToJSChar(ToJSChar &&) = default;
 };

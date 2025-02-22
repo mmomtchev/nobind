@@ -25,11 +25,17 @@ NOBIND_MODULE(inheritance, m) {
 #else
       .def<&Derived::get>("virtual_base_get")
       .def<static_cast<int (Derived::*)() const>(&Derived::base_get)>("base_get")
-      .def<static_cast<int (Derived::*)()>(&Derived::ret1)>("ret1")
-      .def<static_cast<int (Derived::*)()>(&Derived::ret2)>("ret2")
+      .def<static_cast<int (Derived::*)() const>(&Derived::ret1)>("ret1")
+      .def<static_cast<int (Derived::*)() const>(&Derived::ret2)>("ret2")
 #endif
       .def<&Derived::derived_get>("derived_get");
 
   m.def<Abstract>("Abstract");
   m.def<DerivedAbstract, Abstract>("DerivedAbstract").cons<int>().def<&DerivedAbstract::Id>("id");
+
+  m.def<&require_Base>("requireBase");
+  // Automatic upcasting with multiple inheritance is still not supported
+  // (it works only with the first class which is the JS parent)
+  m.def<&require_IF1>("requireIF1");
+  m.def<&return_Base>("returnBase");
 }

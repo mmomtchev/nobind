@@ -13,7 +13,7 @@ template <typename V, typename T> class FromJSVector {
   std::remove_cv_t<std::remove_reference_t<V>> val_;
 
 public:
-  inline explicit FromJSVector(const Napi::Value &val) {
+  NOBIND_INLINE explicit FromJSVector(const Napi::Value &val) {
     if (!val.IsArray()) {
       throw Napi::TypeError::New(val.Env(), "Expected an array");
     }
@@ -24,7 +24,7 @@ public:
     }
   }
 
-  inline V Get() { return val_; }
+  NOBIND_INLINE V Get() { return val_; }
   FromJSVector(const FromJSVector &) = delete;
   FromJSVector(FromJSVector &&) = default;
 
@@ -36,8 +36,8 @@ template <typename V, typename T, const ReturnAttribute &RETATTR> class ToJSVect
   std::remove_cv_t<std::remove_reference_t<V>> val_;
 
 public:
-  inline explicit ToJSVector(Napi::Env env, V val) : env_(env), val_(val) {}
-  inline Napi::Value Get() {
+  NOBIND_INLINE explicit ToJSVector(Napi::Env env, V val) : env_(env), val_(val) {}
+  NOBIND_INLINE Napi::Value Get() {
     Napi::Array array = Napi::Array::New(env_, val_.size());
     for (size_t i = 0; i < val_.size(); i++) {
       array.Set(i, ToJS<T, RETATTR>(env_, val_[i]).Get());
@@ -54,7 +54,7 @@ template <typename M, typename T> class FromJSMap {
   std::remove_cv_t<std::remove_reference_t<M>> val_;
 
 public:
-  inline explicit FromJSMap(const Napi::Value &val) {
+  NOBIND_INLINE explicit FromJSMap(const Napi::Value &val) {
     if (!val.IsObject()) {
       throw Napi::TypeError::New(val.Env(), "Expected an object");
     }
@@ -64,7 +64,7 @@ public:
     }
   }
 
-  inline M Get() { return val_; }
+  NOBIND_INLINE M Get() { return val_; }
   FromJSMap(const FromJSMap &) = delete;
   FromJSMap(FromJSMap &&) = default;
 
@@ -76,8 +76,8 @@ template <typename M, typename T, const ReturnAttribute &RETATTR> class ToJSMap 
   std::remove_cv_t<std::remove_reference_t<M>> val_;
 
 public:
-  inline explicit ToJSMap(Napi::Env env, M val) : env_(env), val_(val) {}
-  inline Napi::Value Get() {
+  NOBIND_INLINE explicit ToJSMap(Napi::Env env, M val) : env_(env), val_(val) {}
+  NOBIND_INLINE Napi::Value Get() {
     Napi::Object object = Napi::Object::New(env_);
     for (auto &prop : val_) {
       object.Set(Napi::String::New(env_, prop.first), ToJS<T, RETATTR>(env_, prop.second).Get());

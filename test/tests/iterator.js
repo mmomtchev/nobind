@@ -12,26 +12,44 @@ describe('iterators', () => {
   });
 
   it('objects by reference', () => {
-    const o = new dll.HelloList;
+    const o = new dll.HelloPtrList;
     assert.isFunction(o[Symbol.iterator]);
-    const r = [];
-    o.push_back(new dll.Hello('Gargantua'));
-    o.push_back(new dll.Hello('Pantagruel'));
+
+    const el1 = new dll.Hello('Gargantua');
+    const el2 = new dll.Hello('Pantagruel');
+    o.push_back(el1);
+    o.push_back(el2);
+
+    const greets = [];
+    const objects = [];
     for (const i of o) {
-      r.push(i.greet('Mr'));
+      objects.push(i);
+      greets.push(i.greet('Mr'));
     }
-    assert.sameOrderedMembers(r, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
+    assert.sameOrderedMembers(greets, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
+
+    // This tests the object store
+    assert.sameOrderedMembers(objects, [el1, el2]);
   });
 
   it('pointers', () => {
     const o = new dll.HelloPtrList;
     assert.isFunction(o[Symbol.iterator]);
-    const r = [];
-    o.push_back(new dll.Hello('Gargantua'));
-    o.push_back(new dll.Hello('Pantagruel'));
+
+    const el1 = new dll.Hello('Gargantua');
+    const el2 = new dll.Hello('Pantagruel');
+    o.push_back(el1);
+    o.push_back(el2);
+
+    const greets = [];
+    const objects = [];
     for (const i of o) {
-      r.push(i.greet('Mr'));
+      objects.push(i);
+      greets.push(i.greet('Mr'));
     }
-    assert.sameOrderedMembers(r, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
+    assert.sameOrderedMembers(greets, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
+
+    // This tests the object store
+    assert.sameOrderedMembers(objects, [el1, el2]);
   });
 });
