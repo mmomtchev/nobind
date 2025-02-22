@@ -25,8 +25,8 @@ NOBIND_MODULE(inheritance, m) {
 #else
       .def<&Derived::get>("virtual_base_get")
       .def<static_cast<int (Derived::*)() const>(&Derived::base_get)>("base_get")
-      .def<static_cast<int (Derived::*)()>(&Derived::ret1)>("ret1")
-      .def<static_cast<int (Derived::*)()>(&Derived::ret2)>("ret2")
+      .def<static_cast<int (Derived::*)() const>(&Derived::ret1)>("ret1")
+      .def<static_cast<int (Derived::*)() const>(&Derived::ret2)>("ret2")
 #endif
       .def<&Derived::derived_get>("derived_get");
 
