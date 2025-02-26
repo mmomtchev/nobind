@@ -18,7 +18,7 @@ it('nominal', () => {
   assert.throws(() => {
     // @ts-expect-error
     b.derived_get();
-  });
+  }, /b\.derived_get is not a function/);
 
   assert.strictEqual(d.ret1(), 1);
   assert.strictEqual(d.ret2(), 2);
@@ -33,5 +33,38 @@ it('abstract', () => {
   assert.throws(() => {
     // @ts-expect-error
     new dll.Abstract;
-  });
+  }, /create an object of abstract/);
+});
+
+it('automatic upcasting', () => {
+  const derived = new dll.Derived(10);
+
+  // Derived is accepted as Base but works as Derived
+  assert.strictEqual(dll.requireBase(derived), 11);
+});
+
+it('type distinction by the object store', () => {
+  const derived = new dll.Derived(12);
+
+  // returnBase returns const Base & which creates a new wrapper
+  // which is not of the Derived type
+  const ret = dll.returnBase(derived);
+  assert.instanceOf(ret, dll.Base);
+  assert.notInstanceOf(ret, dll.Derived);
+
+  // However the C++ object inside is Derived
+  assert.strictEqual(ret.get(), 13);
+});
+
+it('object store object reuse', () => {
+  const base = new dll.Base(16);
+
+  const ret = dll.returnBase(base);
+  assert.instanceOf(ret, dll.Base);
+  assert.notInstanceOf(ret, dll.Derived);
+
+  // returnBase should not create a new wrapper
+  assert.strictEqual(ret, base);
+
+  assert.strictEqual(ret.get(), 16);
 });

@@ -15,3 +15,4 @@
 #endif
 
 #include <napi.h>
+// #undef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER

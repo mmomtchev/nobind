@@ -15,7 +15,7 @@ using namespace std::literals::string_literals;
 
 namespace Nobind {
 
-inline void CheckArgLength(Napi::Env env, size_t expected, size_t actual) {
+NOBIND_INLINE void CheckArgLength(Napi::Env env, size_t expected, size_t actual) {
   if (actual != expected) {
     std::string msg = "Expected "s + std::to_string(expected) + " arguments, got "s + std::to_string(actual);
     throw Napi::TypeError::New(env, msg);
@@ -35,8 +35,8 @@ template <const ReturnAttribute &RETATTR> class ToJS<bool, RETATTR> {
   bool val_;
 
 public:
-  inline explicit ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
-  inline Napi::Value Get() { return Napi::Boolean::New(env_, val_); }
+  NOBIND_INLINE explicit ToJS(Napi::Env env, bool val) : env_(env), val_(val) {}
+  NOBIND_INLINE Napi::Value Get() { return Napi::Boolean::New(env_, val_); }
 
   static const std::string &TSType() { return boolean_tstype; };
 };
@@ -45,13 +45,13 @@ template <> class FromJS<bool> {
   bool val_;
 
 public:
-  inline explicit FromJS(const Napi::Value &val) {
+  NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     if (!val.IsBoolean()) {
       throw Napi::TypeError::New(val.Env(), "Expected a boolean");
     }
     val_ = val.ToBoolean().Value();
   }
-  inline bool Get() { return val_; }
+  NOBIND_INLINE bool Get() { return val_; }
 
   static const std::string &TSType() { return boolean_tstype; };
 };
@@ -62,18 +62,18 @@ template <const ReturnAttribute &RETATTR> class ToJS<Napi::Value, RETATTR> {
   Napi::Value val_;
 
 public:
-  inline explicit ToJS(Napi::Env env, Napi::Value val) : env_(env), val_(val) {
+  NOBIND_INLINE explicit ToJS(Napi::Env env, Napi::Value val) : env_(env), val_(val) {
     static_assert(!RETATTR.isAsync(), "The native typemaps are not compatible with async mode");
   }
-  inline Napi::Value Get() { return val_; }
+  NOBIND_INLINE Napi::Value Get() { return val_; }
 };
 
 template <> class FromJS<Napi::Value> {
   Napi::Value val_;
 
 public:
-  inline explicit FromJS(const Napi::Value &val) : val_(val) {}
-  inline Napi::Value Get() { return val_; }
+  NOBIND_INLINE explicit FromJS(const Napi::Value &val) : val_(val) {}
+  NOBIND_INLINE Napi::Value Get() { return val_; }
 };
 
 // Typemap that generates Napi::Env arguments w/o consuming input
@@ -81,8 +81,8 @@ template <> class FromJS<Napi::Env> {
   Napi::Env val_;
 
 public:
-  inline explicit FromJS(const Napi::Value &val) : val_(val.Env()) {}
-  inline const Napi::Env Get() { return val_; }
+  NOBIND_INLINE explicit FromJS(const Napi::Value &val) : val_(val.Env()) {}
+  NOBIND_INLINE const Napi::Env Get() { return val_; }
   static const std::string TSType() { return ""; };
 
   static const size_t Inputs = 0;
@@ -106,14 +106,14 @@ template <typename T> using never_void_t = typename never_void<T>::type;
 
 template <typename T> class FromJSTypemapHasInputs {
   template <typename U> static constexpr decltype(std::declval<U &>().Inputs, bool()) test(int) { return true; }
-  template <typename U> static constexpr inline bool test(...) { return false; }
+  template <typename U> static constexpr NOBIND_INLINE bool test(...) { return false; }
 
 public:
   static constexpr bool value = test<T>(int());
 };
 
 // Main entry point when processing a Napi::Value
-template <typename T> auto inline FromJSValue(const Napi::Value &val) {
+template <typename T> auto NOBIND_INLINE FromJSValue(const Napi::Value &val) {
   if constexpr (std::is_constructible_v<TypemapOverrides::FromJS<std::remove_cv_t<T>>, const Napi::Value &>) {
     return TypemapOverrides::FromJS<std::remove_cv_t<T>>(val);
   } else {
@@ -122,7 +122,7 @@ template <typename T> auto inline FromJSValue(const Napi::Value &val) {
 }
 
 // Main entry point when processing a value from arguments
-template <typename T> auto inline FromJSArgs(const Napi::CallbackInfo &info, size_t &idx) {
+template <typename T> auto NOBIND_INLINE FromJSArgs(const Napi::CallbackInfo &info, size_t &idx) {
   auto r = FromJSValue<std::remove_cv_t<T>>(info[idx]);
   if constexpr (FromJSTypemapHasInputs<decltype(r)>::value) {
     static_assert(r.Inputs == 0 || r.Inputs == 1, "Only 1:1 and 1:O conversions are supported at the moment");
@@ -134,7 +134,7 @@ template <typename T> auto inline FromJSArgs(const Napi::CallbackInfo &info, siz
 }
 
 // Main entry point when generating a Napi::Value
-template <typename T, const ReturnAttribute &RETATTR> auto inline ToJS(const Napi::Env &env, T val) {
+template <typename T, const ReturnAttribute &RETATTR> auto NOBIND_INLINE ToJS(const Napi::Env &env, T val) {
   if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>, const Napi::Env &, T>) {
     return TypemapOverrides::ToJS<std::remove_cv_t<T>, RETATTR>(env, val);
   } else if constexpr (std::is_constructible_v<TypemapOverrides::ToJS<std::remove_cv_t<T>>, const Napi::Env &, T>) {

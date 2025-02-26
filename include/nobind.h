@@ -2,6 +2,8 @@
 
 #include <nonapi.h>
 
+#include <nodebug.h>
+
 #include <tuple>
 #include <type_traits>
 #include <typeindex>
@@ -45,12 +47,26 @@ public:
   {
   }
 
+  ~Module() noexcept(false) {
+#ifndef NOBIND_NO_OBJECT_STORE
+    auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
+    instance->_Nobind_object_store.Init(class_idx_);
+    auto r = napi_add_env_cleanup_hook(
+        env_,
+        [](void *arg) {
+          auto instance = static_cast<BaseEnvInstanceData *>(arg);
+          instance->_Nobind_object_store.Flush();
+        },
+        instance);
+    if (r != napi_ok) {
+      throw Napi::Error::New(env_, "Failed to register Object Store cleanup hook");
+    }
+#endif
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
-  ~Module() {
     exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
                                                             Napi::String::New(env_, typescript_types_), napi_default));
-  }
 #endif
+  }
 
   // Global function
   template <auto *OBJECT, const ReturnAttribute &RET = ReturnDefault>
@@ -128,6 +144,7 @@ public:
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env, Napi::Object);                                           \
   NODE_API_MODULE(MODULE_NAME, Nobind_##MODULE_NAME##_Init_Wrapper)                                                    \
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                              \
+    NOBIND_DEBUG_INIT;                                                                                                 \
     env.SetInstanceData(new Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>);                                              \
     Nobind::Module<Nobind_##MODULE_NAME##_name> m{env, exports};                                                       \
     Nobind_##MODULE_NAME##_Init_Wrapper(m);                                                                            \

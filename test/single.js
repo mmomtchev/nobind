@@ -36,6 +36,9 @@ switch (process.argv[2]) {
   case 'configure-nots':
     framework.configure(test, 'inherit', ['--debug', '--enable_typescript=false']);
     break;
+  case 'configure-noos':
+    framework.configure(test, 'inherit', ['--debug', '--enable_object_store=false']);
+    break;
   case 'configure-asan':
     framework.configure(test, 'inherit', ['--debug', '--enable_asan']);
     break;
@@ -48,6 +51,11 @@ switch (process.argv[2]) {
     mocha.addFile(path.resolve(__dirname, 'tests', test));
     mocha.run(function (failures) {
       process.on('exit', function () {
+        console.log('Running GC');
+        if (global.gc)
+          global.gc();
+        else
+          console.warn('gc() not available');
         process.exit(failures);
       });
     });
