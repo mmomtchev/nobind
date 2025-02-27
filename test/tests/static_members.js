@@ -30,6 +30,11 @@ describe('StaticMembers', () => {
     assert.strictEqual(dll.version, '0.0.7');
   });
 
+  it('global getter of class type', () => {
+    assert.instanceOf(dll.global_object, dll.StaticMembers);
+    assert.strictEqual(dll.global_object.get_instance(), 12);
+  });
+
   describe('static member setter', () => {
     it('nominal', () => {
       const o = new dll.StaticMembers;

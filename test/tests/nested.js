@@ -29,9 +29,14 @@ describe('nested objects', () => {
   it('explicit nested references', () => {
     const dt = new dll.DateTime(new dll.Time(111));
     assert.instanceOf(dt, dll.DateTime);
+
     // @ts-ignore
     assert.strictEqual(dt.get().__nobind_parent_reference, dt);
     assert.strictEqual(dt.get().get(), 111);
+
+    // @ts-ignore
+    assert.strictEqual(dt.ptr().__nobind_parent_reference, dt);
+    assert.strictEqual(dt.ptr().get(), 111);
   });
 
   it('implicit nested references', () => {
@@ -40,5 +45,7 @@ describe('nested objects', () => {
     // @ts-ignore
     assert.strictEqual(dt.time.__nobind_parent_reference, dt);
     assert.strictEqual(dt.get().get(), 117);
+    // Issue #147
+    assert.strictEqual(dt.time.get(), 117);
   });
 });
