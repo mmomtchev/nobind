@@ -32,7 +32,7 @@ describe('StaticMembers', () => {
 
   it('global getter of class type', () => {
     assert.instanceOf(dll.global_object, dll.StaticMembers);
-    assert.strictEqual(dll.global_object.get_instance(), 1);
+    assert.strictEqual(dll.global_object.get_instance(), 12);
   });
 
   describe('static member setter', () => {
