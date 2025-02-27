@@ -48,4 +48,12 @@ describe('nested objects', () => {
     // Issue #147
     assert.strictEqual(dt.time.get(), 117);
   });
+
+  it('object store', () => {
+    const dt = new dll.DateTime(new dll.Time(122));
+    assert.instanceOf(dt, dll.DateTime);
+
+    assert.strictEqual(dt.get(), dt.ptr());
+    assert.strictEqual(dt.time, dt.ptr());
+  });
 });
