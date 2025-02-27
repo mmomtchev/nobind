@@ -136,7 +136,12 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return SetupNested<ReturnNested>(ToJS<T, ReturnNested>(env, self->*MEMBER).Get());
+    if constexpr (std::is_scalar_v<T>)
+      // Copy scalar objects
+      return ToJS<T, ReturnNested>(env, self->*MEMBER).Get();
+    else
+      // Return a nested reference
+      return SetupNested<ReturnNested>(ToJS<T &, ReturnNested>(env, self->*MEMBER).Get());
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {

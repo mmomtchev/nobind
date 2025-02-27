@@ -40,5 +40,7 @@ describe('nested objects', () => {
     // @ts-ignore
     assert.strictEqual(dt.time.__nobind_parent_reference, dt);
     assert.strictEqual(dt.get().get(), 117);
+    // Issue #147
+    assert.strictEqual(dt.time.get(), 117);
   });
 });
