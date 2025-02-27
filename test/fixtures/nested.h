@@ -11,4 +11,5 @@ public:
   Time time;
   DateTime(Time v);
   operator Time &();
+  operator Time *();
 };

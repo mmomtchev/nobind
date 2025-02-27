@@ -11,5 +11,8 @@ NOBIND_MODULE(nested, m) {
       // Getters of object members references automatically return nested references
       .def<&DateTime::time>("time")
       // Explicitly return a nested reference
-      .def<&DateTime::operator Time &, Nobind::ReturnNested>("get");
+      .def<&DateTime::operator Time &, Nobind::ReturnNested>("get")
+      // Explicitly return a nested pointer
+      .def<&DateTime::operator Time *, Nobind::ReturnNested>("ptr");
+  ;
 }
