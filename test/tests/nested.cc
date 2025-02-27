@@ -14,5 +14,4 @@ NOBIND_MODULE(nested, m) {
       .def<&DateTime::operator Time &, Nobind::ReturnNested>("get")
       // Explicitly return a nested pointer
       .def<&DateTime::operator Time *, Nobind::ReturnNested>("ptr");
-  ;
 }
