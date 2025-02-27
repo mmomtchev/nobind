@@ -170,7 +170,12 @@ Napi::Value FunctionWrapperAsync(const Napi::CallbackInfo &info) {
 // Global or class static getter wrapper
 template <typename T, T *OBJECT> static Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return ToJS<T, ReturnDefault>(env, *OBJECT).Get();
+  if constexpr (std::is_scalar_v<T>)
+    // Copy scalar objects
+    return ToJS<T, ReturnDefault>(env, *OBJECT).Get();
+  else
+    // Return a reference to class objects
+    return ToJS<T &, ReturnDefault>(env, *OBJECT).Get();
 }
 
 // Global or class static setter wrapper
