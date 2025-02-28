@@ -6,7 +6,7 @@ describe('stress tests', function () {
 
   // Objects created from JS are destroyed
   // when their JS wrappers are GCed
-  it.only('JavaScript created objects', async () => {
+  it('JavaScript created objects', async () => {
     const { Hello, DateTime, Time } = dll;
 
     // Two 1000 element arrays
@@ -59,6 +59,42 @@ describe('stress tests', function () {
       assert.instanceOf(dt, dll.DateTime);
       const v = await (await dt.get()).get();
       assert.strictEqual(v, pick);
+    }
+  });
+
+  it('object vector construction and deconstruction', async () => {
+    let v = [];
+    for (let i = 0; i < 100; i++)
+      v.push(new dll.Hello(i.toString()));
+
+    for (let i = 0; i < 10000; i++) {
+      v = await dll.take_and_return_object_vector(v);
+    }
+
+    assert.lengthOf(v, 100);
+    for (const i in v) {
+      assert.instanceOf(v[i], dll.Hello);
+      assert.strictEqual(v[i].greet('comrade'), `hello comrade ${i}`);
+    }
+  });
+
+  it('pointer vector construction and deconstruction', async () => {
+    const orig = [];
+    for (let i = 0; i < 100; i++) {
+      orig.push(new dll.Hello(i.toString()));
+    }
+    let v = [...orig];
+
+    for (let i = 0; i < 10000; i++) {
+      v = await dll.take_and_return_ptr_vector(v);
+    }
+
+    assert.lengthOf(v, 100);
+    for (const i in v) {
+      assert.instanceOf(v[i], dll.Hello);
+      assert.strictEqual(v[i].greet('comrade'), `hello comrade ${i}`);
+      // object store preserves the original objects
+      assert.strictEqual(v[i], orig[i]);
     }
   });
 });

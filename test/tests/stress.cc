@@ -29,9 +29,28 @@ DateTime &check_and_replace(unsigned long element, bool replace) {
   return cpp_container.at(element);
 }
 
+std::vector<Hello> take_and_return_object_vector(const std::vector<Hello> &input) {
+  std::vector<Hello> output;
+  for (auto i : input) {
+    output.push_back(i);
+  }
+  return output;
+}
+
+std::vector<Hello *> take_and_return_ptr_vector(const std::vector<Hello *> &input) {
+  std::vector<Hello *> output;
+  for (auto i : input) {
+    output.push_back(i);
+  }
+  return output;
+}
+
 NOBIND_MODULE(stress, m) {
-  m.def<Hello>("Hello").cons<std::string &>().def<&Hello::Id, Nobind::ReturnAsync>("get_id").ext<ReturnSameHello>(
-      "same");
+  m.def<Hello>("Hello")
+      .cons<std::string &>()
+      .def<&Hello::Id, Nobind::ReturnAsync>("get_id")
+      .def<&Hello::Greet>("greet")
+      .ext<ReturnSameHello>("same");
 
   m.def<Time>("Time").cons<unsigned long>().def<&Time::operator unsigned long, Nobind::ReturnAsync>("get");
 
@@ -46,4 +65,7 @@ NOBIND_MODULE(stress, m) {
     cpp_container.at(i) = Time{static_cast<unsigned long>(i)};
   }
   m.def<&check_and_replace, Nobind::ReturnShared>("cpp_check_and_replace");
+
+  m.def<&take_and_return_object_vector, Nobind::ReturnAsync>("take_and_return_object_vector");
+  m.def<&take_and_return_ptr_vector, Nobind::ReturnAsync>("take_and_return_ptr_vector");
 }
