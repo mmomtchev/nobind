@@ -52,7 +52,7 @@ describe('stress tests', function () {
 
   // Objects created from C++ are preserved
   // when their JS wrappers are GCed
-  it.skip('C++ created objects', async () => {
+  it.only('C++ created objects', async () => {
     for (let i = 0; i < 5e4; i++) {
       const pick = Math.floor(Math.random() * 1000);
       const dt = dll.cpp_check_and_replace(pick, Math.random() < 0.5);
