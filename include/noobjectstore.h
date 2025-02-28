@@ -94,6 +94,9 @@ public:
       return;
     }
     if (js.IsEmpty()) {
+      // If the stored reference is not empty and this one is empty
+      // (which can happen only without basic finalizers), the only
+      // explanation is that the stored object is a new wrapper
       NOBIND_VERBOSE(STORE, "already expired (no basic finalizers)");
       return;
     }
