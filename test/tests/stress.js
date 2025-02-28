@@ -55,7 +55,7 @@ describe('stress tests', function () {
   it.only('C++ created objects', async () => {
     for (let i = 0; i < 5e4; i++) {
       const pick = Math.floor(Math.random() * 1000);
-      const dt = dll.cpp_check_and_replace(dll.cpp_container, pick);
+      const dt = dll.cpp_check_and_replace(dll.cpp_container, pick, Math.random() < 0.5);
       assert.instanceOf(dt, DateTime);
       const v = await (await dt.get()).get();
       assert.strictEqual(v, pick);

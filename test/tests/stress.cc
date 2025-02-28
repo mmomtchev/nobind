@@ -23,7 +23,7 @@ DateTime &check_and_replace(std::vector<DateTime> &cpp_container, unsigned long 
 
   if (replace) {
     // Replace it with a new one
-    cpp_container.emplace(cpp_container.begin() + element, Time{element});
+    cpp_container.at(element) = Time{element};
   }
 
   return cpp_container.at(element);
@@ -44,8 +44,8 @@ NOBIND_MODULE(stress, m) {
   m.def<&cpp_container>("cpp_container");
 
   cpp_container.resize(TEST_SIZE);
-  for (auto i = cpp_container.begin(); i != cpp_container.end(); i++) {
-    cpp_container.emplace(i, Time{static_cast<unsigned long>(i - cpp_container.begin())});
+  for (size_t i = 0; i < TEST_SIZE; i++) {
+    cpp_container.at(i) = Time{static_cast<unsigned long>(i)};
   }
   m.def<&check_and_replace, Nobind::ReturnShared>("cpp_check_and_replace");
 }
