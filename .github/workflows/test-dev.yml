@@ -34,6 +34,21 @@ jobs:
         run: echo MOCHA_TEST_BASIC_FINALIZERS=1 >> $GITHUB_ENV
         if: matrix.platform == 'ubuntu-latest'
       - run: npm test
+      - name: Link the package (POSIX)
+        run: sudo npm link
+        if: runner.os != 'Windows'
+      - name: Link the package (Windows)
+        run: npm link
+        if: runner.os == 'Windows'
+      - name: Check the example
+        run: |
+          cd example
+          npm install node-gyp
+          npm link nobind17
+          cp node_modules/node-addon-api/except.gypi .
+          npx node-gyp configure build
+          node -p "require('./build/Release/hello.node').hello('Garga')"
+        shell: bash
 
 
   asan:
