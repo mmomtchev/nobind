@@ -56,16 +56,16 @@ template <typename T> class ObjectStore {
     }
 
     auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
-    if (ref->IsEmpty()) {
+    Napi::Value js = ref->Value();
+    if (js.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "expired\n");
       // The chain is still here but the goat is nowhere to be found
       object_store.at(class_idx).erase(static_cast<T>(ptr));
       delete ref;
       return Napi::Value{};
     }
-    Napi::Value js = ref->Value();
 
-    NOBIND_VERBOSE(STORE, "found\n");
+    NOBIND_VERBOSE(STORE, "found (%d)\n", (int)js.IsEmpty());
     return js;
   }
 
