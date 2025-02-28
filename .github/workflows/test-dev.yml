@@ -34,9 +34,14 @@ jobs:
         run: echo MOCHA_TEST_BASIC_FINALIZERS=1 >> $GITHUB_ENV
         if: matrix.platform == 'ubuntu-latest'
       - run: npm test
-      - name: check example
+      - name: Link the package (POSIX)
+        run: sudo npm link
+        if: runner.os != 'Windows'
+      - name: Link the package (Windows)
+        run: npm link
+        if: runner.os == 'Windows'
+      - name: Check the example
         run: |
-          sudo npm link
           cd example
           npm install node-gyp
           npm link nobind17
