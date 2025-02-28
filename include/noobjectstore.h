@@ -65,7 +65,7 @@ template <typename T> class ObjectStore {
       return Napi::Value{};
     }
 
-    NOBIND_VERBOSE(STORE, "found (%d)\n", (int)js.IsEmpty());
+    NOBIND_VERBOSE(STORE, "found\n");
     return js;
   }
 
