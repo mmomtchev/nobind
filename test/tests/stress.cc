@@ -16,7 +16,7 @@ std::vector<DateTime> cpp_container;
 
 #define TEST_SIZE 1000
 
-DateTime &check_and_replace(std::vector<DateTime> &cpp_container, unsigned long element, bool replace) {
+DateTime &check_and_replace(unsigned long element, bool replace) {
   // Check that this element is what we expect
   if ((unsigned long)cpp_container[element].time != element)
     throw std::logic_error{"Data corruption"};
@@ -40,8 +40,6 @@ NOBIND_MODULE(stress, m) {
       .cons<unsigned long>()
       .def<&DateTime::operator Time &, NestedAsync>("get")
       .ext<ReturnSameDT>("same");
-
-  m.def<&cpp_container>("cpp_container");
 
   cpp_container.resize(TEST_SIZE);
   for (size_t i = 0; i < TEST_SIZE; i++) {
