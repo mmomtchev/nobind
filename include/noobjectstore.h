@@ -93,6 +93,10 @@ public:
       NOBIND_VERBOSE(STORE, "already expired\n");
       return;
     }
+    if (js.IsEmpty()) {
+      NOBIND_VERBOSE(STORE, "already expired (no basic finalizers)");
+      return;
+    }
     // Are we expiring the right object?
     if (stored == js) {
       NOBIND_VERBOSE(STORE, "expiring\n");
