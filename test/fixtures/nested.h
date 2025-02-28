@@ -9,6 +9,7 @@ public:
 class DateTime {
 public:
   Time time;
+  DateTime();
   DateTime(Time v);
   operator Time &();
   operator Time *();
