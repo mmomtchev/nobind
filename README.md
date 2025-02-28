@@ -276,7 +276,9 @@ By default, when a C++ method returns a `nullptr`, `nobind17` will convert it to
 Attributes can be combined with `operator|`, however if compiling in C++17 mode (the default settings for `node-gyp`), only `static constexpr` variables can be used as non-type template arguments:
 
 ```cpp
-static constexpr auto myAttrs = Nobind::ReturnAsync | Nobind::ReturnOwned | Nobind::ReturnNullThrow;
+static constexpr auto myAttrs = Nobind::ReturnAsync |
+                                Nobind::ReturnOwned |
+                                Nobind::ReturnNullThrow;
 ```
 
 In later standards this requirement has been relaxed. Also, MSVC 2019 chokes on `static constexpr` local function variables used as non-type template arguments with an *C1001: Internal Compiler Error* - use global variables if you have to support it.
@@ -577,8 +579,14 @@ m.def<Derived, Base>("Derived");
 The only caveat is that this does not automatically inherit all the base class members. These must be declared separately for each class:
 
 ```cpp
-m.def<Base>("Base").cons<int>().def<&Base::get>("get").def<&Base::base_get>("base_get");
-m.def<Derived, Base>("Derived").cons<int>().def<&Derived::get>("get").def<&Derived::base_get>("base_get");
+m.def<Base>("Base")
+  .cons<int>()
+  .def<&Base::get>("get")
+  .def<&Base::base_get>("base_get");
+m.def<Derived, Base>("Derived")
+  .cons<int>()
+  .def<&Derived::get>("get")
+  .def<&Derived::base_get>("base_get");
 ```
 
 In this case, `get()` is a virtual method overriden in `Derived` and there is a single `base_get()` in `Base` that must also be explicitly declared in `Derived`. Resolution of virtual methods is left to the C++ compiler and follows the usual rules.
