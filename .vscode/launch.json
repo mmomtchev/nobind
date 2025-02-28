@@ -43,7 +43,12 @@
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/test",
-      "environment": [],
+      "environment": [
+        {
+          "name": "NOBIND_DEBUG_STORE",
+          "value": "1"
+        }
+      ],
       "externalConsole": false,
       "MIMode": "lldb",
       "setupCommands": []

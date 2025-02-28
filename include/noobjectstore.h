@@ -56,14 +56,14 @@ template <typename T> class ObjectStore {
     }
 
     auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
-    if (ref->IsEmpty()) {
+    Napi::Value js = ref->Value();
+    if (js.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "expired\n");
       // The chain is still here but the goat is nowhere to be found
       object_store.at(class_idx).erase(static_cast<T>(ptr));
       delete ref;
       return Napi::Value{};
     }
-    Napi::Value js = ref->Value();
 
     NOBIND_VERBOSE(STORE, "found\n");
     return js;
@@ -91,6 +91,13 @@ public:
     NOBIND_VERBOSE_TYPE(STORE, U, "Expire %p from object store: ", ptr);
     if (stored.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "already expired\n");
+      return;
+    }
+    if (js.IsEmpty()) {
+      // If the stored reference is not empty and this one is empty
+      // (which can happen only without basic finalizers), the only
+      // explanation is that the stored object is a new wrapper
+      NOBIND_VERBOSE(STORE, "already expired (no basic finalizers)");
       return;
     }
     // Are we expiring the right object?
