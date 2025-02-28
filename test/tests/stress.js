@@ -1,14 +1,14 @@
 const { assert } = require('chai');
 
-const { Hello, DateTime, Time } = dll;
-
 describe('stress tests', function () {
   this.timeout(20000);
   this.slow(20000);
 
   // Objects created from JS are destroyed
   // when their JS wrappers are GCed
-  it('JavaScript created objects', async () => {
+  it.only('JavaScript created objects', async () => {
+    const { Hello, DateTime, Time } = dll;
+
     // Two 1000 element arrays
     const hello = (new Array(1000)).fill(new Hello('Gen. Ripper'), 0, 1000);
     const dateTime = (new Array(1000)).fill(new DateTime(17), 0, 1000);
@@ -52,11 +52,11 @@ describe('stress tests', function () {
 
   // Objects created from C++ are preserved
   // when their JS wrappers are GCed
-  it.only('C++ created objects', async () => {
+  it('C++ created objects', async () => {
     for (let i = 0; i < 5e4; i++) {
       const pick = Math.floor(Math.random() * 1000);
       const dt = dll.cpp_check_and_replace(pick, Math.random() < 0.5);
-      assert.instanceOf(dt, DateTime);
+      assert.instanceOf(dt, dll.DateTime);
       const v = await (await dt.get()).get();
       assert.strictEqual(v, pick);
     }
