@@ -687,7 +687,7 @@ There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/
 
 ### Async locking
 
-`nobind17@2` introduces automatic async locking. The built-in typemaps for object types will lock all the passed objects to any function for the duration of the call. This will automatically prevent reentrance of class objects. This however has two very important caveats:
+`nobind17@2` introduces automatic async locking. The built-in typemaps for object types will lock all the passed objects to any function for the duration of the call. This will automatically prevent reentrance of class objects. This however has three very important caveats:
   * If a the user code calls asynchronously a method which uses a C++ object - acquiring the lock on this object - any subsequent synchronous calls involving the same object will block the event loop until the first operations completes:
     ```typescript
     const data: Promise<DataType> = object.retrieveData(); // async
@@ -704,6 +704,8 @@ There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/
 * If the user code launches two asynchronous operations involving the same object, they will run sequentially as expected. However, the second operation will sit waiting on the background thread pool which has a limited size. If the background pool has only 4 threads - the default Node.js value - launching 4 operations on the same object will lead to starvation of the thread pool. This is a good starting point for learning more: [Increase Node JS Performance With Libuv Thread Pool](https://dev.to/bleedingcode/increase-node-js-performance-with-libuv-thread-pool-5h10).
 
 When implementing custom `FromJS` typemaps that provide locking, locking should be performed in the `Get()` method and unlocking in the destructor. In case of an async operation, the actual locking will happen in the background thread. When executing the operation, the main thread will only protect the object from being GCed, then once a background thread is available, the object will be actually locked to ensure that only a single thread is accessing it.
+
+ * Automatic locking can lead to a deadlock. If there are two wrapped methods that can be called with multiple objects in a random order, there is a risk of a deadlock. For example when calling asynchronously `fn(a, b)` and `fn(b, a)` at almost the same time, the first one can lock `a` and wait for a lock on `b`, while the second one is holding `b` and waiting for a lock on `a`. The best way to ensure that this never happens is to always reference the objects in the same order.
 
 ### R-value references
 
