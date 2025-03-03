@@ -121,16 +121,28 @@ template <typename T> auto NOBIND_INLINE FromJSValue(const Napi::Value &val) {
   }
 }
 
+// Type getter for the above method
+template <typename T>
+using FromJS_t = typename std::invoke_result_t<decltype(Nobind::FromJSValue<std::remove_cv_t<T>>), const Napi::Value &>;
+
 // Main entry point when processing a value from arguments
 template <typename T> auto NOBIND_INLINE FromJSArgs(const Napi::CallbackInfo &info, size_t &idx) {
-  auto r = FromJSValue<std::remove_cv_t<T>>(info[idx]);
-  if constexpr (FromJSTypemapHasInputs<decltype(r)>::value) {
-    static_assert(r.Inputs == 0 || r.Inputs == 1, "Only 1:1 and 1:O conversions are supported at the moment");
-    idx += r.Inputs;
+  // Get the template specialization that will be used from the result of FromJSArgs for T
+  using FromJSTypeMap = FromJS_t<std::remove_cv_t<T>>;
+
+  size_t current_idx = idx;
+
+  // Check if this template specialization has Inputs
+  if constexpr (FromJSTypemapHasInputs<FromJSTypeMap>::value) {
+    static_assert(FromJSTypeMap::Inputs == 0 || FromJSTypeMap::Inputs == 1,
+                  "Only 1:1 and 1:0 conversions are supported at the moment");
+    idx += FromJSTypeMap::Inputs;
   } else {
     idx++;
   }
-  return r;
+  // Construct in place to avoid copying
+  // (this type is potentially not copy-constructible)
+  return FromJSValue<std::remove_cv_t<T>>(info[current_idx]);
 }
 
 // Main entry point when generating a Napi::Value
@@ -144,11 +156,7 @@ template <typename T, const ReturnAttribute &RETATTR> auto NOBIND_INLINE ToJS(co
   }
 }
 
-// Type getters for the above methods
-// These has been specially crafted to avoid triggering a compiler crash in g++-11 (fixed in g++-12)
-template <typename T>
-using FromJS_t = typename std::invoke_result_t<decltype(Nobind::FromJSValue<T>), const Napi::Value &>;
-
+// Type getter for the above method
 template <typename T, const ReturnAttribute &RETATTR>
 using ToJS_t =
     typename std::invoke_result_t<decltype(Nobind::ToJS<never_void_t<T>, RETATTR>), const Napi::Env &, never_void_t<T>>;

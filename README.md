@@ -50,7 +50,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
-| Async locking | Yes, with automatic dead-lock prevention | Not at the moment, but planned |
+| Async locking | Yes, with automatic dead-lock prevention | Yes, but no deadlock prevention |
 | Smart pointers | Yes | Not at the moment, but planned |
 | TypeScript support | Automatic | Automatic |
 | ES6 named exports for all C/C++ functions | Yes, automatic | No, must write it |
@@ -324,8 +324,8 @@ public:
   // An optional public member may specify the number
   // of consumed JS arguments (considered 1 if not present)
   int Inputs;
-  // Optionally, if the typemap has a costly state, only move
-  // semantics may be specified, nobind17 can work with this type
+  // Optionally, if the typemap has a state, specify only move
+  // semantics, nobind17 can work with this type
   FromJS(const FromJS &) = delete;
   FromJS(FromJS &&) = default;
 };
@@ -685,9 +685,31 @@ This expects that `Iterable` implements `std::input_iterator_tag` which is the m
 
 There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/main/test/tests/iterator.cc).
 
+### Async locking
+
+`nobind17@2` introduces automatic async locking. The built-in typemaps for object types will lock all the passed objects to any function for the duration of the call. This will automatically prevent reentrance of class objects. This however has two very important caveats:
+  * If a the user code calls asynchronously a method which uses a C++ object - acquiring the lock on this object - any subsequent synchronous calls involving the same object will block the event loop until the first operations completes:
+    ```typescript
+    const data: Promise<DataType> = object.retrieveData(); // async
+    // This will block the event loop until the first opertion completes:
+    object.useData();
+    ```
+    This is impossible to avoid, as after launching the first operation, the interpreter will continue to synchronously execute the JS code and it will require to synchronously access the locked `object`. This however will have an identical behaviour without blocking the event loop:
+    ```typescript
+    const data: DataType = await object.retrieveData();
+    object.useData();
+    ```
+    In this case the interpreter will yield the current context.
+
+* If the user code launches two asynchronous operations involving the same object, they will run sequentially as expected. However, the second operation will sit waiting on the background thread pool which has a limited size. If the background pool has only 4 threads - the default Node.js value - launching 4 operations on the same object will lead to starvation of the thread pool. This is a good starting point for learning more: [Increase Node JS Performance With Libuv Thread Pool](https://dev.to/bleedingcode/increase-node-js-performance-with-libuv-thread-pool-5h10).
+
+When implementing custom `FromJS` typemaps that provide locking, locking should be performed in the `Get()` method and unlocking in the destructor. In case of an async operation, the actual locking will happen in the background thread. When executing the operation, the main thread will only protect the object from being GCed, then once a background thread is available, the object will be actually locked to ensure that only a single thread is accessing it.
+
 ### R-value references
 
-`nobind17` does not support R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.
+`nobind17` does not have built-in support for R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.
+
+Still, when dealing with a particular case which can be supported in JavaScript, it is possible to define custom typemaps to convert these arguments.
 
 ### Troubleshooting
 

@@ -104,8 +104,14 @@ public:
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
 
-  // Check types and extract the proxied C++ object
-  static CLASS *CheckUnwrap(Napi::Value);
+  // Confirm the instance against the constructor, throws on error
+  static void CheckInstance(Napi::Value);
+  // Retrieve the C++ object pointer
+  CLASS *Get();
+  // Acquire the async lock (may block)
+  void Lock();
+  // Release the async lock
+  void Unlock();
 
   // Constructor wrapper, these are only a pair - there are no pointers to constructors in C++
   template <typename... ARGS> void ConsWrapper(const Napi::CallbackInfo &info) {
@@ -382,6 +388,8 @@ private:
   CLASS *self;
   // Should we destroy it in the destructor
   bool owned;
+  // The async reentrancy lock
+  std::mutex async_lock;
 };
 
 template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
@@ -420,7 +428,8 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 // * From JS with JS arguments -> it must construct the underlying object
 // * From C++ with a Napi::External<> pointer -> it must construct a proxy for this object
 template <typename CLASS>
-NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info) {
+NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
+    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info), async_lock{} {
   Napi::Env env{info.Env()};
 
   if (info.Length() == 2 && info[0].IsExternal()) {
@@ -522,7 +531,7 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *o
   return r;
 }
 
-template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::Value val) {
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::CheckInstance(Napi::Value val) {
   Napi::Env env(val.Env());
   if (!val.IsObject()) {
     throw Napi::TypeError::New(env, "Expected an object");
@@ -533,8 +542,11 @@ template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::CheckUnwrap(
     throw Napi::TypeError::New(env, "Expected a "s +
                                         (name != NOBIND_NAME_NOT_INITIALIZED ? name : "<unknown to nobind17 class>"s));
   }
-  return NoObjectWrap<CLASS>::Unwrap(obj)->self;
 }
+
+template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { return self; }
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() { async_lock.lock(); }
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() { return async_lock.unlock(); }
 
 // API class for defining a class binding
 template <typename CLASS, typename BASE, typename... INTERFACES> class ClassDefinition {
@@ -716,17 +728,27 @@ namespace Typemap {
 
 // Generic object reference typemap
 template <typename T> class FromJS<T &> {
-  T *val_;
-  Napi::ObjectReference persistent;
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+  T *val_;
+  OBJCLASS *wrapper;
+  Napi::ObjectReference persistent;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
-    val_ = OBJCLASS::CheckUnwrap(val);
+    OBJCLASS::CheckInstance(val);
+    wrapper = OBJCLASS::Unwrap(val.ToObject());
+    val_ = wrapper->Get();
     persistent = Napi::Persistent(val.ToObject());
   }
-  NOBIND_INLINE T &Get() { return *val_; }
+  NOBIND_INLINE T &Get() {
+    wrapper->Lock();
+    return *val_;
+  }
+  virtual NOBIND_INLINE ~FromJS() { wrapper->Unlock(); }
+
+  FromJS(const FromJS &) = delete;
+  NOBIND_INLINE FromJS(FromJS &&) = default;
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -754,17 +776,27 @@ public:
 
 // Generic object pointer typemap
 template <typename T> class FromJS<T *> {
-  T *val_;
-  Napi::ObjectReference persistent;
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+  T *val_;
+  OBJCLASS *wrapper;
+  Napi::ObjectReference persistent;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
-    val_ = OBJCLASS::CheckUnwrap(val);
+    OBJCLASS::CheckInstance(val);
+    wrapper = OBJCLASS::Unwrap(val.ToObject());
+    val_ = wrapper->Get();
     persistent = Napi::Persistent(val.ToObject());
   }
-  NOBIND_INLINE T *Get() { return val_; }
+  NOBIND_INLINE T *Get() {
+    wrapper->Lock();
+    return val_;
+  }
+  virtual NOBIND_INLINE ~FromJS() { wrapper->Unlock(); }
+
+  FromJS(const FromJS &) = delete;
+  NOBIND_INLINE FromJS(FromJS &&) = default;
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -802,17 +834,28 @@ public:
 // Generic stack-allocated object typemaps
 template <typename T> class FromJS {
   T *object;
+  NoObjectWrap<T> *wrapper;
   Napi::ObjectReference persistent;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     // C++ asks for a regular stack-allocated object
-    object = NoObjectWrap<T>::CheckUnwrap(val);
+    NoObjectWrap<T>::CheckInstance(val);
+    wrapper = NoObjectWrap<T>::Unwrap(val.ToObject());
+    object = wrapper->Get();
     persistent = Napi::Persistent(val.ToObject());
   }
   // will return a copy by value
-  NOBIND_INLINE T Get() { return *object; }
+  NOBIND_INLINE T Get() {
+    wrapper->Lock();
+    return *object;
+  }
+
+  virtual NOBIND_INLINE ~FromJS() { wrapper->Unlock(); }
+
+  FromJS(const FromJS &) = delete;
+  NOBIND_INLINE FromJS(FromJS &&) = default;
 
   static const size_t Inputs = 1;
 
