@@ -59,6 +59,9 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
           this_ref(Napi::Persistent(wrapper->Value())), wrapper_(wrapper), self_(static_cast<BASE *>(self)) {}
 
     template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
+      // Lock this
+      std::unique_lock{wrapper_->async_lock};
+
       try {
         if constexpr (std::is_void_v<RETURN>) {
           // Convert and call
@@ -142,6 +145,8 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+    // Lock this
+    std::unique_lock{async_lock};
     if constexpr (std::is_scalar_v<T>)
       // Copy scalar objects
       return ToJS<T, ReturnNested>(env, self->*MEMBER).Get();
@@ -151,6 +156,8 @@ public:
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
+    // Lock this
+    std::unique_lock{async_lock};
     self->*MEMBER = FromJSValue<T>(val).Get();
   }
 
@@ -210,6 +217,9 @@ private:
 
     size_t idx = 0;
     try {
+      // Lock this
+      std::unique_lock{async_lock};
+
       // Call the FromJS constructors
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
