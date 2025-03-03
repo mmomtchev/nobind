@@ -42,7 +42,9 @@ template <const char *...OPTS> bool NobindDebug<OPTS...>::debug_opt_enabled[size
 // String literals as template arguments requires C++20
 constexpr const char _nobind_debug_opt_STORE[] = "STORE";
 constexpr const char _nobind_debug_opt_OBJECT[] = "OBJECT";
-using NobindDebugInstance = struct NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT>;
+constexpr const char _nobind_debug_opt_LOCK[] = "LOCK";
+using NobindDebugInstance =
+    struct NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT, _nobind_debug_opt_LOCK>;
 
 #define NOBIND_INLINE
 #define NOBIND_ASSERT(x) assert(x)

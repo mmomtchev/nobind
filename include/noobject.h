@@ -59,22 +59,26 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
           this_ref(Napi::Persistent(wrapper->Value())), wrapper_(wrapper), self_(static_cast<BASE *>(self)) {}
 
     template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
-      // Lock this
-      std::unique_lock{wrapper_->async_lock};
+      {
+        // Lock this
+        std::lock_guard lock{wrapper_->async_lock};
+        NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Locked this %p\n", wrapper_->self);
 
-      try {
-        if constexpr (std::is_void_v<RETURN>) {
-          // Convert and call
-          (self_->*FUNC)(std::get<I>(args_).Get()...);
-        } else {
-          // Convert and call
-          RETURN result = (self_->*FUNC)(std::get<I>(args_).Get()...);
-          // Call the ToJS constructor
-          output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
+        try {
+          if constexpr (std::is_void_v<RETURN>) {
+            // Convert and call
+            (self_->*FUNC)(std::get<I>(args_).Get()...);
+          } else {
+            // Convert and call
+            RETURN result = (self_->*FUNC)(std::get<I>(args_).Get()...);
+            // Call the ToJS constructor
+            output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
+          }
+        } catch (const std::exception &e) {
+          SetError(e.what());
         }
-      } catch (const std::exception &e) {
-        SetError(e.what());
       }
+      NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Unlocking this %p\n", wrapper_->self);
     }
 
     virtual void Execute() override { ExecuteImpl(std::index_sequence_for<ARGS...>{}); }
@@ -146,7 +150,7 @@ public:
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     // Lock this
-    std::unique_lock{async_lock};
+    std::lock_guard lock{async_lock};
     if constexpr (std::is_scalar_v<T>)
       // Copy scalar objects
       return ToJS<T, ReturnNested>(env, self->*MEMBER).Get();
@@ -157,7 +161,7 @@ public:
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
     // Lock this
-    std::unique_lock{async_lock};
+    std::lock_guard lock{async_lock};
     self->*MEMBER = FromJSValue<T>(val).Get();
   }
 
@@ -218,7 +222,7 @@ private:
     size_t idx = 0;
     try {
       // Lock this
-      std::unique_lock{async_lock};
+      std::lock_guard lock{async_lock};
 
       // Call the FromJS constructors
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
@@ -555,8 +559,14 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::CheckInstance(
 }
 
 template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { return self; }
-template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() { async_lock.lock(); }
-template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() { return async_lock.unlock(); }
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() {
+  async_lock.lock();
+  NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Locked %p\n", self);
+}
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() {
+  NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Unlocking %p\n", self);
+  return async_lock.unlock();
+}
 
 // API class for defining a class binding
 template <typename CLASS, typename BASE, typename... INTERFACES> class ClassDefinition {
