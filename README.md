@@ -318,14 +318,22 @@ public:
     }
     val_ = std::atoi(val.ToString().Utf8Value().c_str());
   }
-  // The second part may be called from a background thread
-  // It should Expected access V8
+  // Actually retrieving the value, this method can be
+  // called from any thread, it should not interact with V8
   inline int Get() { return val_; }
+  // An optional method that, if present, will be called immediately
+  // after returning from the function, can be used to unlock
+  // the underlying C++ object if needed
+  // Can be called in any thread, it should not interact with V8
+  inline void Release() {}
+
   // An optional public member may specify the number
   // of consumed JS arguments (considered 1 if not present)
   int Inputs;
   // Optionally, if the typemap has a state, specify only move
   // semantics, nobind17 can work with this type
+  // Constructors and destructors will always be called only
+  // on the main thread
   FromJS(const FromJS &) = delete;
   FromJS(FromJS &&) = default;
 };
@@ -703,7 +711,7 @@ There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/
 
 * If the user code launches two asynchronous operations involving the same object, they will run sequentially as expected. However, the second operation will sit waiting on the background thread pool which has a limited size. If the background pool has only 4 threads - the default Node.js value - launching 4 operations on the same object will lead to starvation of the thread pool. This is a good starting point for learning more: [Increase Node JS Performance With Libuv Thread Pool](https://dev.to/bleedingcode/increase-node-js-performance-with-libuv-thread-pool-5h10).
 
-When implementing custom `FromJS` typemaps that provide locking, locking should be performed in the `Get()` method and unlocking in the destructor. In case of an async operation, the actual locking will happen in the background thread. When executing the operation, the main thread will only protect the object from being GCed, then once a background thread is available, the object will be actually locked to ensure that only a single thread is accessing it.
+When implementing custom `FromJS` typemaps that provide locking, locking should be performed in the `Get()` method and unlocking in the `Release()` method. In case of an async operation, the actual locking and unlocking will happen in the background thread. When executing the operation, the main thread will only protect the object from being GCed, then once a background thread is available, the object will be actually locked to ensure that only a single thread is accessing it.
 
  * Automatic locking can lead to a deadlock. If there are two wrapped methods that can be called with multiple objects in a random order, there is a risk of a deadlock. For example when calling asynchronously `fn(a, b)` and `fn(b, a)` at almost the same time, the first one can lock `a` and wait for a lock on `b`, while the second one is holding `b` and waiting for a lock on `a`. The best way to ensure that this never happens is to always reference the objects in the same order.
 

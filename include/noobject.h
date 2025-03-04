@@ -62,6 +62,7 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
       {
         // Lock this
         std::lock_guard lock{wrapper_->async_lock};
+        [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args_)...};
         NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Locked this %p\n", wrapper_->self);
 
         try {
@@ -227,6 +228,8 @@ private:
       // Call the FromJS constructors
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
+      [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{args};
+
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
         (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
@@ -319,6 +322,7 @@ private:
     size_t idx = 0;
     std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
     CheckArgLength(env, idx, info.Length());
+    [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{args};
 
     // Convert and call
     self = new CLASS(std::get<I>(args).Get()...);
@@ -360,6 +364,8 @@ private:
       size_t idx = 0;
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
+      [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args)...};
+
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
         FUNC(thisObj.Get(), std::get<I>(args).Get()...);
@@ -565,7 +571,7 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() {
 }
 template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() {
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Unlocking %p\n", self);
-  return async_lock.unlock();
+  async_lock.unlock();
 }
 
 // API class for defining a class binding
@@ -766,16 +772,10 @@ public:
     return *val_;
   }
 
-  virtual NOBIND_INLINE ~FromJS() {
+  NOBIND_INLINE void Release() {
     if (wrapper_)
       wrapper_->Unlock();
   }
-
-  FromJS(const FromJS &) = delete;
-  NOBIND_INLINE FromJS(FromJS &&rhs) : val_{rhs.val_}, wrapper_{rhs.wrapper_}, persistent_(std::move(rhs.persistent_)) {
-    rhs.val_ = nullptr;
-    rhs.wrapper_ = nullptr;
-  };
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -820,16 +820,11 @@ public:
     wrapper_->Lock();
     return val_;
   }
-  virtual NOBIND_INLINE ~FromJS() {
+
+  NOBIND_INLINE void Release() {
     if (wrapper_)
       wrapper_->Unlock();
   }
-
-  FromJS(const FromJS &) = delete;
-  NOBIND_INLINE FromJS(FromJS &&rhs) : val_{rhs.val_}, wrapper_{rhs.wrapper_}, persistent_(std::move(rhs.persistent_)) {
-    rhs.val_ = nullptr;
-    rhs.wrapper_ = nullptr;
-  };
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -885,17 +880,10 @@ public:
     return *object_;
   }
 
-  virtual NOBIND_INLINE ~FromJS() {
+  NOBIND_INLINE void Release() {
     if (wrapper_)
       wrapper_->Unlock();
   }
-
-  FromJS(const FromJS &) = delete;
-  NOBIND_INLINE FromJS(FromJS &&rhs)
-      : object_{rhs.object_}, wrapper_{rhs.wrapper_}, persistent_(std::move(rhs.persistent_)) {
-    rhs.object_ = nullptr;
-    rhs.wrapper_ = nullptr;
-  };
 
   static const size_t Inputs = 1;
 

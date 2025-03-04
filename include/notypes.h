@@ -102,10 +102,19 @@ template <typename T> using never_void_t = typename never_void<T>::type;
 
 // Standard C++ detection idiom (SFINAE version)
 // adapted from https://benjaminbrock.net/blog/detection_idiom.php
-// Detects if the Typemap has declared Inputs
 
+// Detects if the Typemap has declared Inputs
 template <typename T> class FromJSTypemapHasInputs {
   template <typename U> static constexpr decltype(std::declval<U &>().Inputs, bool()) test(int) { return true; }
+  template <typename U> static constexpr NOBIND_INLINE bool test(...) { return false; }
+
+public:
+  static constexpr bool value = test<T>(int());
+};
+
+// Detects if the Typemap has Release()
+template <typename T> class FromJSTypemapHasRelease {
+  template <typename U> static constexpr decltype(std::declval<U &>().Release(), bool()) test(int) { return true; }
   template <typename U> static constexpr NOBIND_INLINE bool test(...) { return false; }
 
 public:
@@ -160,5 +169,18 @@ template <typename T, const ReturnAttribute &RETATTR> auto NOBIND_INLINE ToJS(co
 template <typename T, const ReturnAttribute &RETATTR>
 using ToJS_t =
     typename std::invoke_result_t<decltype(Nobind::ToJS<never_void_t<T>, RETATTR>), const Napi::Env &, never_void_t<T>>;
+
+// A RAII guard that calls FromJS::Release() if the typemap has it
+template <typename T> class FromJSReleaseGuard {
+  FromJS_t<T> &tm_;
+
+public:
+  FromJSReleaseGuard(FromJS_t<T> &tm) : tm_(tm) {};
+  virtual ~FromJSReleaseGuard() {
+    if constexpr (FromJSTypemapHasRelease<FromJS_t<T>>::value) {
+      tm_.Release();
+    }
+  }
+};
 
 } // namespace Nobind
