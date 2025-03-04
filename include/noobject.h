@@ -892,7 +892,7 @@ public:
 
   FromJS(const FromJS &) = delete;
   NOBIND_INLINE FromJS(FromJS &&rhs)
-      : object_{rhs.val_}, wrapper_{rhs.wrapper_}, persistent_(std::move(rhs.persistent_)) {
+      : object_{rhs.object_}, wrapper_{rhs.wrapper_}, persistent_(std::move(rhs.persistent_)) {
     rhs.object_ = nullptr;
     rhs.wrapper_ = nullptr;
   };
