@@ -1,6 +1,8 @@
 #pragma once
 #ifdef DEBUG
+#ifndef _MSC_VER
 #include <cxxabi.h>
+#endif
 #include <string>
 
 using namespace std::literals::string_literals;
@@ -25,10 +27,14 @@ template <const char *...OPTS> struct NobindDebug {
   template <typename U> static std::string Demangle() { return Demangle(typeid(U).name()); }
   // https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
   static std::string Demangle(const char *name) {
+#ifndef _MSC_VER
     int status = -4;
     std::unique_ptr<char, void (*)(void *)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
 
     return (status == 0) ? res.get() : name;
+#else
+    return std::string{name};
+#endif
   }
   template <const char *OPT, size_t... Ints> static inline bool Enabled(std::integer_sequence<size_t, Ints...>) {
     return (... || ((OPT == OPTS) && debug_opt_enabled[Ints]));
