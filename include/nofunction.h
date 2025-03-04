@@ -17,7 +17,7 @@ NOBIND_INLINE Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::i
     size_t idx = 0;
     std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
     CheckArgLength(env, idx, info.Length());
-    [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards;
+    [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args)...};
     if constexpr (std::is_void_v<RETURN>) {
       // Convert and call
       FUNC(std::get<I>(args).Get()...);
