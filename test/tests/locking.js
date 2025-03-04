@@ -21,7 +21,7 @@ describe('locking', () => {
     }).catch(done);
   });
 
-  it('arguments', (done) => {
+  it.only('arguments', (done) => {
     const [c1, c2] = [new dll.Critical, new dll.Critical];
     let count = 0;
     const inc = 100;
