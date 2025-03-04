@@ -750,25 +750,32 @@ namespace Typemap {
 template <typename T> class FromJS<T &> {
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
   T *val_;
-  OBJCLASS *wrapper;
-  Napi::ObjectReference persistent;
+  OBJCLASS *wrapper_;
+  Napi::ObjectReference persistent_;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     OBJCLASS::CheckInstance(val);
-    wrapper = OBJCLASS::Unwrap(val.ToObject());
-    val_ = wrapper->Get();
-    persistent = Napi::Persistent(val.ToObject());
+    wrapper_ = OBJCLASS::Unwrap(val.ToObject());
+    val_ = wrapper_->Get();
+    persistent_ = Napi::Persistent(val.ToObject());
   }
   NOBIND_INLINE T &Get() {
-    wrapper->Lock();
+    wrapper_->Lock();
     return *val_;
   }
-  virtual NOBIND_INLINE ~FromJS() { wrapper->Unlock(); }
+
+  virtual NOBIND_INLINE ~FromJS() {
+    if (wrapper_)
+      wrapper_->Unlock();
+  }
 
   FromJS(const FromJS &) = delete;
-  NOBIND_INLINE FromJS(FromJS &&) = default;
+  NOBIND_INLINE FromJS(FromJS &&rhs) : val_{rhs.val_}, wrapper_{rhs.wrapper_}, persistent_(std::move(rhs.persistent_)) {
+    rhs.val_ = nullptr;
+    rhs.wrapper_ = nullptr;
+  };
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -798,25 +805,31 @@ public:
 template <typename T> class FromJS<T *> {
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
   T *val_;
-  OBJCLASS *wrapper;
-  Napi::ObjectReference persistent;
+  OBJCLASS *wrapper_;
+  Napi::ObjectReference persistent_;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     OBJCLASS::CheckInstance(val);
-    wrapper = OBJCLASS::Unwrap(val.ToObject());
-    val_ = wrapper->Get();
-    persistent = Napi::Persistent(val.ToObject());
+    wrapper_ = OBJCLASS::Unwrap(val.ToObject());
+    val_ = wrapper_->Get();
+    persistent_ = Napi::Persistent(val.ToObject());
   }
   NOBIND_INLINE T *Get() {
-    wrapper->Lock();
+    wrapper_->Lock();
     return val_;
   }
-  virtual NOBIND_INLINE ~FromJS() { wrapper->Unlock(); }
+  virtual NOBIND_INLINE ~FromJS() {
+    if (wrapper_)
+      wrapper_->Unlock();
+  }
 
   FromJS(const FromJS &) = delete;
-  NOBIND_INLINE FromJS(FromJS &&) = default;
+  NOBIND_INLINE FromJS(FromJS &&rhs) : val_{rhs.val_}, wrapper_{rhs.wrapper_}, persistent_(std::move(rhs.persistent_)) {
+    rhs.val_ = nullptr;
+    rhs.wrapper_ = nullptr;
+  };
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -853,29 +866,36 @@ public:
 
 // Generic stack-allocated object typemaps
 template <typename T> class FromJS {
-  T *object;
-  NoObjectWrap<T> *wrapper;
-  Napi::ObjectReference persistent;
+  T *object_;
+  NoObjectWrap<T> *wrapper_;
+  Napi::ObjectReference persistent_;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     // C++ asks for a regular stack-allocated object
     NoObjectWrap<T>::CheckInstance(val);
-    wrapper = NoObjectWrap<T>::Unwrap(val.ToObject());
-    object = wrapper->Get();
-    persistent = Napi::Persistent(val.ToObject());
+    wrapper_ = NoObjectWrap<T>::Unwrap(val.ToObject());
+    object_ = wrapper_->Get();
+    persistent_ = Napi::Persistent(val.ToObject());
   }
   // will return a copy by value
   NOBIND_INLINE T Get() {
-    wrapper->Lock();
-    return *object;
+    wrapper_->Lock();
+    return *object_;
   }
 
-  virtual NOBIND_INLINE ~FromJS() { wrapper->Unlock(); }
+  virtual NOBIND_INLINE ~FromJS() {
+    if (wrapper_)
+      wrapper_->Unlock();
+  }
 
   FromJS(const FromJS &) = delete;
-  NOBIND_INLINE FromJS(FromJS &&) = default;
+  NOBIND_INLINE FromJS(FromJS &&rhs)
+      : object_{rhs.val_}, wrapper_{rhs.wrapper_}, persistent_(std::move(rhs.persistent_)) {
+    rhs.object_ = nullptr;
+    rhs.wrapper_ = nullptr;
+  };
 
   static const size_t Inputs = 1;
 
