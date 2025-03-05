@@ -717,6 +717,8 @@ When implementing custom `FromJS` typemaps that provide locking, locking should 
 
  * Automatic locking can lead to a deadlock. If there are two wrapped methods that can be called with multiple objects in a random order, there is a risk of a deadlock. For example when calling asynchronously `fn(a, b)` and `fn(b, a)` at almost the same time, the first one can lock `a` and wait for a lock on `b`, while the second one is holding `b` and waiting for a lock on `a`. The best way to ensure that this never happens is to always reference the objects in the same order.
 
+Currently when using transformation of the STL classes - `std::vector` and `std::map` - and iterators - the locking is not recursive. This means that calling `some_method([a, b])` `a` and `b` won't be locked for the duration of the call. Similarly, objects that are nested references do not lock the parent object.
+
 ### R-value references
 
 `nobind17` does not have built-in support for R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.
