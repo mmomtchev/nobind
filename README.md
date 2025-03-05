@@ -38,7 +38,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 
 | Feature | SWIG Node-API | `nobind17` |
 | --- | --- | --- |
-| Design goal | Create bindings for (*almost*) any C++ code with (*almost*) native feel | Easy to use, easy to learn |
+| Design goal | Create bindings for (*almost*) any C or C++ calling semantic with (*almost*) native feel | Easy to use, easy to learn, be able to wrap most C++ calling semantics, including asynchronous methods, without understanding the Node.js memory management or thread model, be able to go a little further by tweaking the typemaps |
 | Target use | Commercial-grade bindings for large C++ libraries | Very fast porting of C++ code with few methods/classes |
 | Method of operation | Custom C++ header compiler, uses its own interface language, generates C++ code | Collection of C++ templates to be included in the project |
 | Method of using | Must write metaprogramming code | Must enumerate the binded methods using C++ syntax |
