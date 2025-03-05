@@ -65,12 +65,20 @@ describe('stress tests', function () {
   });
 
   it('object vector construction and deconstruction', async () => {
-    if (!objectStore)
-      return;
-
     let v = [];
-    for (let i = 0; i < 100; i++)
-      v.push(new dll.Hello(i.toString()));
+    const orig = [];
+
+    for (let i = 0; i < 100; i++) {
+      const h = new dll.Hello(i.toString());
+      v.push(h);
+      // Without the Object Store this will work only if the
+      // original values are artificially protected from the GC
+      // Otherwise the new JS wrappers obtained from the function
+      // below will be shared references without any link to their
+      // original wrappers owning the C++ objects
+      if (!objectStore)
+        orig.push(h);
+    }
 
     for (let i = 0; i < 10000; i++) {
       v = await dll.take_and_return_object_vector(v);
@@ -83,7 +91,7 @@ describe('stress tests', function () {
     }
   });
 
-  it.only('pointer vector construction and deconstruction', async () => {
+  it('pointer vector construction and deconstruction', async () => {
     const orig = [];
     for (let i = 0; i < 100; i++) {
       orig.push(new dll.Hello(i.toString()));
