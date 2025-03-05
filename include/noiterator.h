@@ -77,7 +77,9 @@ template <typename T, const ReturnAttribute &RETATTR> JSIterator<T, RETATTR> *Ma
                 "JSMakeIterator supports only explicit return type, "
                 "refer to the documentation to see why");
   auto tm = FromJSValue<T &>(jsobj);
+#ifndef NOBIND_NO_ASYNC_LOCKING
   FromJSReleaseGuard<T &> guard{tm};
+#endif
   T &obj = tm.Get();
   return new JSIterator<T, RETATTR>{obj, obj.begin(), jsobj};
 };

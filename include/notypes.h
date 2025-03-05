@@ -170,6 +170,7 @@ template <typename T, const ReturnAttribute &RETATTR>
 using ToJS_t =
     typename std::invoke_result_t<decltype(Nobind::ToJS<never_void_t<T>, RETATTR>), const Napi::Env &, never_void_t<T>>;
 
+#ifndef NOBIND_NO_ASYNC_LOCKING
 // A RAII guard that calls FromJS::Release() if the typemap has it
 template <typename T> class FromJSReleaseGuard {
   FromJS_t<T> &tm_;
@@ -182,5 +183,6 @@ public:
     }
   }
 };
+#endif
 
 } // namespace Nobind

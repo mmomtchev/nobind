@@ -62,6 +62,7 @@ jobs:
         options:
           - '-DNOBIND_NO_OBJECT_STORE'
           - '-DNOBIND_NO_TYPESCRIPT_GENERATOR'
+          - '-DNOBIND_NO_ASYNC_LOCKING'
           - '-DNODE_ADDON_API_REQUIRE_BASIC_FINALIZERS'
 
     steps:

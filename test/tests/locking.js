@@ -1,9 +1,13 @@
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
+const { mocha_locking } = require('../opts');
 chai.use(chaiAsPromised);
 const { assert } = chai;
 
 describe('locking', () => {
+  if (!mocha_locking())
+    return;
+
   it('this object', (done) => {
     const [c1, c2] = [new dll.Critical, new dll.Critical];
     let count = 0;

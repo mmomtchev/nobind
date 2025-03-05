@@ -719,6 +719,8 @@ When implementing custom `FromJS` typemaps that provide locking, locking should 
 
 Currently when using transformation of the STL classes - `std::vector` and `std::map` - and iterators - the locking is not recursive. This means that calling `some_method([a, b])` `a` and `b` won't be locked for the duration of the call. Similarly, objects that are nested references do not lock the parent object.
 
+Async locking is another complex feature which certainly introduces new bugs and has a performance cost, it can be disabled by defining `NOBIND_NO_ASYNC_LOCKING`.
+
 ### R-value references
 
 `nobind17` does not have built-in support for R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.

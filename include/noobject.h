@@ -60,10 +60,12 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
 
     template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
       {
+#ifndef NOBIND_NO_ASYNC_LOCKING
         // Lock this
         std::lock_guard lock{wrapper_->async_lock};
         [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args_)...};
         NOBIND_VERBOSE_TYPE(LOCK, CLASS, wrapper_->self, "Locked this\n");
+#endif
 
         try {
           if constexpr (std::is_void_v<RETURN>) {
@@ -79,7 +81,9 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
           SetError(e.what());
         }
       }
+#ifndef NOBIND_NO_ASYNC_LOCKING
       NOBIND_VERBOSE_TYPE(LOCK, CLASS, wrapper_->self, "Unlocking this\n");
+#endif
     }
 
     virtual void Execute() override { ExecuteImpl(std::index_sequence_for<ARGS...>{}); }
@@ -116,10 +120,12 @@ public:
   static void CheckInstance(Napi::Value);
   // Retrieve the C++ object pointer
   CLASS *Get();
+#ifndef NOBIND_NO_ASYNC_LOCKING
   // Acquire the async lock (may block)
   void Lock();
   // Release the async lock
   void Unlock();
+#endif
 
   // Constructor wrapper, these are only a pair - there are no pointers to constructors in C++
   template <typename... ARGS> void ConsWrapper(const Napi::CallbackInfo &info) {
@@ -150,8 +156,10 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+#ifndef NOBIND_NO_ASYNC_LOCKING
     // Lock this
     std::lock_guard lock{async_lock};
+#endif
     if constexpr (std::is_scalar_v<T>)
       // Copy scalar objects
       return ToJS<T, ReturnNested>(env, self->*MEMBER).Get();
@@ -161,17 +169,21 @@ public:
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
+    auto tm = FromJSValue<T>(val);
+#ifndef NOBIND_NO_ASYNC_LOCKING
     // Lock this
     std::lock_guard lock{async_lock};
-    auto tm = FromJSValue<T>(val);
     FromJSReleaseGuard<T> guard{tm};
+#endif
     self->*MEMBER = tm.Get();
   }
 
   template <typename T, T *MEMBER>
   static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
     auto tm = FromJSValue<T>(val);
+#ifndef NOBIND_NO_ASYNC_LOCKING
     FromJSReleaseGuard<T> guard{tm};
+#endif
     *MEMBER = tm.Get();
   }
 
@@ -226,13 +238,14 @@ private:
 
     size_t idx = 0;
     try {
-      // Lock this
-      std::lock_guard lock{async_lock};
-
       // Call the FromJS constructors
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      // Lock this
+      std::lock_guard lock{async_lock};
       [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args)...};
+#endif
 
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
@@ -326,7 +339,9 @@ private:
     size_t idx = 0;
     std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
     CheckArgLength(env, idx, info.Length());
+#ifndef NOBIND_NO_ASYNC_LOCKING
     [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args)...};
+#endif
 
     // Convert and call
     self = new CLASS(std::get<I>(args).Get()...);
@@ -364,12 +379,14 @@ private:
 
     try {
       auto this_obj = FromJSValue<THIS>(info.This());
-      FromJSReleaseGuard<THIS> this_guard{this_obj};
       // Call the FromJS constructors
       size_t idx = 0;
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      FromJSReleaseGuard<THIS> this_guard{this_obj};
       [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args)...};
+#endif
 
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
@@ -413,8 +430,10 @@ private:
   CLASS *self;
   // Should we destroy it in the destructor
   bool owned;
+#ifndef NOBIND_NO_ASYNC_LOCKING
   // The async reentrancy lock
   std::mutex async_lock;
+#endif
 };
 
 template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
@@ -454,7 +473,12 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 // * From C++ with a Napi::External<> pointer -> it must construct a proxy for this object
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
-    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info), async_lock{} {
+    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info)
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      ,
+      async_lock{}
+#endif
+{
   Napi::Env env{info.Env()};
 
   if (info.Length() == 2 && info[0].IsExternal()) {
@@ -506,7 +530,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
                  "]"s);
   }
   throw Napi::TypeError::New(env, "No constructor with "s + std::to_string(info.Length()) + " arguments found");
-}
+} // namespace Nobind
 
 template <typename CLASS>
 Napi::Function
@@ -570,6 +594,8 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::CheckInstance(
 }
 
 template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { return self; }
+
+#ifndef NOBIND_NO_ASYNC_LOCKING
 template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() {
   async_lock.lock();
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked\n");
@@ -578,6 +604,7 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() {
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Unlocking\n");
   async_lock.unlock();
 }
+#endif
 
 // API class for defining a class binding
 template <typename CLASS, typename BASE, typename... INTERFACES> class ClassDefinition {
@@ -773,14 +800,18 @@ public:
     persistent_ = Napi::Persistent(val.ToObject());
   }
   NOBIND_INLINE T &Get() {
+#ifndef NOBIND_NO_ASYNC_LOCKING
     wrapper_->Lock();
+#endif
     return *val_;
   }
 
+#ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Release() {
     if (wrapper_)
       wrapper_->Unlock();
   }
+#endif
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -822,14 +853,18 @@ public:
     persistent_ = Napi::Persistent(val.ToObject());
   }
   NOBIND_INLINE T *Get() {
+#ifndef NOBIND_NO_ASYNC_LOCKING
     wrapper_->Lock();
+#endif
     return val_;
   }
 
+#ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Release() {
     if (wrapper_)
       wrapper_->Unlock();
   }
+#endif
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -879,16 +914,21 @@ public:
     object_ = wrapper_->Get();
     persistent_ = Napi::Persistent(val.ToObject());
   }
+
   // will return a copy by value
   NOBIND_INLINE T Get() {
+#ifndef NOBIND_NO_ASYNC_LOCKING
     wrapper_->Lock();
+#endif
     return *object_;
   }
 
+#ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Release() {
     if (wrapper_)
       wrapper_->Unlock();
   }
+#endif
 
   static const size_t Inputs = 1;
 
