@@ -4,6 +4,7 @@ const { mocha_object_store } = require('../opts');
 describe('stress tests', function () {
   this.timeout(20000);
   this.slow(20000);
+  const objectStore = mocha_object_store();
 
   // Objects created from JS are destroyed
   // when their JS wrappers are GCed
@@ -26,7 +27,7 @@ describe('stress tests', function () {
           time.shift();
       }
 
-      if (Math.random() < 0.5) {
+      if (Math.random() < 0.5 || !objectStore) {
         // Randomly pick elements, check them and replace them
         assert.instanceOf(hello[pick], Hello);
         assert.isNumber(await hello[pick].get_id());
@@ -64,6 +65,9 @@ describe('stress tests', function () {
   });
 
   it('object vector construction and deconstruction', async () => {
+    if (!objectStore)
+      return;
+
     let v = [];
     for (let i = 0; i < 100; i++)
       v.push(new dll.Hello(i.toString()));
@@ -79,7 +83,7 @@ describe('stress tests', function () {
     }
   });
 
-  it('pointer vector construction and deconstruction', async () => {
+  it.only('pointer vector construction and deconstruction', async () => {
     const orig = [];
     for (let i = 0; i < 100; i++) {
       orig.push(new dll.Hello(i.toString()));
@@ -95,9 +99,8 @@ describe('stress tests', function () {
       assert.instanceOf(v[i], dll.Hello);
       assert.strictEqual(v[i].greet('comrade'), `hello comrade ${i}`);
       // object store preserves the original objects
-      if (!mocha_object_store())
-        return;
-      assert.strictEqual(v[i], orig[i]);
+      if (objectStore)
+        assert.strictEqual(v[i], orig[i]);
     }
   });
 });

@@ -7,6 +7,7 @@
 #include <vector>
 
 constexpr auto NestedAsync = Nobind::ReturnNested | Nobind::ReturnAsync;
+constexpr auto SharedAsync = Nobind::ReturnShared | Nobind::ReturnAsync;
 
 template <typename T> T &ReturnSame(T &v) { return v; }
 constexpr auto *ReturnSameHello = &ReturnSame<Hello>;
@@ -67,5 +68,7 @@ NOBIND_MODULE(stress, m) {
   m.def<&check_and_replace, Nobind::ReturnShared>("cpp_check_and_replace");
 
   m.def<&take_and_return_object_vector, Nobind::ReturnAsync>("take_and_return_object_vector");
-  m.def<&take_and_return_ptr_vector, Nobind::ReturnAsync>("take_and_return_ptr_vector");
+  // Without the object store this function is quite dangerous
+  // (returned pointers are owned by default)
+  m.def<&take_and_return_ptr_vector, SharedAsync>("take_and_return_ptr_vector");
 }
