@@ -20,7 +20,11 @@ public:
     Napi::Array array = val.As<Napi::Array>();
     val_.reserve(array.Length());
     for (size_t i = 0; i < array.Length(); i++) {
-      val_.push_back(FromJSValue<T>(array.Get(i)).Get());
+      auto val = FromJSValue<T>(array.Get(i));
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      FromJSLockGuard<T> guard{val};
+#endif
+      val_.push_back(val.Get());
     }
   }
 
@@ -60,7 +64,11 @@ public:
     }
     Napi::Object object = val.ToObject();
     for (auto prop : object) {
-      val_.insert({prop.first.ToString().Utf8Value(), FromJSValue<T>(prop.second).Get()});
+      auto tm = FromJSValue<T>(prop.second);
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      FromJSLockGuard<T> guard{tm};
+#endif
+      val_.insert({prop.first.ToString().Utf8Value(), tm.Get()});
     }
   }
 

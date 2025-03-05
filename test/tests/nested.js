@@ -1,4 +1,5 @@
 const { assert } = require('chai');
+const { mocha_object_store } = require('../opts');
 
 describe('nested objects', () => {
   it('constructors', () => {
@@ -50,6 +51,8 @@ describe('nested objects', () => {
   });
 
   it('object store', () => {
+    if (!mocha_object_store())
+      return;
     const dt = new dll.DateTime(new dll.Time(122));
     assert.instanceOf(dt, dll.DateTime);
 

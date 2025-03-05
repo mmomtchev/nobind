@@ -49,7 +49,7 @@ template <typename T> class ObjectStore {
   std::vector<std::map<T, Napi::Reference<Napi::Value> *>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
-    NOBIND_VERBOSE_TYPE(STORE, U, "Get %p from object store: ", ptr);
+    NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
     if (object_store.at(class_idx).count(static_cast<T>(ptr)) == 0) {
       NOBIND_VERBOSE(STORE, "not there\n");
       return Napi::Value{};
@@ -78,7 +78,7 @@ public:
   template <typename U> NOBIND_INLINE void Put(size_t class_idx, U *ptr, Napi::Value js) {
     std::lock_guard guard{lock};
 
-    NOBIND_VERBOSE_TYPE(STORE, U, "create %p in object store\n", ptr);
+    NOBIND_VERBOSE_TYPE(STORE, U, ptr, "create in object store\n");
     auto ref = new Napi::Reference<Napi::Value>;
     *ref = Napi::Reference<Napi::Value>::New(js);
     object_store.at(class_idx).insert({static_cast<T>(ptr), ref});
@@ -88,7 +88,7 @@ public:
     std::lock_guard guard{lock};
 
     Napi::Value stored = GetLocked(class_idx, ptr);
-    NOBIND_VERBOSE_TYPE(STORE, U, "Expire %p from object store: ", ptr);
+    NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Expire from object store: ");
     if (stored.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "already expired\n");
       return;

@@ -17,6 +17,9 @@ NOBIND_INLINE Napi::Value FunctionWrapper(const Napi::CallbackInfo &info, std::i
     size_t idx = 0;
     std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
     CheckArgLength(env, idx, info.Length());
+#ifndef NOBIND_NO_ASYNC_LOCKING
+    [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> lock_guards{std::get<I>(args)...};
+#endif
     if constexpr (std::is_void_v<RETURN>) {
       // Convert and call
       FUNC(std::get<I>(args).Get()...);
@@ -49,6 +52,10 @@ public:
 
   template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
     try {
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> lock_guards{std::get<I>(args_)...};
+#endif
+
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
         FUNC(std::get<I>(args_).Get()...);
@@ -180,7 +187,11 @@ template <typename T, T *OBJECT> static Napi::Value GetterWrapper(const Napi::Ca
 
 // Global or class static setter wrapper
 template <typename T, T *OBJECT> static void SetterWrapper(const Napi::CallbackInfo &info) {
-  *OBJECT = FromJSValue<T>(info[0]).Get();
+  auto obj = FromJSValue<T>(info[0]);
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  FromJSLockGuard<T> guard{obj};
+#endif
+  *OBJECT = obj.Get();
 }
 
 } // namespace Nobind

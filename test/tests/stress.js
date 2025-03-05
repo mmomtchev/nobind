@@ -1,8 +1,10 @@
 const { assert } = require('chai');
+const { mocha_object_store } = require('../opts');
 
 describe('stress tests', function () {
   this.timeout(20000);
   this.slow(20000);
+  const objectStore = mocha_object_store();
 
   // Objects created from JS are destroyed
   // when their JS wrappers are GCed
@@ -25,7 +27,7 @@ describe('stress tests', function () {
           time.shift();
       }
 
-      if (Math.random() < 0.5) {
+      if (Math.random() < 0.5 || !objectStore) {
         // Randomly pick elements, check them and replace them
         assert.instanceOf(hello[pick], Hello);
         assert.isNumber(await hello[pick].get_id());
@@ -64,8 +66,19 @@ describe('stress tests', function () {
 
   it('object vector construction and deconstruction', async () => {
     let v = [];
-    for (let i = 0; i < 100; i++)
-      v.push(new dll.Hello(i.toString()));
+    const orig = [];
+
+    for (let i = 0; i < 100; i++) {
+      const h = new dll.Hello(i.toString());
+      v.push(h);
+      // Without the Object Store this will work only if the
+      // original values are artificially protected from the GC
+      // Otherwise the new JS wrappers obtained from the function
+      // below will be shared references without any link to their
+      // original wrappers owning the C++ objects
+      if (!objectStore)
+        orig.push(h);
+    }
 
     for (let i = 0; i < 10000; i++) {
       v = await dll.take_and_return_object_vector(v);
@@ -94,7 +107,8 @@ describe('stress tests', function () {
       assert.instanceOf(v[i], dll.Hello);
       assert.strictEqual(v[i].greet('comrade'), `hello comrade ${i}`);
       // object store preserves the original objects
-      assert.strictEqual(v[i], orig[i]);
+      if (objectStore)
+        assert.strictEqual(v[i], orig[i]);
     }
   });
 });

@@ -49,6 +49,7 @@ switch (process.argv[2]) {
     framework.load(test, 'Debug');
     const mocha = new Mocha({ ui: 'bdd' });
     mocha.addFile(path.resolve(__dirname, 'tests', test));
+    mocha.timeout(0);
     mocha.run(function (failures) {
       process.on('exit', function () {
         console.log('Running GC');
