@@ -76,7 +76,9 @@ template <typename T, const ReturnAttribute &RETATTR> JSIterator<T, RETATTR> *Ma
   static_assert(RETATTR.isCopy() || RETATTR.isNested() || RETATTR.isOwned() || RETATTR.isShared(),
                 "JSMakeIterator supports only explicit return type, "
                 "refer to the documentation to see why");
-  T &obj = FromJSValue<T &>(jsobj).Get();
+  auto tm = FromJSValue<T &>(jsobj);
+  FromJSReleaseGuard<T &> guard{tm};
+  T &obj = tm.Get();
   return new JSIterator<T, RETATTR>{obj, obj.begin(), jsobj};
 };
 

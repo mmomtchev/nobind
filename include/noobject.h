@@ -163,12 +163,16 @@ public:
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
     // Lock this
     std::lock_guard lock{async_lock};
-    self->*MEMBER = FromJSValue<T>(val).Get();
+    auto tm = FromJSValue<T>(val);
+    FromJSReleaseGuard<T> guard{tm};
+    self->*MEMBER = tm.Get();
   }
 
   template <typename T, T *MEMBER>
   static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    *MEMBER = FromJSValue<T>(val).Get();
+    auto tm = FromJSValue<T>(val);
+    FromJSReleaseGuard<T> guard{tm};
+    *MEMBER = tm.Get();
   }
 
   static void Declare(const char *jsname) { name = std::string{jsname}; }
@@ -359,7 +363,8 @@ private:
     Napi::Env env = info.Env();
 
     try {
-      auto thisObj = FromJSValue<THIS>(info.This());
+      auto this_obj = FromJSValue<THIS>(info.This());
+      FromJSReleaseGuard<THIS> this_guard{this_obj};
       // Call the FromJS constructors
       size_t idx = 0;
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
@@ -368,12 +373,12 @@ private:
 
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
-        FUNC(thisObj.Get(), std::get<I>(args).Get()...);
+        FUNC(this_obj.Get(), std::get<I>(args).Get()...);
         return env.Undefined();
         // FromJS objects are destroyed
       } else {
         // Convert and call
-        RETURN result = FUNC(thisObj.Get(), std::get<I>(args).Get()...);
+        RETURN result = FUNC(this_obj.Get(), std::get<I>(args).Get()...);
         // Call the ToJS constructor
         auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert

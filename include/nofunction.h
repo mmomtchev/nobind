@@ -183,7 +183,9 @@ template <typename T, T *OBJECT> static Napi::Value GetterWrapper(const Napi::Ca
 
 // Global or class static setter wrapper
 template <typename T, T *OBJECT> static void SetterWrapper(const Napi::CallbackInfo &info) {
-  *OBJECT = FromJSValue<T>(info[0]).Get();
+  auto obj = FromJSValue<T>(info[0]);
+  FromJSReleaseGuard<T> guard{obj};
+  *OBJECT = obj.Get();
 }
 
 } // namespace Nobind
