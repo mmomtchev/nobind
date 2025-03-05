@@ -59,7 +59,10 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
 
   public:
     MethodWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, CLASS *self, NoObjectWrap<CLASS> *wrapper,
-                         FromJS_t<CLASS> &&this_tm, std::tuple<FromJS_t<ARGS>...> &&args)
+#ifndef NOBIND_NO_ASYNC_LOCKING
+                         FromJS_t<CLASS> &&this_tm,
+#endif
+                         std::tuple<FromJS_t<ARGS>...> &&args)
         : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)),
 #ifndef NOBIND_NO_ASYNC_LOCKING
           this_tm_(std::move(this_tm)),
