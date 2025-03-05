@@ -15,7 +15,7 @@ namespace Typemap {
  * - The constructor can create state that will be destroyed after the function call
  * - When throwing a JS Error, throw in the constructor (throw where the Napi::Value is)
  *   (throwing an std::exception is allowed everywhere)
- * - When locking against reentrancy, lock in Get(), unlock in Release()
+ * - When locking against reentrancy, lock in Lock(), unlock in Unlock()
  */
 template <typename T> class FromJS;
 

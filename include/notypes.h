@@ -112,13 +112,19 @@ public:
   static constexpr bool value = test<T>(int());
 };
 
-// Detects if the Typemap has Release()
-template <typename T> class FromJSTypemapHasRelease {
-  template <typename U> static constexpr decltype(std::declval<U &>().Release(), bool()) test(int) { return true; }
-  template <typename U> static constexpr NOBIND_INLINE bool test(...) { return false; }
+// Detects if the Typemap has Lock() and Unlock()
+template <typename T> class FromJSTypemapHasLocking {
+  template <typename U> static constexpr decltype(std::declval<U &>().Lock(), bool()) test_Lock(int) { return true; }
+  template <typename U> static constexpr NOBIND_INLINE bool test_Lock(...) { return false; }
+
+  template <typename U> static constexpr decltype(std::declval<U &>().Unlock(), bool()) test_Unlock(int) {
+    return true;
+  }
+  template <typename U> static constexpr NOBIND_INLINE bool test_Unlock(...) { return false; }
 
 public:
-  static constexpr bool value = test<T>(int());
+  static constexpr bool lock = test_Lock<T>(int());
+  static constexpr bool unlock = test_Unlock<T>(int());
 };
 
 // Main entry point when processing a Napi::Value
@@ -171,15 +177,19 @@ using ToJS_t =
     typename std::invoke_result_t<decltype(Nobind::ToJS<never_void_t<T>, RETATTR>), const Napi::Env &, never_void_t<T>>;
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-// A RAII guard that calls FromJS::Release() if the typemap has it
-template <typename T> class FromJSReleaseGuard {
+// A RAII guard that calls FromJS::Lock()/Unlock() if the typemap has them
+template <typename T> class FromJSLockGuard {
   FromJS_t<T> &tm_;
 
 public:
-  FromJSReleaseGuard(FromJS_t<T> &tm) : tm_(tm) {};
-  virtual ~FromJSReleaseGuard() {
-    if constexpr (FromJSTypemapHasRelease<FromJS_t<T>>::value) {
-      tm_.Release();
+  FromJSLockGuard(FromJS_t<T> &tm) : tm_(tm) {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
+      tm_.Lock();
+    }
+  };
+  virtual ~FromJSLockGuard() {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
+      tm_.Unlock();
     }
   }
 };

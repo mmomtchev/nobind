@@ -321,11 +321,14 @@ public:
   // Actually retrieving the value, this method can be
   // called from any thread, it should not interact with V8
   inline int Get() { return val_; }
-  // An optional method that, if present, will be called immediately
-  // after returning from the function, can be used to unlock
-  // the underlying C++ object if needed
+  // Optional methods that, if present, will be called immediately
+  // before or after returning from the call, can be used to implement
+  // locking of the underlying C++ object if needed
   // Can be called in any thread, it should not interact with V8
-  inline void Release() {}
+  // For one call, Lock, Get and Unlock will always be called on the
+  // same thread
+  inline void Lock() {}
+  inline void Unlock() {}
 
   // An optional public member may specify the number
   // of consumed JS arguments (considered 1 if not present)

@@ -46,6 +46,11 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
     std::unique_ptr<ToJS_t<RETURN, RETATTR>> output;
     // FromJS wrappers also contain persistent references to their underlying JS values
     std::tuple<FromJS_t<ARGS>...> args_;
+#ifndef NOBIND_NO_ASYNC_LOCKING
+    // This is the This typemap, used only for locking
+    // (Node-API sets the C++ this pointer for us)
+    FromJS_t<CLASS> this_tm_;
+#endif
     // This is the This persistent
     Napi::ObjectReference this_ref;
     // This is the This wrapper
@@ -54,36 +59,33 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
 
   public:
     MethodWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, CLASS *self, NoObjectWrap<CLASS> *wrapper,
-                         std::tuple<FromJS_t<ARGS>...> &&args)
+                         FromJS_t<CLASS> &&this_tm, std::tuple<FromJS_t<ARGS>...> &&args)
         : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)),
-          this_ref(Napi::Persistent(wrapper->Value())), wrapper_(wrapper), self_(static_cast<BASE *>(self)) {}
+#ifndef NOBIND_NO_ASYNC_LOCKING
+          this_tm_(std::move(this_tm)),
+#endif
+          this_ref(Napi::Persistent(wrapper->Value())), wrapper_(wrapper), self_(static_cast<BASE *>(self)) {
+    }
 
     template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
-      {
 #ifndef NOBIND_NO_ASYNC_LOCKING
-        // Lock this
-        std::lock_guard lock{wrapper_->async_lock};
-        [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args_)...};
-        NOBIND_VERBOSE_TYPE(LOCK, CLASS, wrapper_->self, "Locked this\n");
+      FromJSLockGuard<CLASS> this_lock_guard{this_tm_};
+      [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> lock_guards{std::get<I>(args_)...};
 #endif
 
-        try {
-          if constexpr (std::is_void_v<RETURN>) {
-            // Convert and call
-            (self_->*FUNC)(std::get<I>(args_).Get()...);
-          } else {
-            // Convert and call
-            RETURN result = (self_->*FUNC)(std::get<I>(args_).Get()...);
-            // Call the ToJS constructor
-            output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
-          }
-        } catch (const std::exception &e) {
-          SetError(e.what());
+      try {
+        if constexpr (std::is_void_v<RETURN>) {
+          // Convert and call
+          (self_->*FUNC)(std::get<I>(args_).Get()...);
+        } else {
+          // Convert and call
+          RETURN result = (self_->*FUNC)(std::get<I>(args_).Get()...);
+          // Call the ToJS constructor
+          output = std::make_unique<ToJS_t<RETURN, RETATTR>>(env_, result);
         }
+      } catch (const std::exception &e) {
+        SetError(e.what());
       }
-#ifndef NOBIND_NO_ASYNC_LOCKING
-      NOBIND_VERBOSE_TYPE(LOCK, CLASS, wrapper_->self, "Unlocking this\n");
-#endif
     }
 
     virtual void Execute() override { ExecuteImpl(std::index_sequence_for<ARGS...>{}); }
@@ -158,7 +160,8 @@ public:
     Napi::Env env = info.Env();
 #ifndef NOBIND_NO_ASYNC_LOCKING
     // Lock this
-    std::lock_guard lock{async_lock};
+    FromJS_t<CLASS> this_tm = FromJSValue<CLASS>(info.This());
+    FromJSLockGuard<CLASS> this_lock_guard(this_tm);
 #endif
     if constexpr (std::is_scalar_v<T>)
       // Copy scalar objects
@@ -172,8 +175,8 @@ public:
     auto tm = FromJSValue<T>(val);
 #ifndef NOBIND_NO_ASYNC_LOCKING
     // Lock this
-    std::lock_guard lock{async_lock};
-    FromJSReleaseGuard<T> guard{tm};
+    FromJS_t<CLASS> this_tm = FromJSValue<CLASS>(info.This());
+    FromJSLockGuard<T> this_guard{tm};
 #endif
     self->*MEMBER = tm.Get();
   }
@@ -182,7 +185,7 @@ public:
   static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
     auto tm = FromJSValue<T>(val);
 #ifndef NOBIND_NO_ASYNC_LOCKING
-    FromJSReleaseGuard<T> guard{tm};
+    FromJSLockGuard<T> guard{tm};
 #endif
     *MEMBER = tm.Get();
   }
@@ -243,8 +246,9 @@ private:
       CheckArgLength(env, idx, info.Length());
 #ifndef NOBIND_NO_ASYNC_LOCKING
       // Lock this
-      std::lock_guard lock{async_lock};
-      [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args)...};
+      FromJS_t<CLASS> this_tm = FromJSValue<CLASS>(info.This());
+      FromJSLockGuard<CLASS> this_guard{this_tm};
+      [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
 #endif
 
       if constexpr (std::is_void_v<RETURN>) {
@@ -312,6 +316,9 @@ private:
       // the evaluation order of its arguments, only *braced-init-list* lists do
       // https://en.cppreference.com/w/cpp/language/list_initialization
       auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(env, deferred, self, this,
+#ifndef NOBIND_NO_ASYNC_LOCKING
+                                                                                    FromJSValue<CLASS>(info.This()),
+#endif
                                                                                     {FromJSArgs<ARGS>(info, idx)...});
       try {
         CheckArgLength(env, idx, info.Length());
@@ -340,7 +347,7 @@ private:
     std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
     CheckArgLength(env, idx, info.Length());
 #ifndef NOBIND_NO_ASYNC_LOCKING
-    [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args)...};
+    [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
 #endif
 
     // Convert and call
@@ -384,8 +391,8 @@ private:
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
 #ifndef NOBIND_NO_ASYNC_LOCKING
-      FromJSReleaseGuard<THIS> this_guard{this_obj};
-      [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args)...};
+      FromJSLockGuard<THIS> this_guard{this_obj};
+      [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
 #endif
 
       if constexpr (std::is_void_v<RETURN>) {
@@ -799,15 +806,14 @@ public:
     val_ = wrapper_->Get();
     persistent_ = Napi::Persistent(val.ToObject());
   }
-  NOBIND_INLINE T &Get() {
-#ifndef NOBIND_NO_ASYNC_LOCKING
-    wrapper_->Lock();
-#endif
-    return *val_;
-  }
+  NOBIND_INLINE T &Get() { return *val_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Release() {
+  NOBIND_INLINE void Lock() {
+    if (wrapper_)
+      wrapper_->Lock();
+  }
+  NOBIND_INLINE void Unlock() {
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -852,15 +858,14 @@ public:
     val_ = wrapper_->Get();
     persistent_ = Napi::Persistent(val.ToObject());
   }
-  NOBIND_INLINE T *Get() {
-#ifndef NOBIND_NO_ASYNC_LOCKING
-    wrapper_->Lock();
-#endif
-    return val_;
-  }
+  NOBIND_INLINE T *Get() { return val_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Release() {
+  NOBIND_INLINE void Lock() {
+    if (wrapper_)
+      wrapper_->Lock();
+  }
+  NOBIND_INLINE void Unlock() {
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -916,15 +921,14 @@ public:
   }
 
   // will return a copy by value
-  NOBIND_INLINE T Get() {
-#ifndef NOBIND_NO_ASYNC_LOCKING
-    wrapper_->Lock();
-#endif
-    return *object_;
-  }
+  NOBIND_INLINE T Get() { return *object_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Release() {
+  NOBIND_INLINE void Lock() {
+    if (wrapper_)
+      wrapper_->Lock();
+  }
+  NOBIND_INLINE void Unlock() {
     if (wrapper_)
       wrapper_->Unlock();
   }
