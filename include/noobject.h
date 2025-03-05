@@ -63,7 +63,7 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
         // Lock this
         std::lock_guard lock{wrapper_->async_lock};
         [[maybe_unused]] std::tuple<FromJSReleaseGuard<ARGS>...> release_guards{std::get<I>(args_)...};
-        NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Locked this %p\n", wrapper_->self);
+        NOBIND_VERBOSE_TYPE(LOCK, CLASS, wrapper_->self, "Locked this\n");
 
         try {
           if constexpr (std::is_void_v<RETURN>) {
@@ -79,7 +79,7 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
           SetError(e.what());
         }
       }
-      NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Unlocking this %p\n", wrapper_->self);
+      NOBIND_VERBOSE_TYPE(LOCK, CLASS, wrapper_->self, "Unlocking this\n");
     }
 
     virtual void Execute() override { ExecuteImpl(std::index_sequence_for<ARGS...>{}); }
@@ -421,11 +421,11 @@ std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == nullptr); }
 
 template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "synchronous delete for %p\n", self);
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "synchronous delete\n");
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   Napi::Env env{this->Env()};
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "asynchronous delete for %p\n", self);
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "asynchronous delete\n");
 #endif
 #ifndef NOBIND_NO_OBJECT_STORE
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
@@ -456,7 +456,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
     // From C++
     owned = info[1].ToBoolean().Value();
     self = info[0].As<Napi::External<CLASS>>().Data();
-    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "create wrapper for C++ object %p\n", self);
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create wrapper for C++ object\n");
     return;
   }
   // From JS
@@ -474,7 +474,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
         (this->*ctor)(info);
 #ifndef NOBIND_NO_OBJECT_STORE
         instance->_Nobind_object_store.Put(class_idx, self, this->Value());
-        NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "create new JS object with C++ object %p\n", self);
+        NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create new JS object with C++ object\n");
 #endif
         return;
       } catch (const Napi::Error &e) {
@@ -567,10 +567,10 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::CheckInstance(
 template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { return self; }
 template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() {
   async_lock.lock();
-  NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Locked %p\n", self);
+  NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked\n");
 }
 template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() {
-  NOBIND_VERBOSE_TYPE(LOCK, CLASS, "Unlocking %p\n", self);
+  NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Unlocking\n");
   async_lock.unlock();
 }
 

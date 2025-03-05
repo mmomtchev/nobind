@@ -42,6 +42,22 @@ template <const char *...OPTS> struct NobindDebug {
   template <const char *OPT> static inline bool Enabled() {
     return Enabled<OPT>(std::make_integer_sequence<size_t, sizeof...(OPTS)>{});
   }
+  template <const char *OPT, typename T> static void Log(T *obj, const char *fmt...) {
+    if (Enabled<OPT>()) {
+      va_list args;
+      va_start(args, fmt);
+      std::string type = Demangle<T>();
+      std::printf("[%s : %p] ", type.c_str(), obj);
+      std::vprintf(fmt, args);
+    }
+  }
+  template <const char *OPT> static void Log(const char *fmt...) {
+    if (Enabled<OPT>()) {
+      va_list args;
+      va_start(args, fmt);
+      std::vprintf(fmt, args);
+    }
+  }
 };
 template <const char *...OPTS> bool NobindDebug<OPTS...>::debug_opt_enabled[sizeof...(OPTS)];
 
@@ -55,18 +71,9 @@ using NobindDebugInstance = NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_o
 #define NOBIND_ASSERT(x) assert(x)
 #define NOBIND_DEBUG_INIT Nobind::NobindDebugInstance::Init()
 
-#define NOBIND_VERBOSE(sys, ...)                                                                                       \
-  do {                                                                                                                 \
-    if (NobindDebugInstance::Enabled<_nobind_debug_opt_##sys>())                                                       \
-      printf(__VA_ARGS__);                                                                                             \
-  } while (0)
+#define NOBIND_VERBOSE(SYS, ...) NobindDebugInstance::Log<_nobind_debug_opt_##SYS>(__VA_ARGS__)
 
-#define NOBIND_VERBOSE_TYPE(sys, T, FMT, ...)                                                                          \
-  do {                                                                                                                 \
-    if (NobindDebugInstance::Enabled<_nobind_debug_opt_##sys>())                                                       \
-      printf("[%s]" FMT, NobindDebugInstance::Demangle<T>().c_str(), __VA_ARGS__);                                     \
-  } while (0)
-
+#define NOBIND_VERBOSE_TYPE(SYS, T, O, ...) NobindDebugInstance::Log<_nobind_debug_opt_##SYS, T>(O, __VA_ARGS__)
 } // namespace Nobind
 
 #else
