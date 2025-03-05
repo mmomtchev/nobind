@@ -1,4 +1,5 @@
 const { assert } = require('chai');
+const { mocha_object_store } = require('../opts');
 
 describe('stress tests', function () {
   this.timeout(20000);
@@ -94,6 +95,8 @@ describe('stress tests', function () {
       assert.instanceOf(v[i], dll.Hello);
       assert.strictEqual(v[i].greet('comrade'), `hello comrade ${i}`);
       // object store preserves the original objects
+      if (!mocha_object_store())
+        return;
       assert.strictEqual(v[i], orig[i]);
     }
   });
