@@ -555,7 +555,9 @@ public:
 
 Starting from version 2, `nobind17` uses an object store. Each time a C++ object is wrapped, `nobind17` will remember this reference and as longer as the object is not garbage-collected, it will continue returning the same JS reference. This means that objects preserve their equality even if they cross multiple times the JS/C++ language barrier.
 
-This is particularly important for `ReturnShared` objects and allows to avoid memory management issues related to having multiple JS wrappers for the same C++ object. With the Object Store, returning a C++ reference to an already existing object will reuse the existing JS reference. `ReturnCopy` will still copy the object and create a new underlying C++ object and a new JS wrapper for it. 
+This is particularly important for `ReturnShared` objects and allows to avoid memory management issues related to having multiple JS wrappers for the same C++ object. With the Object Store, returning a C++ reference to an already existing object will reuse the existing JS reference. `ReturnCopy` will still copy the object and create a new underlying C++ object and a new JS wrapper for it.
+
+The Object Store also permits to guarantee the locking mechanics since one C++ object can have only one JS wrapper proxy - not counting the special case of a separate JS wrappers for a base and a derived class which is not yet handled.
 
 The Object Store can be disabled by defining the `NOBIND_NO_OBJECT_STORE` macro.
 
