@@ -8,7 +8,7 @@ describe('nobind', function () {
       before('configure', () => framework.configure(t, undefined, process.env.ENABLE_ASAN && ['--debug', '--enable_asan'] || []));
       before('build', () => framework.build());
       before('load', () => framework.load(t, process.env.ENABLE_ASAN && 'Debug'));
-      if (!mocha_typescript()) {
+      if (mocha_typescript()) {
         before('generate types', () => framework.gen_typescript());
         it('check types', () => framework.check_typescript(t));
       }
