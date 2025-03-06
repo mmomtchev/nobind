@@ -327,6 +327,8 @@ public:
   // Can be called in any thread, it should not interact with V8
   // For one call, Lock, Get and Unlock will always be called on the
   // same thread
+  // (note that according to the specs a mutex can throw - this is
+  // not supported and will lead to an inconsistent state)
   inline void Lock() noexcept {}
   inline void Unlock() noexcept {}
 
