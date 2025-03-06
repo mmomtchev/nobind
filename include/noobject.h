@@ -127,9 +127,9 @@ public:
   CLASS *Get();
 #ifndef NOBIND_NO_ASYNC_LOCKING
   // Acquire the async lock (may block)
-  void Lock();
+  void Lock() noexcept;
   // Release the async lock
-  void Unlock();
+  void Unlock() noexcept;
 #endif
 
   // Constructor wrapper, these are only a pair - there are no pointers to constructors in C++
@@ -607,11 +607,11 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::CheckInstance(
 template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { return self; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() {
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() noexcept {
   async_lock.lock();
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked\n");
 }
-template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() {
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() noexcept {
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Unlocking\n");
   async_lock.unlock();
 }
@@ -813,11 +813,11 @@ public:
   NOBIND_INLINE T &Get() { return *val_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() {
+  NOBIND_INLINE void Lock() noexcept {
     if (wrapper_)
       wrapper_->Lock();
   }
-  NOBIND_INLINE void Unlock() {
+  NOBIND_INLINE void Unlock() noexcept {
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -865,11 +865,11 @@ public:
   NOBIND_INLINE T *Get() { return val_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() {
+  NOBIND_INLINE void Lock() noexcept {
     if (wrapper_)
       wrapper_->Lock();
   }
-  NOBIND_INLINE void Unlock() {
+  NOBIND_INLINE void Unlock() noexcept {
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -928,11 +928,11 @@ public:
   NOBIND_INLINE T Get() { return *object_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() {
+  NOBIND_INLINE void Lock() noexcept {
     if (wrapper_)
       wrapper_->Lock();
   }
-  NOBIND_INLINE void Unlock() {
+  NOBIND_INLINE void Unlock() noexcept {
     if (wrapper_)
       wrapper_->Unlock();
   }

@@ -46,7 +46,6 @@ void increment_critical(std::vector<Critical *> v, int inc) {
 
 NOBIND_MODULE(array, m) {
   m.def<Hello>("Hello").cons<std::string &>().def<&Hello::Id>("get_id").def<&Hello::id, Nobind::ReadOnly>("id");
-
   m.def<Critical>("Critical").cons<>().def<&Critical::Get>("get");
 
   m.def<&get_ptr_array>("get_ptr_array");

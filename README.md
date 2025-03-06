@@ -327,8 +327,8 @@ public:
   // Can be called in any thread, it should not interact with V8
   // For one call, Lock, Get and Unlock will always be called on the
   // same thread
-  inline void Lock() {}
-  inline void Unlock() {}
+  inline void Lock() noexcept {}
+  inline void Unlock() noexcept {}
 
   // An optional public member may specify the number
   // of consumed JS arguments (considered 1 if not present)

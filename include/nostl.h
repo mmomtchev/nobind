@@ -1,5 +1,4 @@
 #pragma once
-#include <list>
 #include <map>
 #include <notypes.h>
 #include <notypescript.h>
@@ -29,7 +28,7 @@ public:
   }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() {
+  NOBIND_INLINE void Lock() noexcept {
     if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
       for (auto &el : tms_) {
         el.Lock();
@@ -37,7 +36,7 @@ public:
     }
   }
 
-  NOBIND_INLINE void Unlock() {
+  NOBIND_INLINE void Unlock() noexcept {
     if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
       for (auto &el : tms_) {
         el.Unlock();
@@ -80,6 +79,8 @@ public:
 
 template <typename M, typename T> class FromJSMap {
   std::remove_cv_t<std::remove_reference_t<M>> val_;
+  size_t len_;
+  std::map<std::string, FromJS_t<T>> tms_;
 
 public:
   NOBIND_INLINE explicit FromJSMap(const Napi::Value &val) {
@@ -89,14 +90,36 @@ public:
     Napi::Object object = val.ToObject();
     for (auto prop : object) {
       auto tm = FromJSValue<T>(prop.second);
-#ifndef NOBIND_NO_ASYNC_LOCKING
-      FromJSLockGuard<T> guard{tm};
-#endif
+      tms_.emplace(prop.first.ToString().Utf8Value(), prop.second);
       val_.insert({prop.first.ToString().Utf8Value(), tm.Get()});
     }
   }
 
-  NOBIND_INLINE M Get() { return val_; }
+  NOBIND_INLINE M Get() {
+    for (auto &el : tms_) {
+      val_.insert({el.first, el.second.Get()});
+    }
+    return val_;
+  }
+
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  NOBIND_INLINE void Lock() noexcept {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
+      for (auto &el : tms_) {
+        el.second.Lock();
+      }
+    }
+  }
+
+  NOBIND_INLINE void Unlock() noexcept {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
+      for (auto &el : tms_) {
+        el.second.Unlock();
+      }
+    }
+  }
+#endif
+
   FromJSMap(const FromJSMap &) = delete;
   FromJSMap(FromJSMap &&) = default;
 
