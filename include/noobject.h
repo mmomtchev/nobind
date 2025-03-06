@@ -179,7 +179,8 @@ public:
 #ifndef NOBIND_NO_ASYNC_LOCKING
     // Lock this
     FromJS_t<CLASS> this_tm = FromJSValue<CLASS>(info.This());
-    FromJSLockGuard<T> this_guard{tm};
+    FromJSLockGuard<CLASS> this_guard{this_tm};
+    FromJSLockGuard<T> val_guard{tm};
 #endif
     self->*MEMBER = tm.Get();
   }

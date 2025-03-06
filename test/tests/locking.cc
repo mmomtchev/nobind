@@ -9,6 +9,7 @@ NOBIND_MODULE(locking, m) {
       .cons<>()
       .def<&Critical::Increment, Nobind::ReturnAsync>("increment")
       .def<&Critical::Get>("get")
+      .def<&Critical::counter>("value")
       .ext<&Increment>("ext");
   m.def<&Increment, Nobind::ReturnAsync>("increment");
 }
