@@ -1,6 +1,8 @@
 #pragma once
 #ifdef DEBUG
+#ifndef _MSC_VER
 #include <cxxabi.h>
+#endif
 #include <string>
 
 using namespace std::literals::string_literals;
@@ -25,10 +27,14 @@ template <const char *...OPTS> struct NobindDebug {
   template <typename U> static std::string Demangle() { return Demangle(typeid(U).name()); }
   // https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
   static std::string Demangle(const char *name) {
+#ifndef _MSC_VER
     int status = -4;
     std::unique_ptr<char, void (*)(void *)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
 
     return (status == 0) ? res.get() : name;
+#else
+    return std::string{name};
+#endif
   }
   template <const char *OPT, size_t... Ints> static inline bool Enabled(std::integer_sequence<size_t, Ints...>) {
     return (... || ((OPT == OPTS) && debug_opt_enabled[Ints]));
@@ -36,30 +42,38 @@ template <const char *...OPTS> struct NobindDebug {
   template <const char *OPT> static inline bool Enabled() {
     return Enabled<OPT>(std::make_integer_sequence<size_t, sizeof...(OPTS)>{});
   }
+  template <const char *OPT, typename T> static void Log(T *obj, const char *fmt...) {
+    if (Enabled<OPT>()) {
+      va_list args;
+      va_start(args, fmt);
+      std::string type = Demangle<T>();
+      std::printf("[%s : %p] ", type.c_str(), obj);
+      std::vprintf(fmt, args);
+    }
+  }
+  template <const char *OPT> static void Log(const char *fmt...) {
+    if (Enabled<OPT>()) {
+      va_list args;
+      va_start(args, fmt);
+      std::vprintf(fmt, args);
+    }
+  }
 };
 template <const char *...OPTS> bool NobindDebug<OPTS...>::debug_opt_enabled[sizeof...(OPTS)];
 
 // String literals as template arguments requires C++20
 constexpr const char _nobind_debug_opt_STORE[] = "STORE";
 constexpr const char _nobind_debug_opt_OBJECT[] = "OBJECT";
-using NobindDebugInstance = struct NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT>;
+constexpr const char _nobind_debug_opt_LOCK[] = "LOCK";
+using NobindDebugInstance = NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT, _nobind_debug_opt_LOCK>;
 
 #define NOBIND_INLINE
 #define NOBIND_ASSERT(x) assert(x)
 #define NOBIND_DEBUG_INIT Nobind::NobindDebugInstance::Init()
 
-#define NOBIND_VERBOSE(sys, ...)                                                                                       \
-  do {                                                                                                                 \
-    if (NobindDebugInstance::Enabled<_nobind_debug_opt_##sys>())                                                       \
-      printf(__VA_ARGS__);                                                                                             \
-  } while (0)
+#define NOBIND_VERBOSE(SYS, ...) NobindDebugInstance::Log<_nobind_debug_opt_##SYS>(__VA_ARGS__)
 
-#define NOBIND_VERBOSE_TYPE(sys, T, FMT, ...)                                                                          \
-  do {                                                                                                                 \
-    if (NobindDebugInstance::Enabled<_nobind_debug_opt_##sys>())                                                       \
-      printf("[%s]" FMT, NobindDebugInstance::Demangle<T>().c_str(), __VA_ARGS__);                                     \
-  } while (0)
-
+#define NOBIND_VERBOSE_TYPE(SYS, T, O, ...) NobindDebugInstance::Log<_nobind_debug_opt_##SYS, T>(O, __VA_ARGS__)
 } // namespace Nobind
 
 #else

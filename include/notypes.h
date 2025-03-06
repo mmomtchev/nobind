@@ -102,14 +102,29 @@ template <typename T> using never_void_t = typename never_void<T>::type;
 
 // Standard C++ detection idiom (SFINAE version)
 // adapted from https://benjaminbrock.net/blog/detection_idiom.php
-// Detects if the Typemap has declared Inputs
 
+// Detects if the Typemap has declared Inputs
 template <typename T> class FromJSTypemapHasInputs {
   template <typename U> static constexpr decltype(std::declval<U &>().Inputs, bool()) test(int) { return true; }
   template <typename U> static constexpr NOBIND_INLINE bool test(...) { return false; }
 
 public:
   static constexpr bool value = test<T>(int());
+};
+
+// Detects if the Typemap has Lock() and Unlock()
+template <typename T> class FromJSTypemapHasLocking {
+  template <typename U> static constexpr decltype(std::declval<U &>().Lock(), bool()) test_Lock(int) { return true; }
+  template <typename U> static constexpr NOBIND_INLINE bool test_Lock(...) { return false; }
+
+  template <typename U> static constexpr decltype(std::declval<U &>().Unlock(), bool()) test_Unlock(int) {
+    return true;
+  }
+  template <typename U> static constexpr NOBIND_INLINE bool test_Unlock(...) { return false; }
+
+public:
+  static constexpr bool lock = test_Lock<T>(int());
+  static constexpr bool unlock = test_Unlock<T>(int());
 };
 
 // Main entry point when processing a Napi::Value
@@ -121,16 +136,28 @@ template <typename T> auto NOBIND_INLINE FromJSValue(const Napi::Value &val) {
   }
 }
 
+// Type getter for the above method
+template <typename T>
+using FromJS_t = typename std::invoke_result_t<decltype(Nobind::FromJSValue<std::remove_cv_t<T>>), const Napi::Value &>;
+
 // Main entry point when processing a value from arguments
 template <typename T> auto NOBIND_INLINE FromJSArgs(const Napi::CallbackInfo &info, size_t &idx) {
-  auto r = FromJSValue<std::remove_cv_t<T>>(info[idx]);
-  if constexpr (FromJSTypemapHasInputs<decltype(r)>::value) {
-    static_assert(r.Inputs == 0 || r.Inputs == 1, "Only 1:1 and 1:O conversions are supported at the moment");
-    idx += r.Inputs;
+  // Get the template specialization that will be used from the result of FromJSArgs for T
+  using FromJSTypeMap = FromJS_t<std::remove_cv_t<T>>;
+
+  size_t current_idx = idx;
+
+  // Check if this template specialization has Inputs
+  if constexpr (FromJSTypemapHasInputs<FromJSTypeMap>::value) {
+    static_assert(FromJSTypeMap::Inputs == 0 || FromJSTypeMap::Inputs == 1,
+                  "Only 1:1 and 1:0 conversions are supported at the moment");
+    idx += FromJSTypeMap::Inputs;
   } else {
     idx++;
   }
-  return r;
+  // Construct in place to avoid copying
+  // (this type is potentially not copy-constructible)
+  return FromJSValue<std::remove_cv_t<T>>(info[current_idx]);
 }
 
 // Main entry point when generating a Napi::Value
@@ -144,13 +171,30 @@ template <typename T, const ReturnAttribute &RETATTR> auto NOBIND_INLINE ToJS(co
   }
 }
 
-// Type getters for the above methods
-// These has been specially crafted to avoid triggering a compiler crash in g++-11 (fixed in g++-12)
-template <typename T>
-using FromJS_t = typename std::invoke_result_t<decltype(Nobind::FromJSValue<T>), const Napi::Value &>;
-
+// Type getter for the above method
 template <typename T, const ReturnAttribute &RETATTR>
 using ToJS_t =
     typename std::invoke_result_t<decltype(Nobind::ToJS<never_void_t<T>, RETATTR>), const Napi::Env &, never_void_t<T>>;
+
+#ifndef NOBIND_NO_ASYNC_LOCKING
+// A RAII guard that calls FromJS::Lock()/Unlock() if the typemap has them
+template <typename T> class FromJSLockGuard {
+  FromJS_t<T> &tm_;
+
+public:
+  FromJSLockGuard(FromJS_t<T> &tm) : tm_(tm) {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
+      tm_.Lock();
+    }
+  };
+  virtual ~FromJSLockGuard() {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
+      tm_.Unlock();
+    }
+  }
+
+  FromJSLockGuard(const FromJSLockGuard &) = delete;
+};
+#endif
 
 } // namespace Nobind

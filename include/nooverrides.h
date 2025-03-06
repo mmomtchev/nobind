@@ -14,7 +14,8 @@ namespace Typemap {
  * - Get can be called in a background thread - no V8 Local<>s allowed
  * - The constructor can create state that will be destroyed after the function call
  * - When throwing a JS Error, throw in the constructor (throw where the Napi::Value is)
- * - (throwing an std::exception is allowed everywhere)
+ *   (throwing an std::exception is allowed everywhere)
+ * - When locking against reentrancy, lock in Lock(), unlock in Unlock()
  */
 template <typename T> class FromJS;
 
@@ -25,7 +26,7 @@ template <typename T> class FromJS;
  * - Get will be called on the main V8 thread -> Local<>s allowed
  * - The constructor can create state that will be destroyed after the function call
  * - When throwing a JS Error, throw in Get (throw where the Napi::Value is)
- * - (throwing an std::exception is allowed everywhere)
+ *   (throwing an std::exception is allowed everywhere)
  */
 template <typename T, const ReturnAttribute &RETATTR = ReturnDefault> class ToJS;
 } // namespace Typemap

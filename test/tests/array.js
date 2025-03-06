@@ -1,4 +1,5 @@
 const { assert } = require('chai');
+const { mocha_locking } = require('../opts');
 
 describe('std::vector', () => {
   it('get array of object pointers', () => {
@@ -35,5 +36,33 @@ describe('std::vector', () => {
       // @ts-expect-error
       dll.put_ptr_array('comrade', [{ field: 'value' }]);
     }, /Expected a Hello/);
+  });
+
+  if (!mocha_locking())
+    return;
+  it('recursive locking', function (done) {
+    this.slow(5000);
+    this.timeout(10000);
+
+    const array = [];
+    for (let i = 0; i < 10; i++)
+      array.push(new dll.Critical);
+
+    const q = [];
+    let counter = 0;
+    const inc = 100;
+    for (let i = 0; i < 1e4; i++) {
+      q.push(dll.incrementCritical(array, inc));
+      counter += inc;
+    }
+
+    Promise.all(q)
+      .then(() => {
+        for (const el of array) {
+          assert.strictEqual(el.get(), counter);
+        }
+        done();
+      })
+      .catch(done);
   });
 });

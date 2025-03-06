@@ -38,7 +38,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 
 | Feature | SWIG Node-API | `nobind17` |
 | --- | --- | --- |
-| Design goal | Create bindings for (*almost*) any C++ code with (*almost*) native feel | Easy to use, easy to learn |
+| Design goal | Create bindings for (*almost*) any C or C++ calling semantic with (*almost*) native feel | Easy to use, easy to learn, be able to wrap most C++ calling semantics, including asynchronous methods, without understanding the Node.js memory management or thread model, be able to go a little further by tweaking the typemaps |
 | Target use | Commercial-grade bindings for large C++ libraries | Very fast porting of C++ code with few methods/classes |
 | Method of operation | Custom C++ header compiler, uses its own interface language, generates C++ code | Collection of C++ templates to be included in the project |
 | Method of using | Must write metaprogramming code | Must enumerate the binded methods using C++ syntax |
@@ -50,7 +50,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 | `Buffer`s / `ArrayBuffer`s / `TypedArray`s | Yes | Only `Buffer`s for now |
 | STL | Complete, supports both JS using C++ STLs without copying and C++ using JS types with copying | Limited, all passing of STL arguments is by copying |
 | Async | Automatic | Automatic |
-| Async locking | Yes, with automatic dead-lock prevention | Not at the moment, but planned |
+| Async locking | Yes, with automatic dead-lock prevention | Yes, but no deadlock prevention |
 | Smart pointers | Yes | Not at the moment, but planned |
 | TypeScript support | Automatic | Automatic |
 | ES6 named exports for all C/C++ functions | Yes, automatic | No, must write it |
@@ -318,14 +318,27 @@ public:
     }
     val_ = std::atoi(val.ToString().Utf8Value().c_str());
   }
-  // The second part may be called from a background thread
-  // It should Expected access V8
+  // Actually retrieving the value, this method can be
+  // called from any thread, it should not interact with V8
   inline int Get() { return val_; }
+  // Optional methods that, if present, will be called immediately
+  // before or after returning from the call, can be used to implement
+  // locking of the underlying C++ object if needed
+  // Can be called in any thread, it should not interact with V8
+  // For one call, Lock, Get and Unlock will always be called on the
+  // same thread
+  // (note that according to the specs a mutex can throw - this is
+  // not supported and will lead to an inconsistent state)
+  inline void Lock() noexcept {}
+  inline void Unlock() noexcept {}
+
   // An optional public member may specify the number
   // of consumed JS arguments (considered 1 if not present)
   int Inputs;
-  // Optionally, if the typemap has a costly state, only move
-  // semantics may be specified, nobind17 can work with this type
+  // Optionally, if the typemap has a state, specify only move
+  // semantics, nobind17 can work with this type
+  // Constructors and destructors will always be called only
+  // on the main thread
   FromJS(const FromJS &) = delete;
   FromJS(FromJS &&) = default;
 };
@@ -547,7 +560,9 @@ public:
 
 Starting from version 2, `nobind17` uses an object store. Each time a C++ object is wrapped, `nobind17` will remember this reference and as longer as the object is not garbage-collected, it will continue returning the same JS reference. This means that objects preserve their equality even if they cross multiple times the JS/C++ language barrier.
 
-This is particularly important for `ReturnShared` objects and allows to avoid memory management issues related to having multiple JS wrappers for the same C++ object. With the Object Store, returning a C++ reference to an already existing object will reuse the existing JS reference. `ReturnCopy` will still copy the object and create a new underlying C++ object and a new JS wrapper for it. 
+This is particularly important for `ReturnShared` objects and allows to avoid memory management issues related to having multiple JS wrappers for the same C++ object. With the Object Store, returning a C++ reference to an already existing object will reuse the existing JS reference. `ReturnCopy` will still copy the object and create a new underlying C++ object and a new JS wrapper for it.
+
+The Object Store also permits to guarantee the locking mechanics since one C++ object can have only one JS wrapper proxy - not counting the special case of a separate JS wrappers for a base and a derived class which is not yet handled.
 
 The Object Store can be disabled by defining the `NOBIND_NO_OBJECT_STORE` macro.
 
@@ -685,9 +700,39 @@ This expects that `Iterable` implements `std::input_iterator_tag` which is the m
 
 There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/main/test/tests/iterator.cc).
 
+### Async locking
+
+`nobind17@2` introduces automatic async locking. The built-in typemaps for object types will lock all the passed objects to any function for the duration of the call. This will automatically prevent reentrance of class objects. This however has three very important caveats:
+  * If a the user code calls asynchronously a method which uses a C++ object - acquiring the lock on this object - any subsequent synchronous calls involving the same object will block the event loop until the first operations completes:
+    ```typescript
+    const data: Promise<DataType> = object.retrieveData(); // async
+    // This will block the event loop until the first opertion completes:
+    object.useData();
+    ```
+    This is impossible to avoid, as after launching the first operation, the interpreter will continue to synchronously execute the JS code and it will require to synchronously access the locked `object`. This however will have an identical behaviour without blocking the event loop:
+    ```typescript
+    const data: DataType = await object.retrieveData();
+    object.useData();
+    ```
+    In this case the interpreter will yield the current context.
+
+* If the user code launches two asynchronous operations involving the same object, they will run sequentially as expected. However, the second operation will sit waiting on the background thread pool which has a limited size. If the background pool has only 4 threads - the default Node.js value - launching 4 operations on the same object will lead to starvation of the thread pool. This is a good starting point for learning more: [Increase Node JS Performance With Libuv Thread Pool](https://dev.to/bleedingcode/increase-node-js-performance-with-libuv-thread-pool-5h10).
+
+When implementing custom `FromJS` typemaps that provide locking, locking should be performed in the `Get()` method and unlocking in the `Release()` method. In case of an async operation, the actual locking and unlocking will happen in the background thread. When executing the operation, the main thread will only protect the object from being GCed, then once a background thread is available, the object will be actually locked to ensure that only a single thread is accessing it.
+
+ * Automatic locking can lead to a deadlock. If there are two wrapped methods that can be called with multiple objects in a random order, there is a risk of a deadlock. For example when calling asynchronously `fn(a, b)` and `fn(b, a)` at almost the same time, the first one can lock `a` and wait for a lock on `b`, while the second one is holding `b` and waiting for a lock on `a`. The best way to ensure that this never happens is to always reference the objects in the same order.
+
+Also note that iterators do not lock the object except for the duration of the call that creates the iterator. Whether the object supports being modified while it is iterated depends on the underlying C++ library.
+
+Similarly `Nobind::ReturnNested` references do not lock the parent object. Once again, whether it is possible to modify the parent object at the same time as a member object depends on the called C++ code. As, usually, this is not the case, this might be added in a future version.
+
+Async locking is another complex feature which certainly introduces new bugs and has a performance cost, it can be disabled by defining `NOBIND_NO_ASYNC_LOCKING`.
+
 ### R-value references
 
-`nobind17` does not support R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.
+`nobind17` does not have built-in support for R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.
+
+Still, when dealing with a particular case which can be supported in JavaScript, it is possible to define custom typemaps to convert these arguments.
 
 ### Troubleshooting
 
