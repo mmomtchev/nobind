@@ -40,9 +40,9 @@ describe('std::map', () => {
     }, /Expected a Hello/);
   });
 
+  if (!mocha_locking())
+    return;
   it('recursive locking', function (done) {
-    if (!mocha_locking())
-      return;
     this.slow(5000);
     this.timeout(10000);
 
