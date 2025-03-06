@@ -62,4 +62,26 @@ describe('locking', function () {
       done();
     }).catch(done);
   });
+
+  it('sync class extension', (done) => {
+    const c = new dll.Critical;
+    const inc = 100;
+    let counter = 0;
+    const q = [];
+    for (let i = 0; i < 2e4; i++) {
+      q.push(c.increment(inc));
+      counter += inc;
+      if (Math.random() < 0.25) {
+        assert.isNumber(c.value);
+        assert.isTrue(c.value % inc === 0);
+        c.ext(inc);
+        counter += inc;
+      }
+    }
+    Promise.all(q).then(() => {
+      assert.isNumber(c.value);
+      assert.strictEqual(c.value, counter);
+      done();
+    }).catch(done);
+  });
 });
