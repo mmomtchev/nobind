@@ -46,7 +46,7 @@ describe('std::map', () => {
     this.slow(5000);
     this.timeout(10000);
 
-    const map = {};
+    const map = { 'initial': new dll.Critical };
     for (let i = 0; i < 10; i++)
       map[i.toString()] = new dll.Critical;
 
