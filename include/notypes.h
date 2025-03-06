@@ -192,6 +192,8 @@ public:
       tm_.Unlock();
     }
   }
+
+  FromJSLockGuard(const FromJSLockGuard &) = delete;
 };
 #endif
 

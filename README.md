@@ -720,8 +720,6 @@ When implementing custom `FromJS` typemaps that provide locking, locking should 
 
  * Automatic locking can lead to a deadlock. If there are two wrapped methods that can be called with multiple objects in a random order, there is a risk of a deadlock. For example when calling asynchronously `fn(a, b)` and `fn(b, a)` at almost the same time, the first one can lock `a` and wait for a lock on `b`, while the second one is holding `b` and waiting for a lock on `a`. The best way to ensure that this never happens is to always reference the objects in the same order.
 
-Currently when using transformation of the STL classes - `std::vector` and `std::map` - and iterators - the locking is not recursive. This means that calling `some_method([a, b])` `a` and `b` won't be locked for the duration of the call. Similarly, objects that are nested references do not lock the parent object.
-
 Async locking is another complex feature which certainly introduces new bugs and has a performance cost, it can be disabled by defining `NOBIND_NO_ASYNC_LOCKING`.
 
 ### R-value references

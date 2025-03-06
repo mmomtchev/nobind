@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <map>
 #include <notypes.h>
 #include <notypescript.h>
@@ -11,6 +12,10 @@ namespace Typemap {
 
 template <typename V, typename T> class FromJSVector {
   std::remove_cv_t<std::remove_reference_t<V>> val_;
+  size_t len_;
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  std::vector<FromJS_t<T>> tms_;
+#endif
 
 public:
   NOBIND_INLINE explicit FromJSVector(const Napi::Value &val) {
@@ -18,17 +23,38 @@ public:
       throw Napi::TypeError::New(val.Env(), "Expected an array");
     }
     Napi::Array array = val.As<Napi::Array>();
-    val_.reserve(array.Length());
+    len_ = array.Length();
+    tms_.reserve(len_);
     for (size_t i = 0; i < array.Length(); i++) {
-      auto val = FromJSValue<T>(array.Get(i));
-#ifndef NOBIND_NO_ASYNC_LOCKING
-      FromJSLockGuard<T> guard{val};
-#endif
-      val_.push_back(val.Get());
+      tms_.emplace_back(array.Get(i));
     }
   }
 
-  NOBIND_INLINE V Get() { return val_; }
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  NOBIND_INLINE void Lock() {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
+      for (auto &el : tms_) {
+        el.Lock();
+      }
+    }
+  }
+
+  NOBIND_INLINE void Unlock() {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
+      for (auto &el : tms_) {
+        el.Unlock();
+      }
+    }
+  }
+#endif
+
+  NOBIND_INLINE V Get() {
+    for (auto &el : tms_) {
+      val_.push_back(el.Get());
+    }
+    return val_;
+  }
+
   FromJSVector(const FromJSVector &) = delete;
   FromJSVector(FromJSVector &&) = default;
 
