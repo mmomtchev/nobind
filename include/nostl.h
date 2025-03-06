@@ -13,9 +13,7 @@ namespace Typemap {
 template <typename V, typename T> class FromJSVector {
   std::remove_cv_t<std::remove_reference_t<V>> val_;
   size_t len_;
-#ifndef NOBIND_NO_ASYNC_LOCKING
   std::vector<FromJS_t<T>> tms_;
-#endif
 
 public:
   NOBIND_INLINE explicit FromJSVector(const Napi::Value &val) {
