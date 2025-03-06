@@ -722,6 +722,10 @@ When implementing custom `FromJS` typemaps that provide locking, locking should 
 
  * Automatic locking can lead to a deadlock. If there are two wrapped methods that can be called with multiple objects in a random order, there is a risk of a deadlock. For example when calling asynchronously `fn(a, b)` and `fn(b, a)` at almost the same time, the first one can lock `a` and wait for a lock on `b`, while the second one is holding `b` and waiting for a lock on `a`. The best way to ensure that this never happens is to always reference the objects in the same order.
 
+Also note that iterators do not lock the object except for the duration of the call that creates the iterator. Whether the object supports being modified while it is iterated depends on the underlying C++ library.
+
+Similarly `Nobind::ReturnNested` references do not lock the parent object. Once again, whether it is possible to modify the parent object at the same time as a member object depends on the called C++ code. As, usually, this is not the case, this might be added in a future version.
+
 Async locking is another complex feature which certainly introduces new bugs and has a performance cost, it can be disabled by defining `NOBIND_NO_ASYNC_LOCKING`.
 
 ### R-value references
