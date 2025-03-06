@@ -39,7 +39,7 @@ describe('std::vector', () => {
   });
 
   it('recursive locking', function (done) {
-    if (!mocha_locking)
+    if (!mocha_locking())
       return;
     this.slow(5000);
     this.timeout(10000);
