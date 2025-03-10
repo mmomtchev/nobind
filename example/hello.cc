@@ -4,6 +4,7 @@
 
 #include "hello.h"
 #include "monster.h"
+#include "monster_ptr.h"
 
 int add(int a, int b) { return a + b; }
 
@@ -36,4 +37,5 @@ NOBIND_MODULE(hello, m) {
   m.def<&hello>("hello");
   m.def<Hello>("Hello").cons<std::string &>().def<&Hello::Id>("id").def<&Hello::Greet>("greet");
   m.def<&handleMonster>("handleMonster");
+  m.def<&handleMonsterPtr>("handleMonsterPtr");
 }

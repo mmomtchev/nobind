@@ -18,15 +18,10 @@ struct MonsterDefinition {
   enum Feature { CLAWS, HORN } feature;
 
   // The easiest is to copy the object.
-  // If you use a pointer or a reference, it will point to the object held
-  // by the calling JavaScript. nobind can protect it from the GC for the
-  // duration of the call itself. If you want to keep this on the C++ side,
-  // you will have to protect it yourself by adding a
-  // Napi::ObjectReference. In this case the structure won't be
-  // copy-constructible and you will have to use std::move()
+  // Check monster_ptr for an example with a pointer
+  // to the actual JS-held object which may be kept
+  // on the C++ side
   Hello greeter;
-
-  // Napi::ObjectReference greeter_gc_guard;
 };
 
 MonsterDefinition handleMonster(MonsterDefinition v);
@@ -88,16 +83,12 @@ Nobind::TypemapOverrides::FromJS<MonsterDefinition>::FromJS(Napi::Value val) {
   std::string str_feature = Nobind::Typemap::FromJS<std::string>(js_feature).Get();
   if (str_feature == "claws")
     val_.feature = MonsterDefinition::CLAWS;
-  else if (str_feature == "HORN")
+  else if (str_feature == "horn")
     val_.feature = MonsterDefinition::HORN;
   else
     throw Napi::TypeError::New(env, std::string{"Invalid feature: "} + str_feature);
 
   val_.greeter = Nobind::Typemap::FromJS<Hello>(obj.Get("greeter")).Get();
-
-  // GC protection example, as long as this object exists, the GC
-  // won't destroy the underlying object
-  // val_.greeter_gc_guard = Napi::Persistent(obj.Get("greeter"));
 }
 
 // Implement the construction of the JS struct here

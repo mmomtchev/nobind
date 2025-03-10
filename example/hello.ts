@@ -15,3 +15,10 @@ console.log(hello.handleMonster({
   feature: 'claws',
   greeter: new hello.Hello('Lamia')
 }));
+
+hello.handleMonsterPtr({
+  name: 'Zmei',
+  eyes: 2,
+  feature: 'horn',
+  greeter: new hello.Hello('Zmei')
+});
