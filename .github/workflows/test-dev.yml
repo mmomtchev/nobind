@@ -31,20 +31,14 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - run: npm test
-      - name: Link the package (POSIX)
-        run: sudo npm link
-        if: runner.os != 'Windows'
-      - name: Link the package (Windows)
+      - name: Link the package
         run: npm link
-        if: runner.os == 'Windows'
       - name: Check the example
         run: |
           cd example
           npm install --ignore-scripts
           npm link nobind17
-          cat node_modules/nobind17/package.json
-          cp node_modules/node-addon-api/except.gypi .
-          npx node-gyp configure build -v
+          npx node-gyp configure build
           node -p "require('./build/Release/hello.node').hello('Garga')"
           npx tsx hello.ts
         shell: bash
