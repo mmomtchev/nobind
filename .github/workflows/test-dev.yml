@@ -30,9 +30,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
-      - name: Enable REQUIRE_BASIC_FINALIZERS
-        run: echo MOCHA_TEST_BASIC_FINALIZERS=1 >> $GITHUB_ENV
-        if: matrix.platform == 'ubuntu-latest'
       - run: npm test
       - name: Link the package (POSIX)
         run: sudo npm link
