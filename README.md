@@ -774,6 +774,19 @@ When encountering compilation errors, start with this quick checklist:
 
   You most probably have multiple definitions for the same class.
 
+### Parsing structures
+
+A very common pattern in JavaScript, inspired by the `kwargs` feature in Python, is to call a method using an object with named values. You can check the `MonsterDefinition` implementation in `./example` for an example on how to transform a structure containing optional values. The transformation itself is implemented in `monster.h` and includes a TypeScript definition.
+
+To run the example, type:
+
+```shell
+cd example
+npm install
+node-gyp configure build
+npx tsx hello.ts
+```
+
 ## WASM compatbility
 
 Although building to WASM using `emnapi` should be possible, this is considered out of scope for this project and you should be using `embind` which implements the same functionality directly in the `emscripten` compiler without adding additional layers (C++/`nobind` to `node-addon-api`, then `node-addon-api`/`emnapi` to `embind`).
