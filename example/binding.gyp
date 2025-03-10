@@ -24,7 +24,7 @@
           'outputs': [ '<(PRODUCT_DIR)/hello.d.ts' ],
           'action': [
             'node',
-            '--eval="fs.writeFileSync(\'<(PRODUCT_DIR)/hello.d.ts\', require(\'<(PRODUCT_DIR)/hello.node\').__typescript)"'
+            '--eval=\'fs.writeFileSync("<(PRODUCT_DIR)/hello.d.ts", require("<(PRODUCT_DIR)/hello.node").__typescript)\''
           ]
         }
       ]
