@@ -125,7 +125,6 @@ public:
   // Custom TypeScript fragment
   void typescript_fragment(const char *fragment) { typescript_types_ += fragment; }
   void typescript_fragment(const std::string &fragment) { typescript_types_ += fragment; }
-
 #endif
 
   Napi::Env Env() { return env_; }

@@ -11,6 +11,8 @@ namespace Typemap {
 
 template <typename V, typename T> class FromJSVector {
   std::remove_cv_t<std::remove_reference_t<V>> val_;
+  size_t len_;
+  std::vector<FromJS_t<T>> tms_;
 
 public:
   NOBIND_INLINE explicit FromJSVector(const Napi::Value &val) {
@@ -18,13 +20,38 @@ public:
       throw Napi::TypeError::New(val.Env(), "Expected an array");
     }
     Napi::Array array = val.As<Napi::Array>();
-    val_.reserve(array.Length());
+    len_ = array.Length();
+    tms_.reserve(len_);
     for (size_t i = 0; i < array.Length(); i++) {
-      val_.push_back(FromJSValue<T>(array.Get(i)).Get());
+      tms_.emplace_back(array.Get(i));
     }
   }
 
-  NOBIND_INLINE V Get() { return val_; }
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  NOBIND_INLINE void Lock() noexcept {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
+      for (auto &el : tms_) {
+        el.Lock();
+      }
+    }
+  }
+
+  NOBIND_INLINE void Unlock() noexcept {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
+      for (auto &el : tms_) {
+        el.Unlock();
+      }
+    }
+  }
+#endif
+
+  NOBIND_INLINE V Get() {
+    for (auto &el : tms_) {
+      val_.push_back(el.Get());
+    }
+    return val_;
+  }
+
   FromJSVector(const FromJSVector &) = delete;
   FromJSVector(FromJSVector &&) = default;
 
@@ -52,6 +79,8 @@ public:
 
 template <typename M, typename T> class FromJSMap {
   std::remove_cv_t<std::remove_reference_t<M>> val_;
+  size_t len_;
+  std::map<std::string, FromJS_t<T>> tms_;
 
 public:
   NOBIND_INLINE explicit FromJSMap(const Napi::Value &val) {
@@ -60,11 +89,37 @@ public:
     }
     Napi::Object object = val.ToObject();
     for (auto prop : object) {
-      val_.insert({prop.first.ToString().Utf8Value(), FromJSValue<T>(prop.second).Get()});
+      auto tm = FromJSValue<T>(prop.second);
+      tms_.emplace(prop.first.ToString().Utf8Value(), prop.second);
+      val_.insert({prop.first.ToString().Utf8Value(), tm.Get()});
     }
   }
 
-  NOBIND_INLINE M Get() { return val_; }
+  NOBIND_INLINE M Get() {
+    for (auto &el : tms_) {
+      val_.insert({el.first, el.second.Get()});
+    }
+    return val_;
+  }
+
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  NOBIND_INLINE void Lock() noexcept {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
+      for (auto &el : tms_) {
+        el.second.Lock();
+      }
+    }
+  }
+
+  NOBIND_INLINE void Unlock() noexcept {
+    if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
+      for (auto &el : tms_) {
+        el.second.Unlock();
+      }
+    }
+  }
+#endif
+
   FromJSMap(const FromJSMap &) = delete;
   FromJSMap(FromJSMap &&) = default;
 

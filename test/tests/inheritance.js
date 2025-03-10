@@ -1,4 +1,5 @@
 const { assert } = require('chai');
+const { mocha_object_store } = require('../opts');
 
 it('nominal', () => {
   const b = new dll.Base(12);
@@ -44,6 +45,8 @@ it('automatic upcasting', () => {
 });
 
 it('type distinction by the object store', () => {
+  if (!mocha_object_store())
+    return;
   const derived = new dll.Derived(12);
 
   // returnBase returns const Base & which creates a new wrapper
@@ -57,6 +60,9 @@ it('type distinction by the object store', () => {
 });
 
 it('object store object reuse', () => {
+  if (!mocha_object_store())
+    return;
+
   const base = new dll.Base(16);
 
   const ret = dll.returnBase(base);

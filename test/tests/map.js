@@ -1,4 +1,5 @@
 const { assert } = require('chai');
+const { mocha_locking } = require('../opts');
 
 describe('std::map', () => {
   it('get map of object pointers', () => {
@@ -37,5 +38,33 @@ describe('std::map', () => {
       // @ts-expect-error
       dll.put_ptr_map('comrade', { key: { field: 'value' } });
     }, /Expected a Hello/);
+  });
+
+  if (!mocha_locking())
+    return;
+  it('recursive locking', function (done) {
+    this.slow(5000);
+    this.timeout(10000);
+
+    const map = { 'initial': new dll.Critical };
+    for (let i = 0; i < 10; i++)
+      map[i.toString()] = new dll.Critical;
+
+    const q = [];
+    let counter = 0;
+    const inc = 100;
+    for (let i = 0; i < 1e4; i++) {
+      q.push(dll.incrementCritical(map, inc));
+      counter += inc;
+    }
+
+    Promise.all(q)
+      .then(() => {
+        for (const el of Object.keys(map)) {
+          assert.strictEqual(map[el].get(), counter);
+        }
+        done();
+      })
+      .catch(done);
   });
 });

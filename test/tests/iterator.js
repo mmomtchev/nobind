@@ -1,4 +1,5 @@
 const { assert } = require('chai');
+const { mocha_object_store } = require('../opts');
 
 describe('iterators', () => {
   it('scalar values', () => {
@@ -29,6 +30,8 @@ describe('iterators', () => {
     assert.sameOrderedMembers(greets, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
 
     // This tests the object store
+    if (!mocha_object_store())
+      return;
     assert.sameOrderedMembers(objects, [el1, el2]);
   });
 
@@ -50,6 +53,8 @@ describe('iterators', () => {
     assert.sameOrderedMembers(greets, ['hello Mr Gargantua', 'hello Mr Pantagruel']);
 
     // This tests the object store
+    if (!mocha_object_store())
+      return;
     assert.sameOrderedMembers(objects, [el1, el2]);
   });
 });

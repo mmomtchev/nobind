@@ -51,6 +51,32 @@ jobs:
         shell: bash
 
 
+  options:
+    runs-on: ${{ matrix.platform }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest]
+        node-version: [22]
+        options:
+          - '-DNOBIND_NO_OBJECT_STORE'
+          - '-DNOBIND_NO_TYPESCRIPT_GENERATOR'
+          - '-DNOBIND_NO_ASYNC_LOCKING'
+          - '-DNODE_ADDON_API_REQUIRE_BASIC_FINALIZERS'
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm install
+      - run: npm test
+        env:
+          CXXFLAGS: ${{ matrix.options }}
+  
+
   asan:
     runs-on: ubuntu-22.04
 

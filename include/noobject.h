@@ -46,6 +46,11 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
     std::unique_ptr<ToJS_t<RETURN, RETATTR>> output;
     // FromJS wrappers also contain persistent references to their underlying JS values
     std::tuple<FromJS_t<ARGS>...> args_;
+#ifndef NOBIND_NO_ASYNC_LOCKING
+    // This is the This typemap, used only for locking
+    // (Node-API sets the C++ this pointer for us)
+    FromJS_t<CLASS> this_tm_;
+#endif
     // This is the This persistent
     Napi::ObjectReference this_ref;
     // This is the This wrapper
@@ -54,11 +59,23 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
 
   public:
     MethodWrapperTasklet(Napi::Env env, Napi::Promise::Deferred deferred, CLASS *self, NoObjectWrap<CLASS> *wrapper,
+#ifndef NOBIND_NO_ASYNC_LOCKING
+                         FromJS_t<CLASS> &&this_tm,
+#endif
                          std::tuple<FromJS_t<ARGS>...> &&args)
         : AsyncWorker(env, "nobind_AsyncWorker"), env_(env), deferred_(deferred), output(), args_(std::move(args)),
-          this_ref(Napi::Persistent(wrapper->Value())), wrapper_(wrapper), self_(static_cast<BASE *>(self)) {}
+#ifndef NOBIND_NO_ASYNC_LOCKING
+          this_tm_(std::move(this_tm)),
+#endif
+          this_ref(Napi::Persistent(wrapper->Value())), wrapper_(wrapper), self_(static_cast<BASE *>(self)) {
+    }
 
     template <std::size_t... I> void ExecuteImpl(std::index_sequence<I...>) {
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      FromJSLockGuard<CLASS> this_lock_guard{this_tm_};
+      [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> lock_guards{std::get<I>(args_)...};
+#endif
+
       try {
         if constexpr (std::is_void_v<RETURN>) {
           // Convert and call
@@ -104,8 +121,16 @@ public:
   static Napi::Function GetClass(Napi::Env, const char *,
                                  const std::vector<Napi::ClassPropertyDescriptor<NoObjectWrap<CLASS>>> &);
 
-  // Check types and extract the proxied C++ object
-  static CLASS *CheckUnwrap(Napi::Value);
+  // Confirm the instance against the constructor, throws on error
+  static void CheckInstance(Napi::Value);
+  // Retrieve the C++ object pointer
+  CLASS *Get();
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  // Acquire the async lock (may block)
+  void Lock() noexcept;
+  // Release the async lock
+  void Unlock() noexcept;
+#endif
 
   // Constructor wrapper, these are only a pair - there are no pointers to constructors in C++
   template <typename... ARGS> void ConsWrapper(const Napi::CallbackInfo &info) {
@@ -136,6 +161,11 @@ public:
 
   template <typename T, T CLASS::*MEMBER> Napi::Value GetterWrapper(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+#ifndef NOBIND_NO_ASYNC_LOCKING
+    // Lock this
+    FromJS_t<CLASS> this_tm = FromJSValue<CLASS>(info.This());
+    FromJSLockGuard<CLASS> this_lock_guard(this_tm);
+#endif
     if constexpr (std::is_scalar_v<T>)
       // Copy scalar objects
       return ToJS<T, ReturnNested>(env, self->*MEMBER).Get();
@@ -145,12 +175,23 @@ public:
   }
 
   template <typename T, T CLASS::*MEMBER> void SetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    self->*MEMBER = FromJSValue<T>(val).Get();
+    auto tm = FromJSValue<T>(val);
+#ifndef NOBIND_NO_ASYNC_LOCKING
+    // Lock this
+    FromJS_t<CLASS> this_tm = FromJSValue<CLASS>(info.This());
+    FromJSLockGuard<CLASS> this_guard{this_tm};
+    FromJSLockGuard<T> val_guard{tm};
+#endif
+    self->*MEMBER = tm.Get();
   }
 
   template <typename T, T *MEMBER>
   static void StaticSetterWrapper(const Napi::CallbackInfo &info, const Napi::Value &val) {
-    *MEMBER = FromJSValue<T>(val).Get();
+    auto tm = FromJSValue<T>(val);
+#ifndef NOBIND_NO_ASYNC_LOCKING
+    FromJSLockGuard<T> guard{tm};
+#endif
+    *MEMBER = tm.Get();
   }
 
   static void Declare(const char *jsname) { name = std::string{jsname}; }
@@ -207,6 +248,13 @@ private:
       // Call the FromJS constructors
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      // Lock this
+      FromJS_t<CLASS> this_tm = FromJSValue<CLASS>(info.This());
+      FromJSLockGuard<CLASS> this_guard{this_tm};
+      [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
+#endif
+
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
         (static_cast<BASE *>(self)->*FUNC)(std::get<I>(args).Get()...);
@@ -272,6 +320,9 @@ private:
       // the evaluation order of its arguments, only *braced-init-list* lists do
       // https://en.cppreference.com/w/cpp/language/list_initialization
       auto tasklet = new MethodWrapperTasklet<RETATTR, BASE, FUNC, RETURN, ARGS...>(env, deferred, self, this,
+#ifndef NOBIND_NO_ASYNC_LOCKING
+                                                                                    FromJSValue<CLASS>(info.This()),
+#endif
                                                                                     {FromJSArgs<ARGS>(info, idx)...});
       try {
         CheckArgLength(env, idx, info.Length());
@@ -299,6 +350,9 @@ private:
     size_t idx = 0;
     std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
     CheckArgLength(env, idx, info.Length());
+#ifndef NOBIND_NO_ASYNC_LOCKING
+    [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
+#endif
 
     // Convert and call
     self = new CLASS(std::get<I>(args).Get()...);
@@ -335,19 +389,24 @@ private:
     Napi::Env env = info.Env();
 
     try {
-      auto thisObj = FromJSValue<THIS>(info.This());
+      auto this_obj = FromJSValue<THIS>(info.This());
       // Call the FromJS constructors
       size_t idx = 0;
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      FromJSLockGuard<THIS> this_guard{this_obj};
+      [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
+#endif
+
       if constexpr (std::is_void_v<RETURN>) {
         // Convert and call
-        FUNC(thisObj.Get(), std::get<I>(args).Get()...);
+        FUNC(this_obj.Get(), std::get<I>(args).Get()...);
         return env.Undefined();
         // FromJS objects are destroyed
       } else {
         // Convert and call
-        RETURN result = FUNC(thisObj.Get(), std::get<I>(args).Get()...);
+        RETURN result = FUNC(this_obj.Get(), std::get<I>(args).Get()...);
         // Call the ToJS constructor
         auto output = ToJS_t<RETURN, RETATTR>(env, result);
         // Convert
@@ -382,6 +441,10 @@ private:
   CLASS *self;
   // Should we destroy it in the destructor
   bool owned;
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  // The async reentrancy lock
+  std::mutex async_lock;
+#endif
 };
 
 template <typename CLASS> size_t NoObjectWrap<CLASS>::class_idx = 0;
@@ -393,11 +456,11 @@ std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == nullptr); }
 
 template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "synchronous delete for %p\n", self);
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "synchronous delete\n");
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   Napi::Env env{this->Env()};
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "asynchronous delete for %p\n", self);
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "asynchronous delete\n");
 #endif
 #ifndef NOBIND_NO_OBJECT_STORE
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
@@ -420,14 +483,20 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 // * From JS with JS arguments -> it must construct the underlying object
 // * From C++ with a Napi::External<> pointer -> it must construct a proxy for this object
 template <typename CLASS>
-NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info) {
+NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
+    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info)
+#ifndef NOBIND_NO_ASYNC_LOCKING
+      ,
+      async_lock{}
+#endif
+{
   Napi::Env env{info.Env()};
 
   if (info.Length() == 2 && info[0].IsExternal()) {
     // From C++
     owned = info[1].ToBoolean().Value();
     self = info[0].As<Napi::External<CLASS>>().Data();
-    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "create wrapper for C++ object %p\n", self);
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create wrapper for C++ object\n");
     return;
   }
   // From JS
@@ -445,7 +514,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
         (this->*ctor)(info);
 #ifndef NOBIND_NO_OBJECT_STORE
         instance->_Nobind_object_store.Put(class_idx, self, this->Value());
-        NOBIND_VERBOSE_TYPE(OBJECT, CLASS, "create new JS object with C++ object %p\n", self);
+        NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create new JS object with C++ object\n");
 #endif
         return;
       } catch (const Napi::Error &e) {
@@ -472,7 +541,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info) : Napi::Object
                  "]"s);
   }
   throw Napi::TypeError::New(env, "No constructor with "s + std::to_string(info.Length()) + " arguments found");
-}
+} // namespace Nobind
 
 template <typename CLASS>
 Napi::Function
@@ -522,7 +591,7 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *o
   return r;
 }
 
-template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::CheckUnwrap(Napi::Value val) {
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::CheckInstance(Napi::Value val) {
   Napi::Env env(val.Env());
   if (!val.IsObject()) {
     throw Napi::TypeError::New(env, "Expected an object");
@@ -533,8 +602,20 @@ template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::CheckUnwrap(
     throw Napi::TypeError::New(env, "Expected a "s +
                                         (name != NOBIND_NAME_NOT_INITIALIZED ? name : "<unknown to nobind17 class>"s));
   }
-  return NoObjectWrap<CLASS>::Unwrap(obj)->self;
 }
+
+template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { return self; }
+
+#ifndef NOBIND_NO_ASYNC_LOCKING
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() noexcept {
+  async_lock.lock();
+  NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked\n");
+}
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() noexcept {
+  NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Unlocking\n");
+  async_lock.unlock();
+}
+#endif
 
 // API class for defining a class binding
 template <typename CLASS, typename BASE, typename... INTERFACES> class ClassDefinition {
@@ -716,17 +797,31 @@ namespace Typemap {
 
 // Generic object reference typemap
 template <typename T> class FromJS<T &> {
-  T *val_;
-  Napi::ObjectReference persistent;
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+  T *val_;
+  OBJCLASS *wrapper_;
+  Napi::ObjectReference persistent_;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
-    val_ = OBJCLASS::CheckUnwrap(val);
-    persistent = Napi::Persistent(val.ToObject());
+    OBJCLASS::CheckInstance(val);
+    wrapper_ = OBJCLASS::Unwrap(val.ToObject());
+    val_ = wrapper_->Get();
+    persistent_ = Napi::Persistent(val.ToObject());
   }
   NOBIND_INLINE T &Get() { return *val_; }
+
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  NOBIND_INLINE void Lock() noexcept {
+    if (wrapper_)
+      wrapper_->Lock();
+  }
+  NOBIND_INLINE void Unlock() noexcept {
+    if (wrapper_)
+      wrapper_->Unlock();
+  }
+#endif
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -754,17 +849,31 @@ public:
 
 // Generic object pointer typemap
 template <typename T> class FromJS<T *> {
-  T *val_;
-  Napi::ObjectReference persistent;
   using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
+  T *val_;
+  OBJCLASS *wrapper_;
+  Napi::ObjectReference persistent_;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
-    val_ = OBJCLASS::CheckUnwrap(val);
-    persistent = Napi::Persistent(val.ToObject());
+    OBJCLASS::CheckInstance(val);
+    wrapper_ = OBJCLASS::Unwrap(val.ToObject());
+    val_ = wrapper_->Get();
+    persistent_ = Napi::Persistent(val.ToObject());
   }
   NOBIND_INLINE T *Get() { return val_; }
+
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  NOBIND_INLINE void Lock() noexcept {
+    if (wrapper_)
+      wrapper_->Lock();
+  }
+  NOBIND_INLINE void Unlock() noexcept {
+    if (wrapper_)
+      wrapper_->Unlock();
+  }
+#endif
 
   static const std::string &TSType() { return OBJCLASS::GetName(); };
 };
@@ -801,18 +910,33 @@ public:
 
 // Generic stack-allocated object typemaps
 template <typename T> class FromJS {
-  T *object;
-  Napi::ObjectReference persistent;
+  T *object_;
+  NoObjectWrap<T> *wrapper_;
+  Napi::ObjectReference persistent_;
 
 public:
   NOBIND_INLINE explicit FromJS(const Napi::Value &val) {
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "Type does not have a FromJS typemap");
     // C++ asks for a regular stack-allocated object
-    object = NoObjectWrap<T>::CheckUnwrap(val);
-    persistent = Napi::Persistent(val.ToObject());
+    NoObjectWrap<T>::CheckInstance(val);
+    wrapper_ = NoObjectWrap<T>::Unwrap(val.ToObject());
+    object_ = wrapper_->Get();
+    persistent_ = Napi::Persistent(val.ToObject());
   }
+
   // will return a copy by value
-  NOBIND_INLINE T Get() { return *object; }
+  NOBIND_INLINE T Get() { return *object_; }
+
+#ifndef NOBIND_NO_ASYNC_LOCKING
+  NOBIND_INLINE void Lock() noexcept {
+    if (wrapper_)
+      wrapper_->Lock();
+  }
+  NOBIND_INLINE void Unlock() noexcept {
+    if (wrapper_)
+      wrapper_->Unlock();
+  }
+#endif
 
   static const size_t Inputs = 1;
 
