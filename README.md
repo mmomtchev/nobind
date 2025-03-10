@@ -1,5 +1,12 @@
 # nobind17
 
+[![CI](https://github.com/mmomtchev/nobind/actions/workflows/test-dev.yml/badge.svg)](https://github.com/mmomtchev/nobind/actions/workflows/test-dev.yml)
+[![QA](https://github.com/mmomtchev/nobind/actions/workflows/test-npm.yml/badge.svg)](https://github.com/mmomtchev/nobind/actions/workflows/test-npm.yml)
+[![npm version](https://img.shields.io/npm/v/nobind17)](https://www.npmjs.com/package/nobind17)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+
+
+
 Experimental next-gen binding framework for Node.js / Node-API inspired by `pybind11`
 
 Inspired by `pybind11` and `embind`, in turn inspired by the groundbreaking `Boost.Python`.
