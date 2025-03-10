@@ -35,5 +35,5 @@ NOBIND_MODULE(hello, m) {
   m.def<&power>("pow");
   m.def<&hello>("hello");
   m.def<Hello>("Hello").cons<std::string &>().def<&Hello::Id>("id").def<&Hello::Greet>("greet");
-  m.def<handleMonster>("handleMonster");
+  m.def<&handleMonster>("handleMonster");
 }
