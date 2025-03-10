@@ -19,7 +19,7 @@ struct MonsterDefinition {
 
   // The easiest is to copy the object.
   // If you use a pointer or a reference, it will point to the object held
-  // by the calling JavaScript. nobind will protect it from the GC for the
+  // by the calling JavaScript. nobind can protect it from the GC for the
   // duration of the call itself. If you want to keep this on the C++ side,
   // you will have to protect it yourself by adding a
   // Napi::ObjectReference. In this case the structure won't be
