@@ -774,6 +774,23 @@ When encountering compilation errors, start with this quick checklist:
 
   You most probably have multiple definitions for the same class.
 
+### Keeping pointers to objects received from JavaScript
+
+`nobind17` will automatically protect objects coming from JavaScript from the garbage collector for the duration of each call - including asynchronous calls. However if the C++ code intends to keep a pointer to an object received from JavaScript for latest use, it must ensure that this object will stay protected from the garbage collector. There is a example in `example/monster_ptr.h` which handles this case. C++ will receive a non-copyconstuctible `Napi::Reference` that it must keep for as long as the object is used.
+
+### Parsing structures
+
+A very common pattern in JavaScript, inspired by the `kwargs` feature in Python, is to call a method using an object with named values. You can check the `MonsterDefinition` implementation in `./example` for an example on how to transform a structure containing optional values. The transformation itself is implemented in `monster.h` and includes a TypeScript definition.
+
+To run the example, type:
+
+```shell
+cd example
+npm install
+node-gyp configure build
+npx tsx hello.ts
+```
+
 ## WASM compatbility
 
 Although building to WASM using `emnapi` should be possible, this is considered out of scope for this project and you should be using `embind` which implements the same functionality directly in the `emscripten` compiler without adding additional layers (C++/`nobind` to `node-addon-api`, then `node-addon-api`/`emnapi` to `embind`).

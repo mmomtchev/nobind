@@ -30,24 +30,17 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
-      - name: Enable REQUIRE_BASIC_FINALIZERS
-        run: echo MOCHA_TEST_BASIC_FINALIZERS=1 >> $GITHUB_ENV
-        if: matrix.platform == 'ubuntu-latest'
       - run: npm test
-      - name: Link the package (POSIX)
-        run: sudo npm link
-        if: runner.os != 'Windows'
-      - name: Link the package (Windows)
+      - name: Link the package
         run: npm link
-        if: runner.os == 'Windows'
       - name: Check the example
         run: |
           cd example
-          npm install node-gyp
+          npm install --ignore-scripts
           npm link nobind17
-          cp node_modules/node-addon-api/except.gypi .
           npx node-gyp configure build
           node -p "require('./build/Release/hello.node').hello('Garga')"
+          npx tsx hello.ts
         shell: bash
 
 
