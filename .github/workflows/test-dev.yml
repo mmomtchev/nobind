@@ -40,7 +40,7 @@ jobs:
       - name: Check the example
         run: |
           cd example
-          npm install
+          npm install --ignore-scripts
           npm link nobind17
           cp node_modules/node-addon-api/except.gypi .
           npx node-gyp configure build -v
