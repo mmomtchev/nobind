@@ -25,6 +25,9 @@
 
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
 #include <notypescript.h>
+#warning TypeScript is enabled
+#else
+#warning TypeScript is disabled
 #endif
 
 namespace Nobind {
