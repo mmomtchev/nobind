@@ -5,6 +5,7 @@ const path = require('node:path');
 const input = path.resolve(process.argv[2]);
 console.log('loading', input);
 const dll = require(input);
+console.log('module contents', dll, dll.__typescript);
 const ts = dll.__typescript;
 if (!ts) throw new Error('No TypeScript definitions found');
 const typings = path.resolve(process.argv[3]);
