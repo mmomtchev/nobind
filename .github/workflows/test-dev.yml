@@ -41,6 +41,8 @@ jobs:
         run: |
           cd example
           npm install --ignore-scripts
+          npm link nobind17
+          cat node_modules/nobind17/package.json
           cp node_modules/node-addon-api/except.gypi .
           npx node-gyp configure build -v
           node -p "require('./build/Release/hello.node').hello('Garga')"
