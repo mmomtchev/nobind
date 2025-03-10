@@ -20,13 +20,12 @@
       'actions': [
         {
           'action_name': 'typescript_bindings',
-
           'inputs': [ '<(PRODUCT_DIR)/hello.node' ],
           'outputs': [ '<(PRODUCT_DIR)/hello.d.ts' ],
           'action': [
             'node',
             '-e',
-            '\'fs.writeFileSync("<(PRODUCT_DIR)/hello.d.ts", require("<(PRODUCT_DIR)/hello.node").__typescript)\''
+            '"fs.writeFileSync(\'<(PRODUCT_DIR)/hello.d.ts\', require(\'<(PRODUCT_DIR)/hello.node\').__typescript)"'
           ]
         }
       ]
