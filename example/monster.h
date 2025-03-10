@@ -21,8 +21,12 @@ struct MonsterDefinition {
   // If you use a pointer or a reference, it will point to the object held
   // by the calling JavaScript. nobind will protect it from the GC for the
   // duration of the call itself. If you want to keep this on the C++ side,
-  // you will have to protect it yourself.
+  // you will have to protect it yourself by adding a
+  // Napi::ObjectReference. In this case the structure won't be
+  // copy-constructible and you will have to use std::move()
   Hello greeter;
+
+  // Napi::ObjectReference greeter_gc_guard;
 };
 
 MonsterDefinition handleMonster(MonsterDefinition v);
@@ -90,6 +94,10 @@ Nobind::TypemapOverrides::FromJS<MonsterDefinition>::FromJS(Napi::Value val) {
     throw Napi::TypeError::New(env, std::string{"Invalid feature: "} + str_feature);
 
   val_.greeter = Nobind::Typemap::FromJS<Hello>(obj.Get("greeter")).Get();
+
+  // GC protection example, as long as this object exists, the GC
+  // won't destroy the underlying object
+  // val_.greeter_gc_guard = Napi::Persistent(obj.Get("greeter"));
 }
 
 // Implement the construction of the JS struct here
