@@ -68,24 +68,19 @@ Nobind::TypemapOverrides::FromJS<MonsterDefinition>::FromJS(Napi::Value val) {
   if (!val.IsObject()) {
     throw Napi::TypeError::New(val.Env(), "Expected an object");
   }
+  Napi::Object obj = val.ToObject();
 
-  Napi::Value js_name = val.ToObject().Get("name");
-  if (!js_name.IsString()) {
-    throw Napi::TypeError::New(val.Env(), "name must be a string");
-  }
-  val_.name = Nobind::Typemap::FromJS<std::string>(js_name).Get();
+  val_.name = Nobind::Typemap::FromJS<std::string>(obj.Get("name")).Get();
+  val_.eyes = Nobind::Typemap::FromJS<unsigned>(obj.Get("eyes")).Get();
 
-  Napi::Value js_eyes = val.ToObject().Get("eyes");
-  val_.eyes = Nobind::Typemap::FromJS<unsigned>(js_eyes).Get();
-
-  Napi::Value js_fangs = val.ToObject().Get("fangs");
+  Napi::Value js_fangs = obj.Get("fangs");
   if (js_fangs.IsUndefined()) {
     val_.fangs = false;
   } else {
     val_.fangs = Nobind::Typemap::FromJS<bool>(js_fangs).Get();
   }
 
-  Napi::Value js_feature = val.ToObject().Get("feature");
+  Napi::Value js_feature = obj.Get("feature");
   std::string str_feature = Nobind::Typemap::FromJS<std::string>(js_feature).Get();
   if (str_feature == "claws")
     val_.feature = MonsterDefinition::CLAWS;
@@ -94,8 +89,7 @@ Nobind::TypemapOverrides::FromJS<MonsterDefinition>::FromJS(Napi::Value val) {
   else
     throw Napi::TypeError::New(env, std::string{"Invalid feature: "} + str_feature);
 
-  Napi::Value js_greeter = val.ToObject().Get("greeter");
-  val_.greeter = Nobind::Typemap::FromJS<Hello>(js_greeter).Get();
+  val_.greeter = Nobind::Typemap::FromJS<Hello>(obj.Get("greeter")).Get();
 }
 
 // Implement the construction of the JS struct here
