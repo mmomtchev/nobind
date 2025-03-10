@@ -43,7 +43,7 @@ jobs:
           npm install
           npm link nobind17
           cp node_modules/node-addon-api/except.gypi .
-          npx node-gyp configure build
+          npx node-gyp configure build -v
           node -p "require('./build/Release/hello.node').hello('Garga')"
           npx tsx hello.ts
         shell: bash
