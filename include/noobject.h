@@ -608,6 +608,7 @@ template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { retu
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
 template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() noexcept {
+  NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locking\n");
   async_lock.lock();
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked\n");
 }
