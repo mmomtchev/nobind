@@ -8,6 +8,7 @@
 #include <iostream>
 #include <nonapi.h>
 #include <numeric>
+#include <thread>
 #include <tuple>
 #include <type_traits>
 
@@ -27,6 +28,7 @@ struct BaseEnvInstanceData {
 #ifndef NOBIND_NO_OBJECT_STORE
   ObjectStore<void *> _Nobind_object_store;
 #endif
+  std::thread::id js_thread;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
 };
@@ -127,9 +129,9 @@ public:
   CLASS *Get();
 #ifndef NOBIND_NO_ASYNC_LOCKING
   // Acquire the async lock (may block)
-  void Lock() noexcept;
+  void Lock() NOBIND_NOEXCEPT;
   // Release the async lock
-  void Unlock() noexcept;
+  void Unlock() NOBIND_NOEXCEPT;
 #endif
 
   // Constructor wrapper, these are only a pair - there are no pointers to constructors in C++
@@ -607,12 +609,32 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::CheckInstance(
 template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { return self; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() noexcept {
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() NOBIND_NOEXCEPT {
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locking\n");
+#ifdef NOBIND_THROW_ON_EVENT_LOOP_BLOCK
+  Napi::Env env = this->Env();
+  auto instance = env.GetInstanceData<BaseEnvInstanceData>();
+  if (instance->js_thread == std::this_thread::get_id()) {
+    bool acquired = async_lock.try_lock();
+    if (acquired) {
+      NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked on the main thread w/o contention\n");
+      return;
+    } else {
+#ifdef DEBUG
+      std::string type = NobindDebugInstance::Demangle<CLASS>();
+#else
+      static const std::string type = "Enable DEBUG mode to see the object type"s;
+#endif
+      std::ostringstream this_ptr;
+      this_ptr << std::hex << this;
+      throw Napi::Error::New(env, "Will have to block the event loop for ["s + type + "] "s + this_ptr.str());
+    }
+  }
+#endif
   async_lock.lock();
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked\n");
 }
-template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() noexcept {
+template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Unlock() NOBIND_NOEXCEPT {
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Unlocking\n");
   async_lock.unlock();
 }
@@ -814,11 +836,11 @@ public:
   NOBIND_INLINE T &Get() { return *val_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() noexcept {
+  NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
     if (wrapper_)
       wrapper_->Lock();
   }
-  NOBIND_INLINE void Unlock() noexcept {
+  NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -866,11 +888,11 @@ public:
   NOBIND_INLINE T *Get() { return val_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() noexcept {
+  NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
     if (wrapper_)
       wrapper_->Lock();
   }
-  NOBIND_INLINE void Unlock() noexcept {
+  NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -929,11 +951,11 @@ public:
   NOBIND_INLINE T Get() { return *object_; }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() noexcept {
+  NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
     if (wrapper_)
       wrapper_->Lock();
   }
-  NOBIND_INLINE void Unlock() noexcept {
+  NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
     if (wrapper_)
       wrapper_->Unlock();
   }

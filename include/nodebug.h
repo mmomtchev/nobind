@@ -90,3 +90,9 @@ using NobindDebugInstance = NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_o
 #define NOBIND_VERBOSE(...)
 #define NOBIND_VERBOSE_TYPE(...)
 #endif
+
+#ifdef NOBIND_THROW_ON_EVENT_LOOP_BLOCK
+#define NOBIND_NOEXCEPT
+#else
+#define NOBIND_NOEXCEPT noexcept
+#endif
