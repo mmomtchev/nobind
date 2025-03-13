@@ -3,7 +3,9 @@
 #ifndef _MSC_VER
 #include <cxxabi.h>
 #endif
+#include <sstream>
 #include <string>
+#include <thread>
 
 using namespace std::literals::string_literals;
 
@@ -46,8 +48,13 @@ template <const char *...OPTS> struct NobindDebug {
     if (Enabled<OPT>()) {
       va_list args;
       va_start(args, fmt);
+
       std::string type = Demangle<T>();
-      std::printf("[%s : %p] ", type.c_str(), obj);
+
+      std::ostringstream tid;
+      tid << std::this_thread::get_id();
+
+      std::printf("[%s : %p (tid %s)] ", type.c_str(), obj, tid.str().c_str());
       std::vprintf(fmt, args);
     }
   }
@@ -83,4 +90,10 @@ using NobindDebugInstance = NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_o
 #define NOBIND_DEBUG_INIT
 #define NOBIND_VERBOSE(...)
 #define NOBIND_VERBOSE_TYPE(...)
+#endif
+
+#ifdef NOBIND_THROW_ON_EVENT_LOOP_BLOCK
+#define NOBIND_NOEXCEPT
+#else
+#define NOBIND_NOEXCEPT noexcept
 #endif

@@ -15,7 +15,7 @@ using namespace std::literals::string_literals;
 
 namespace Nobind {
 
-NOBIND_INLINE void CheckArgLength(Napi::Env env, size_t expected, size_t actual) {
+inline void CheckArgLength(Napi::Env env, size_t expected, size_t actual) {
   if (actual != expected) {
     std::string msg = "Expected "s + std::to_string(expected) + " arguments, got "s + std::to_string(actual);
     throw Napi::TypeError::New(env, msg);

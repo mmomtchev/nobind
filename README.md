@@ -721,7 +721,7 @@ There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/
     const data: DataType = await object.retrieveData();
     object.useData();
     ```
-    In this case the interpreter will yield the current context.
+    In this case the interpreter will yield the current context. A very useful feature for debugging this type of problem is the `NOBIND_THROW_ON_EVENT_LOOP_BLOCK` macro which will automatically throw is this situation arises. Note that throwing in the mutex is currently not supported, which means that the object will be left in a unconsistent state. This shouild not be used in production code. It is meant as a debugging aid to identify JS code which creates this situation.
 
 * If the user code launches two asynchronous operations involving the same object, they will run sequentially as expected. However, the second operation will sit waiting on the background thread pool which has a limited size. If the background pool has only 4 threads - the default Node.js value - launching 4 operations on the same object will lead to starvation of the thread pool. This is a good starting point for learning more: [Increase Node JS Performance With Libuv Thread Pool](https://dev.to/bleedingcode/increase-node-js-performance-with-libuv-thread-pool-5h10).
 
