@@ -5,6 +5,7 @@
 #endif
 #include <sstream>
 #include <string>
+#include <thread>
 
 using namespace std::literals::string_literals;
 
