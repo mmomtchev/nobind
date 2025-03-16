@@ -713,14 +713,14 @@ There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/
   * If a the user code calls asynchronously a method which uses a C++ object - acquiring the lock on this object - any subsequent synchronous calls involving the same object will block the event loop until the first operations completes:
     ```typescript
     // Launching the async operation will lock the object
-    const data: Promise<DataType> = object.retrieveData();
+    const data: Promise<DataType> = object.slowAsyncOp();
     // This will block the event loop until the first opertion completes
-    object.useData();
+    object.doSomeThingElse();
     ```
     This is impossible to avoid, as after launching the first operation, the interpreter will continue to synchronously execute the JS code and it will require to synchronously access the locked `object`. This however will have an identical behaviour without blocking the event loop:
     ```typescript
-    const data: DataType = await object.retrieveData();
-    object.useData();
+    const data: DataType = await object.slowAsyncOp();
+    object.doSomeThingElse();
     ```
     In this case the interpreter will yield the current context. A very useful feature for debugging this type of problem is the `NOBIND_THROW_ON_EVENT_LOOP_BLOCK` macro which will automatically throw is this situation arises. Because throwing in the mutex is currently not supported, this means that the object will be left in a unconsistent state. This should not be used in production code. It is meant as a debugging aid to identify JS code which creates this situation. There is a softer solution, which will also produce a stack trace, but without throwing. This is is safe to use in production code and it will simply print a warning message to the console - define `NOBIND_WARN_ON_EVENT_LOOP_BLOCK` to enable it.
 
