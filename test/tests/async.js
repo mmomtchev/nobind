@@ -91,4 +91,14 @@ describe('class method', () => {
       // @ts-expect-error
       .then(() => assert.isRejected(o.greet(2), /Expected a string/));
   });
+
+  describe('duplex definitions', () => {
+    it('async versions', () =>
+      assert.isFulfilled(dll.helloDuplexAsync('test')).then((r) => assert.isString(r))
+    );
+
+    it('sync versions', () => {
+      assert.isString(dll.helloDuplexSync('test'));
+    });
+  });
 });
