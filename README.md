@@ -714,7 +714,7 @@ There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/
     ```typescript
     // Launching the async operation will lock the object
     const data: Promise<DataType> = object.slowAsyncOp();
-    // This will block the event loop until the first opertion completes
+    // This will block the event loop until the first operation completes
     object.doSomeThingElse();
     ```
     This is impossible to avoid, as after launching the first operation, the interpreter will continue to synchronously execute the JS code and it will require to synchronously access the locked `object`. This however will have an identical behaviour without blocking the event loop:
