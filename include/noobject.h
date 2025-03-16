@@ -611,7 +611,7 @@ template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { retu
 #ifndef NOBIND_NO_ASYNC_LOCKING
 template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() NOBIND_NOEXCEPT {
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locking\n");
-#ifdef NOBIND_THROW_ON_EVENT_LOOP_BLOCK
+#if defined(NOBIND_THROW_ON_EVENT_LOOP_BLOCK) or defined(NOBIND_WARN_ON_EVENT_LOOP_BLOCK)
   Napi::Env env = this->Env();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   if (instance->js_thread == std::this_thread::get_id()) {
@@ -627,7 +627,18 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() NOBIND_
 #endif
       std::ostringstream this_ptr;
       this_ptr << std::hex << this;
-      throw Napi::Error::New(env, "Will have to block the event loop for ["s + type + "] "s + this_ptr.str());
+      std::string msg = "Will have to block the event loop for ["s + type + "] "s + this_ptr.str() +
+                        ", object is locked by a background async thread.";
+      auto err = Napi::Error::New(env, msg);
+#ifdef NOBIND_THROW_ON_EVENT_LOOP_BLOCK
+      throw err;
+#endif
+#ifdef NOBIND_WARN_ON_EVENT_LOOP_BLOCK
+      Napi::Object err_js = err.Value().ToObject();
+      Napi::Object stack_js = err_js.Get("stack").ToObject();
+      Napi::String output = stack_js.Get("toString").As<Napi::Function>().Call(stack_js, 0, nullptr).ToString();
+      std::cerr << output.Utf8Value() << std::endl;
+#endif
     }
   }
 #endif
