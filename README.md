@@ -712,8 +712,9 @@ There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/
 `nobind17@2` introduces automatic async locking. The built-in typemaps for object types will lock all the passed objects to any function for the duration of the call. This will automatically prevent reentrance of class objects. This however has three very important caveats:
   * If a the user code calls asynchronously a method which uses a C++ object - acquiring the lock on this object - any subsequent synchronous calls involving the same object will block the event loop until the first operations completes:
     ```typescript
-    const data: Promise<DataType> = object.retrieveData(); // async
-    // This will block the event loop until the first opertion completes:
+    // Launching the async operation will lock the object
+    const data: Promise<DataType> = object.retrieveData();
+    // This will block the event loop until the first opertion completes
     object.useData();
     ```
     This is impossible to avoid, as after launching the first operation, the interpreter will continue to synchronously execute the JS code and it will require to synchronously access the locked `object`. This however will have an identical behaviour without blocking the event loop:
