@@ -265,7 +265,7 @@ Building with C++ exceptions enabled is mandatory.
 
 Methods can be made to run in a background thread from the `libuv` thread pool and to return a `Promise` to be resolved with the returned value:
 
-```js
+```cpp
 m.def<Hello>("Hello")
   .def<&Hello::Greet, Nobind::ReturnAsync>("greetAsync");
 ```
@@ -273,6 +273,13 @@ m.def<Hello>("Hello")
 Everything is fully automatic. Raising a C++ exception will reject the `Promise`.
 
 Enabling async mode will allow the JS user to potentially call the C++ method while a previous invocation is still running. If the C++ method is not fully reentrant, a wrapper with a lock mechanism should be implemented.
+
+Specifying two names will automatically create both a sync and an async version. Do not add `Nobind::ReturnAsync` in this case:
+
+```cpp
+m.def<Hello>("Hello")
+  .def<&Hello::Greet>("greetSync", "greetAsync");
+```
 
 ### `nullptr`
 

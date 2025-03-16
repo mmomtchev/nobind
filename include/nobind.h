@@ -85,6 +85,16 @@ public:
     return *this;
   }
 
+  // Global function / sync+async shortcut
+  template <auto OBJECT, const ReturnAttribute &RET = ReturnDefault>
+  std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(OBJECT)>>, Module<MODULE>> &
+  def(const char *name_sync, const char *name_async) {
+    static_assert(!RET.isAsync(), "Do not specify async with the duplex definition");
+    def<OBJECT, RET>(name_sync);
+    def<OBJECT, RetWithAsync<RET>>(name_async);
+    return *this;
+  }
+
   // Global getter/setter
   template <auto *OBJECT, const PropertyAttribute &PROP = ReadWrite>
   std::enable_if_t<!std::is_function_v<std::remove_pointer_t<decltype(OBJECT)>>, Module<MODULE> &>

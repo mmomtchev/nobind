@@ -684,6 +684,16 @@ public:
     return *this;
   }
 
+  // Instance class method / sync+async shortcut
+  template <auto MEMBER, const ReturnAttribute &RET = ReturnDefault, typename NAME = const char *>
+  std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>, ClassDefinition &> def(NAME name_sync,
+                                                                                               NAME name_async) {
+    static_assert(!RET.isAsync(), "Do not specify async with the duplex definition");
+    def<MEMBER, RET>(name_sync);
+    def<MEMBER, RetWithAsync<RET>>(name_async);
+    return *this;
+  }
+
   // Instance class getter/setter
   template <auto CLASS::*MEMBER, const PropertyAttribute &PROP = ReadWrite, typename NAME = const char *>
   std::enable_if_t<std::is_member_object_pointer_v<decltype(MEMBER)>, ClassDefinition &> def(NAME name) {
@@ -719,6 +729,16 @@ public:
     class_typescript_types_ += typescript_types;
 #endif
 
+    return *this;
+  }
+
+  // Static class method / sync+async shortcut
+  template <auto *MEMBER, const ReturnAttribute &RET = ReturnDefault, typename NAME = const char *>
+  std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, ClassDefinition &>
+  def(NAME name_sync, NAME name_async) {
+    static_assert(!RET.isAsync(), "Do not specify async with the duplex definition");
+    def<MEMBER, RET>(name_sync);
+    def<MEMBER, RetWithAsync<RET>>(name_async);
     return *this;
   }
 

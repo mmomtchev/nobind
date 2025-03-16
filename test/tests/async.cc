@@ -14,10 +14,13 @@ NOBIND_MODULE(async, m) {
   m.def<&power, Nobind::ReturnAsync>("pow");
   m.def<&hello, Nobind::ReturnAsync>("hello");
   m.def<&nothing, Nobind::ReturnAsync>("nothing");
+  m.def<&hello>("helloDuplexSync", "helloDuplexAsync");
   m.def<Hello>("Hello")
       .cons<std::string &>()
       .def<&Hello::Id, Nobind::ReturnAsync>("get_id")
       .def<&Hello::Greet, Nobind::ReturnAsync>("greet")
+      .def<&Hello::Greet>("greetDuplexSync", "greetDuplexAsync")
       .def<&Hello::nothing, Nobind::ReturnAsync>("nothing")
-      .def<&Hello::Factory, factoryAttrs>("factory");
+      .def<&Hello::Factory, factoryAttrs>("factory")
+      .def<&Hello::Factory, Nobind::ReturnOwned>("factoryDuplexSync", "factoryDuplexAsync");
 }

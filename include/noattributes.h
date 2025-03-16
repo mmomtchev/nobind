@@ -103,6 +103,11 @@ constexpr ReturnAttribute ReturnSync = ReturnAttribute(ReturnAttribute::Sync);
 constexpr ReturnAttribute ReturnAsync = ReturnAttribute(ReturnAttribute::Async);
 
 /**
+ * constexpr template to add ReturnAsync to a ReturnAttribute
+ */
+template <const ReturnAttribute &RET> constexpr ReturnAttribute RetWithAsync = Nobind::ReturnAsync | RET;
+
+/**
  * This method can return nullptr without raising an exception
  */
 constexpr ReturnAttribute ReturnNullAccept = ReturnAttribute(ReturnAttribute::Allowed);
