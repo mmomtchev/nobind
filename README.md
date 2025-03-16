@@ -712,16 +712,19 @@ There is an example in [`iterator.cc`](https://github.com/mmomtchev/nobind/blob/
 `nobind17@2` introduces automatic async locking. The built-in typemaps for object types will lock all the passed objects to any function for the duration of the call. This will automatically prevent reentrance of class objects. This however has three very important caveats:
   * If a the user code calls asynchronously a method which uses a C++ object - acquiring the lock on this object - any subsequent synchronous calls involving the same object will block the event loop until the first operations completes:
     ```typescript
-    const data: Promise<DataType> = object.retrieveData(); // async
-    // This will block the event loop until the first opertion completes:
-    object.useData();
+    // Launching the async operation will lock the object
+    const data: Promise<DataType> = object.slowAsyncOp();
+    // This will block the event loop until the first operation completes
+    object.doSomeThingElse();
     ```
     This is impossible to avoid, as after launching the first operation, the interpreter will continue to synchronously execute the JS code and it will require to synchronously access the locked `object`. This however will have an identical behaviour without blocking the event loop:
     ```typescript
-    const data: DataType = await object.retrieveData();
-    object.useData();
+    const data: DataType = await object.slowAsyncOp();
+    object.doSomeThingElse();
     ```
-    In this case the interpreter will yield the current context.
+    In this case the interpreter will yield the current context. A very useful feature for debugging this type of problem is the `NOBIND_THROW_ON_EVENT_LOOP_BLOCK` macro which will automatically throw is this situation arises. Because throwing in the mutex is currently not supported, this means that the object will be left in a unconsistent state. This should not be used in production code. It is meant as a debugging aid to identify JS code which creates this situation. There is a softer solution, which will also produce a stack trace, but without throwing. This is is safe to use in production code and it will simply print a warning message to the console - define `NOBIND_WARN_ON_EVENT_LOOP_BLOCK` to enable it.
+
+    **Code that never mixes synchronous and asynchronous operations on the same objects will never encounter this problem.**
 
 * If the user code launches two asynchronous operations involving the same object, they will run sequentially as expected. However, the second operation will sit waiting on the background thread pool which has a limited size. If the background pool has only 4 threads - the default Node.js value - launching 4 operations on the same object will lead to starvation of the thread pool. This is a good starting point for learning more: [Increase Node JS Performance With Libuv Thread Pool](https://dev.to/bleedingcode/increase-node-js-performance-with-libuv-thread-pool-5h10).
 

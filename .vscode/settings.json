@@ -81,7 +81,9 @@
     "__config": "cpp",
     "list": "cpp",
     "__availability": "cpp",
-    "version": "cpp"
+    "version": "cpp",
+    "charconv": "cpp",
+    "forward_list": "cpp"
   },
   "editor.formatOnSave": true,
   "clang-format.executable": "clang-format",

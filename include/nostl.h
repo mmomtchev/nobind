@@ -28,7 +28,7 @@ public:
   }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() noexcept {
+  NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
     if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
       for (auto &el : tms_) {
         el.Lock();
@@ -36,7 +36,7 @@ public:
     }
   }
 
-  NOBIND_INLINE void Unlock() noexcept {
+  NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
     if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
       for (auto &el : tms_) {
         el.Unlock();
@@ -103,7 +103,7 @@ public:
   }
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
-  NOBIND_INLINE void Lock() noexcept {
+  NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
     if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
       for (auto &el : tms_) {
         el.second.Lock();
@@ -111,7 +111,7 @@ public:
     }
   }
 
-  NOBIND_INLINE void Unlock() noexcept {
+  NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
     if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
       for (auto &el : tms_) {
         el.second.Unlock();
