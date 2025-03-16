@@ -90,9 +90,8 @@ public:
   std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(OBJECT)>>, Module<MODULE>> &
   def(const char *name_sync, const char *name_async) {
     static_assert(!RET.isAsync(), "Do not specify async with the duplex definition");
-    constexpr static ReturnAttribute returnAsync = Nobind::ReturnAsync | RET;
     def<OBJECT, RET>(name_sync);
-    def<OBJECT, returnAsync>(name_async);
+    def<OBJECT, RetWithAsync<RET>>(name_async);
     return *this;
   }
 

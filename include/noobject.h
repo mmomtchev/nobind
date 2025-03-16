@@ -689,9 +689,8 @@ public:
   std::enable_if_t<std::is_member_function_pointer_v<decltype(MEMBER)>, ClassDefinition &> def(NAME name_sync,
                                                                                                NAME name_async) {
     static_assert(!RET.isAsync(), "Do not specify async with the duplex definition");
-    constexpr static ReturnAttribute returnAsync = RET | Nobind::ReturnAsync;
     def<MEMBER, RET>(name_sync);
-    def<MEMBER, returnAsync>(name_async);
+    def<MEMBER, RetWithAsync<RET>>(name_async);
     return *this;
   }
 
@@ -738,9 +737,8 @@ public:
   std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(MEMBER)>>, ClassDefinition &>
   def(NAME name_sync, NAME name_async) {
     static_assert(!RET.isAsync(), "Do not specify async with the duplex definition");
-    constexpr static ReturnAttribute returnAsync = RET | Nobind::ReturnAsync;
     def<MEMBER, RET>(name_sync);
-    def<MEMBER, returnAsync>(name_async);
+    def<MEMBER, RetWithAsync<RET>>(name_async);
     return *this;
   }
 
