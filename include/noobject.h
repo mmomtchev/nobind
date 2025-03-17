@@ -472,6 +472,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
       delete self;
+      Napi::MemoryManagement::AdjustExternalMemory(env, -sizeof(CLASS));
     } else {
       // Abstract classes cannot be deleted
       std::cerr << "Cannot delete an object of abstract or non destructible class "s + name << std::endl;
@@ -518,6 +519,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
         instance->_Nobind_object_store.Put(class_idx, self, this->Value());
         NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create new JS object with C++ object\n");
 #endif
+        Napi::MemoryManagement::AdjustExternalMemory(env, sizeof(CLASS));
         return;
       } catch (const Napi::Error &e) {
         // If there is only one constructor for the given number of arguments,
@@ -566,6 +568,10 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
   napi_value own = Napi::Boolean::New(env, OWNED);
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
 
+  if constexpr (OWNED) {
+    Napi::MemoryManagement::AdjustExternalMemory(env, sizeof(CLASS));
+  }
+
 #ifndef NOBIND_NO_OBJECT_STORE
   instance->_Nobind_object_store.Put(class_idx, obj, r);
 #endif
@@ -586,6 +592,10 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *o
   napi_value ext = Napi::External<CLASS>::New(env, const_cast<CLASS *>(obj));
   napi_value own = Napi::Boolean::New(env, false);
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
+
+  if constexpr (OWNED) {
+    Napi::MemoryManagement::AdjustExternalMemory(env, sizeof(CLASS));
+  }
 
 #ifndef NOBIND_NO_OBJECT_STORE
   instance->_Nobind_object_store.Put(class_idx, obj, r);
