@@ -1,6 +1,6 @@
 {
   "name": "nobind17",
-  "version": "2.0.0-rc.1",
+  "version": "2.0.0-rc.2",
   "description": "Next-gen binding framework for Node.js / Node-API",
   "main": "index.js",
   "scripts": {
