@@ -745,6 +745,12 @@ Similarly `Nobind::ReturnNested` references do not lock the parent object. Once 
 
 Async locking is another complex feature which certainly introduces new bugs and has a performance cost, it can be disabled by defining `NOBIND_NO_ASYNC_LOCKING`.
 
+### Interaction with the garbage collector statistics
+
+C++ objects are reported to the garbage collector with the initial size on creation. All objects visible by JS such as `Buffer`s are already managed by the garbage collector. Currently, the garbage collector does not see dynamic memory allocation after the object is created and any additional memory allocated by the underlying C++ libraries such as internal buffers is not reported at all. If this memory is known, it is possible to manually report it, but this is usually not trivial. Custom `ToJS` typemaps are the ideal place for this.
+
+The fact that not all allocated memory is reported to the garbage collector means that this memory won't be counted when estimating the heap size. If the heap size is tuned for the host's machine RAM, then C++ allocations can exceed this amount.
+
 ### R-value references
 
 `nobind17` does not have built-in support for R-value references. These cannot really be expressed in JavaScript because a C++ method that expects an R-value reference will have to destroy the passed value in the parent scope - something that cannot be expressed in JavaScript.

@@ -1,7 +1,7 @@
 {
   "env": {
     "projectDefines": [
-      "NOBIND_THROW_ON_EVENT_LOOP_BLOCK",
+      "NOBIND_WARN_ON_EVENT_LOOP_BLOCK",
       "DEBUG",
       "NAPI_EXPERIMENTAL",
       "NODE_ADDON_API_DISABLE_DEPRECATED",
