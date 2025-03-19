@@ -803,6 +803,18 @@ public:
     return *this;
   }
 
+#ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
+  // Custom TypeScript fragment
+  ClassDefinition &typescript_fragment(const char *fragment) {
+    class_typescript_types_ += fragment;
+    return *this;
+  }
+  ClassDefinition &typescript_fragment(const std::string &fragment) {
+    class_typescript_types_ += fragment;
+    return *this;
+  }
+#endif
+
   explicit ClassDefinition(const char *name, Napi::Env env, Napi::Object exports, size_t class_idx
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
                            ,
