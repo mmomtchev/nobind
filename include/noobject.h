@@ -472,7 +472,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
       delete self;
-      Napi::MemoryManagement::AdjustExternalMemory(env, -sizeof(CLASS));
+      Napi::MemoryManagement::AdjustExternalMemory(env, -static_cast<int64_t>(sizeof(CLASS)));
     } else {
       // Abstract classes cannot be deleted
       std::cerr << "Cannot delete an object of abstract or non destructible class "s + name << std::endl;
