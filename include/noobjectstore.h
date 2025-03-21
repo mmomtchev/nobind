@@ -1,8 +1,8 @@
 #include <nodebug.h>
 #include <nonapi.h>
 
-#include <map>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 namespace Nobind {
@@ -38,29 +38,46 @@ namespace Nobind {
 //   struct B { A obj; } b;
 // Pointers to b and b.obj will have the same value, but will be
 // treated differently depending on the type.
+//
 // Another case is a function which returns an object as being
 // of its base type and another one, which returns the same object but
 // as its derived type. We don't want to set the type in stone after
 // the first time the object has been returned.
+//
+// The second case, can create another potentially disastrous situation:
+// * A derived object has a second wrapper as its base class
+// * The derived object and its derived wrapper are GCed
+// * The second wrapper remains alive with a dangling pointer
+//   This object is a problem on its own
+// * Another object is created with the same pointer
+//   Now that wrapper points to a different object
+// * The new object and the new wrapper create a second
+//   object store item where there are now two identical
+//   pointers leading to inconsistent behaviour
+//
+// The object store problem is solved in the Put() method, but
+// currently there is no good solution for the dangling pointer.
 
 template <typename T> class ObjectStore {
   // Is this really needed?
   std::mutex lock;
-  std::vector<std::map<T, Napi::Reference<Napi::Value> *>> object_store;
+  std::vector<std::unordered_map<T, Napi::Reference<Napi::Value> *>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
-    if (object_store.at(class_idx).count(static_cast<T>(ptr)) == 0) {
+    auto &store = object_store.at(class_idx);
+    auto el = store.find(static_cast<T>(ptr));
+    if (el == store.end()) {
       NOBIND_VERBOSE(STORE, "not there\n");
       return Napi::Value{};
     }
 
-    auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
+    auto *ref = (*el).second;
     Napi::Value js = ref->Value();
     if (js.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "expired\n");
       // The chain is still here but the goat is nowhere to be found
-      object_store.at(class_idx).erase(static_cast<T>(ptr));
+      store.erase(static_cast<T>(ptr));
       delete ref;
       return Napi::Value{};
     }
@@ -79,9 +96,13 @@ public:
     std::lock_guard guard{lock};
 
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "create in object store\n");
+    auto &store = object_store.at(class_idx);
+
     auto ref = new Napi::Reference<Napi::Value>;
     *ref = Napi::Reference<Napi::Value>::New(js);
-    object_store.at(class_idx).insert({static_cast<T>(ptr), ref});
+    // insert or assign to replace existing elements, refer to the
+    // last part of the comment at the top
+    store.insert_or_assign(static_cast<T>(ptr), ref);
   }
 
   template <typename U> NOBIND_INLINE void Expire(size_t class_idx, U *ptr, Napi::Value js) {
@@ -103,8 +124,9 @@ public:
     // Are we expiring the right object?
     if (stored == js) {
       NOBIND_VERBOSE(STORE, "expiring\n");
-      auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
-      object_store.at(class_idx).erase(static_cast<T>(ptr));
+      auto &store = object_store.at(class_idx);
+      auto *ref = store.at(static_cast<T>(ptr));
+      store.erase(static_cast<T>(ptr));
       delete ref;
     } else {
       NOBIND_VERBOSE(STORE, "new object present\n");
