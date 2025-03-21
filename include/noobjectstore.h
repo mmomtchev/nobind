@@ -1,8 +1,8 @@
 #include <nodebug.h>
 #include <nonapi.h>
 
-#include <map>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 namespace Nobind {
@@ -61,21 +61,23 @@ namespace Nobind {
 template <typename T> class ObjectStore {
   // Is this really needed?
   std::mutex lock;
-  std::vector<std::map<T, Napi::Reference<Napi::Value> *>> object_store;
+  std::vector<std::unordered_map<T, Napi::Reference<Napi::Value> *>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
-    if (object_store.at(class_idx).count(static_cast<T>(ptr)) == 0) {
+    auto &store = object_store.at(class_idx);
+    auto el = store.find(static_cast<T>(ptr));
+    if (el == store.end()) {
       NOBIND_VERBOSE(STORE, "not there\n");
       return Napi::Value{};
     }
 
-    auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
+    auto *ref = (*el).second;
     Napi::Value js = ref->Value();
     if (js.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "expired\n");
       // The chain is still here but the goat is nowhere to be found
-      object_store.at(class_idx).erase(static_cast<T>(ptr));
+      store.erase(static_cast<T>(ptr));
       delete ref;
       return Napi::Value{};
     }
@@ -94,13 +96,13 @@ public:
     std::lock_guard guard{lock};
 
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "create in object store\n");
-    if (object_store.at(class_idx).count(static_cast<T>(ptr)) > 0) {
-      // Kludge for solving the duplicate pointer problem from the comments at the top
-      object_store.at(class_idx).erase(static_cast<T>(ptr));
-    }
+    auto &store = object_store.at(class_idx);
+
     auto ref = new Napi::Reference<Napi::Value>;
     *ref = Napi::Reference<Napi::Value>::New(js);
-    object_store.at(class_idx).insert({static_cast<T>(ptr), ref});
+    // insert or assign to replace existing elements, refer to the
+    // last part of the comment at the top
+    store.insert_or_assign(static_cast<T>(ptr), ref);
   }
 
   template <typename U> NOBIND_INLINE void Expire(size_t class_idx, U *ptr, Napi::Value js) {
@@ -122,8 +124,9 @@ public:
     // Are we expiring the right object?
     if (stored == js) {
       NOBIND_VERBOSE(STORE, "expiring\n");
-      auto *ref = object_store.at(class_idx).at(static_cast<T>(ptr));
-      object_store.at(class_idx).erase(static_cast<T>(ptr));
+      auto &store = object_store.at(class_idx);
+      auto *ref = store.at(static_cast<T>(ptr));
+      store.erase(static_cast<T>(ptr));
       delete ref;
     } else {
       NOBIND_VERBOSE(STORE, "new object present\n");
