@@ -72,7 +72,7 @@ template <typename T> class ObjectStore {
       return Napi::Value{};
     }
 
-    auto *ref = (*el).second;
+    auto *ref = el->second;
     Napi::Value js = ref->Value();
     if (js.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "expired\n");
@@ -102,7 +102,10 @@ public:
     *ref = Napi::Reference<Napi::Value>::New(js);
     // insert or assign to replace existing elements, refer to the
     // last part of the comment at the top
-    store.insert_or_assign(static_cast<T>(ptr), ref);
+    auto old = store.insert_or_assign(static_cast<T>(ptr), ref);
+    if (!old.second) {
+      delete ref;
+    }
   }
 
   template <typename U> NOBIND_INLINE void Expire(size_t class_idx, U *ptr, Napi::Value js) {
