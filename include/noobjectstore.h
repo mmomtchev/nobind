@@ -138,13 +138,14 @@ public:
     Expire(idx, const_cast<U *>(ptr), js);
   }
 
-  void Init(size_t s) { object_store.resize(s); }
+  void Init(size_t s) {
+    for (size_t i = 0; i < s; i++)
+      object_store.emplace_back();
+  }
 
   void Flush() {
     NOBIND_VERBOSE(STORE, "flushing object store\n");
-    for (auto &type : object_store) {
-      type.clear();
-    }
+    object_store.clear();
   }
 };
 } // namespace Nobind
