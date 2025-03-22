@@ -139,13 +139,14 @@ public:
   }
 
   void Init(size_t s) {
-    for (size_t i = 0; i <= s; i++)
+    for (size_t i = 0; i < s; i++)
       object_store.emplace_back();
   }
 
   void Flush() {
     NOBIND_VERBOSE(STORE, "flushing object store\n");
-    object_store.clear();
+    for (auto &store : object_store)
+      store.clear();
   }
 };
 } // namespace Nobind
