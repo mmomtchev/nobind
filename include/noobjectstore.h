@@ -61,7 +61,7 @@ namespace Nobind {
 template <typename T> class ObjectStore {
   // Is this really needed?
   std::mutex lock;
-  std::vector<std::unordered_map<T, Napi::Reference<Napi::Value> *>> object_store;
+  std::vector<std::unordered_map<T, Napi::Reference<Napi::Value>>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
@@ -72,13 +72,11 @@ template <typename T> class ObjectStore {
       return Napi::Value{};
     }
 
-    auto *ref = el->second;
-    Napi::Value js = ref->Value();
+    Napi::Value js = el->second.Value();
     if (js.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "expired\n");
       // The chain is still here but the goat is nowhere to be found
       store.erase(static_cast<T>(ptr));
-      delete ref;
       return Napi::Value{};
     }
 
@@ -98,14 +96,9 @@ public:
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "create in object store\n");
     auto &store = object_store.at(class_idx);
 
-    auto ref = new Napi::Reference<Napi::Value>;
-    *ref = Napi::Reference<Napi::Value>::New(js);
     // insert or assign to replace existing elements, refer to the
     // last part of the comment at the top
-    auto old = store.insert_or_assign(static_cast<T>(ptr), ref);
-    if (!old.second) {
-      delete ref;
-    }
+    store.insert_or_assign(static_cast<T>(ptr), Napi::Reference<Napi::Value>::New(js));
   }
 
   template <typename U> NOBIND_INLINE void Expire(size_t class_idx, U *ptr, Napi::Value js) {
@@ -128,9 +121,7 @@ public:
     if (stored == js) {
       NOBIND_VERBOSE(STORE, "expiring\n");
       auto &store = object_store.at(class_idx);
-      auto *ref = store.at(static_cast<T>(ptr));
       store.erase(static_cast<T>(ptr));
-      delete ref;
     } else {
       NOBIND_VERBOSE(STORE, "new object present\n");
     }
@@ -152,9 +143,6 @@ public:
   void Flush() {
     NOBIND_VERBOSE(STORE, "flushing object store\n");
     for (auto &type : object_store) {
-      for (auto &element : type) {
-        delete element.second;
-      }
       type.clear();
     }
   }
