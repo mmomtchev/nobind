@@ -148,7 +148,8 @@ public:
     std::lock_guard guard{lock};
 
     NOBIND_VERBOSE(STORE, "flushing object store\n");
-    for (auto &store : object_store) {
+    for (size_t i = 0; i < object_store.size(); i++) {
+      auto &store = object_store.at(i);
       while (!store.empty()) {
         store.erase(store.cbegin()->first);
       }
