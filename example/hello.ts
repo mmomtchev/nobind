@@ -2,7 +2,7 @@
 // module directly from TypeScript when it is transpiled to ES6
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const hello = require('./build/Release/hello.node') as typeof import('./build/Release/hello');
+const hello = require('./lib/hello.node') as typeof import('./lib/hello');
 
 const obj = new hello.Hello('Baba Yaga');
 console.log(obj.greet());
