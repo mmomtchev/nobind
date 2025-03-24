@@ -96,6 +96,9 @@ public:
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "create in object store\n");
     auto &store = object_store.at(class_idx);
 
+    auto v = store.begin() == store.end();
+    NOBIND_VERBOSE(STORE, "iterator cmp %lu\n", static_cast<unsigned long>(v));
+
     // insert or assign to replace existing elements, refer to the
     // last part of the comment at the top
     store.insert_or_assign(static_cast<T>(ptr), Napi::Reference<Napi::Value>::New(js));
@@ -151,8 +154,6 @@ public:
     for (size_t i = 0; i < object_store.size(); i++) {
       auto &store = object_store.at(i);
       NOBIND_VERBOSE(STORE, "size is %lu\n", static_cast<unsigned long>(store.size()));
-      auto v = store.begin() == store.end();
-      NOBIND_VERBOSE(STORE, "iterator cmp %lu\n", static_cast<unsigned long>(v));
 
       // while (store.size() > 0) {
       //   NOBIND_VERBOSE(STORE, "erasing object %p\n", store.cbegin()->first);
