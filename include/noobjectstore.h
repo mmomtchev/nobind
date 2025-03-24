@@ -84,6 +84,9 @@ template <typename T> class ObjectStore {
   }
 
 public:
+  ObjectStore(size_t s) : lock{}, object_store(s) {}
+  ObjectStore() = delete;
+
   template <typename U> Napi::Value Get(size_t class_idx, U *ptr) {
     std::lock_guard guard{lock};
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
@@ -137,14 +140,7 @@ public:
     Expire(idx, const_cast<U *>(ptr), js);
   }
 
-  void Init(size_t s) {
-    std::lock_guard guard{lock};
-
-    for (size_t i = 0; i < s; i++)
-      object_store.emplace_back();
-  }
-
-  void Flush() {
+  ~ObjectStore() {
     std::lock_guard guard{lock};
 
     NOBIND_VERBOSE(STORE, "flushing object store\n");
@@ -152,10 +148,10 @@ public:
       auto &store = object_store.at(i);
       NOBIND_VERBOSE(STORE, "size is %lu\n", static_cast<unsigned long>(store.size()));
 
-      // while (store.size() > 0) {
-      //   NOBIND_VERBOSE(STORE, "erasing object %p\n", store.cbegin()->first);
-      //   store.erase(store.cbegin()->first);
-      // }
+      while (store.size() > 0) {
+        NOBIND_VERBOSE(STORE, "erasing object %p\n", store.cbegin()->first);
+        store.erase(store.cbegin()->first);
+      }
     }
   }
 };
