@@ -150,7 +150,8 @@ public:
     NOBIND_VERBOSE(STORE, "flushing object store\n");
     for (size_t i = 0; i < object_store.size(); i++) {
       auto &store = object_store.at(i);
-      while (!store.empty()) {
+      while (store.size() > 0) {
+        NOBIND_VERBOSE(STORE, "erasing object %p\n", store.cbegin()->first);
         store.erase(store.cbegin()->first);
       }
     }
