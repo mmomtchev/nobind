@@ -42,8 +42,6 @@ jobs:
           node -p "require('./lib/hello.node').hello('Garga')"
           npx tsx hello.ts
         shell: bash
-        env:
-          NOBIND_DEBUG_STORE: 1
 
 
   options:
