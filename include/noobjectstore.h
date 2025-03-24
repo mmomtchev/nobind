@@ -146,7 +146,8 @@ public:
     NOBIND_VERBOSE(STORE, "flushing object store\n");
     for (size_t i = 0; i < object_store.size(); i++) {
       auto &store = object_store.at(i);
-      store.clear();
+      for (auto const &[key, val] : store)
+        store.erase(key);
     }
   }
 };
