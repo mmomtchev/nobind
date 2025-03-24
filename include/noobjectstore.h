@@ -64,7 +64,6 @@ template <typename T> class ObjectStore {
   std::vector<std::unordered_map<T, Napi::Reference<Napi::Value>>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
-    NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
     auto &store = object_store.at(class_idx);
     auto el = store.find(static_cast<T>(ptr));
     if (el == store.end()) {
@@ -87,6 +86,7 @@ template <typename T> class ObjectStore {
 public:
   template <typename U> Napi::Value Get(size_t class_idx, U *ptr) {
     std::lock_guard guard{lock};
+    NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
     return GetLocked(class_idx, ptr);
   }
 
@@ -104,26 +104,25 @@ public:
   template <typename U> NOBIND_INLINE void Expire(size_t class_idx, U *ptr, Napi::Value js) {
     std::lock_guard guard{lock};
 
-    Napi::Value stored = GetLocked(class_idx, ptr);
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Expire from object store: ");
+    Napi::Value stored = GetLocked(class_idx, ptr);
     if (stored.IsEmpty()) {
-      NOBIND_VERBOSE(STORE, "already expired\n");
       return;
     }
     if (js.IsEmpty()) {
       // If the stored reference is not empty and this one is empty
       // (which can happen only without basic finalizers), the only
       // explanation is that the stored object is a new wrapper
-      NOBIND_VERBOSE(STORE, "already expired (no basic finalizers)");
+      NOBIND_VERBOSE_TYPE(STORE, U, ptr, "already expired (no basic finalizers)");
       return;
     }
     // Are we expiring the right object?
     if (stored == js) {
-      NOBIND_VERBOSE(STORE, "expiring\n");
+      NOBIND_VERBOSE_TYPE(STORE, U, ptr, "expiring\n");
       auto &store = object_store.at(class_idx);
       store.erase(static_cast<T>(ptr));
     } else {
-      NOBIND_VERBOSE(STORE, "new object present\n");
+      NOBIND_VERBOSE_TYPE(STORE, U, ptr, "new object present\n");
     }
   }
 
@@ -145,8 +144,10 @@ public:
 
   void Flush() {
     NOBIND_VERBOSE(STORE, "flushing object store\n");
-    while (!object_store.empty())
-      object_store.pop_back();
+    for (size_t i = 0; i < object_store.size(); i++) {
+      auto &store = object_store.at(i);
+      store.clear();
+    }
   }
 };
 } // namespace Nobind
