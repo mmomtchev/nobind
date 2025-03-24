@@ -138,11 +138,15 @@ public:
   }
 
   void Init(size_t s) {
+    std::lock_guard guard{lock};
+
     for (size_t i = 0; i < s; i++)
       object_store.emplace_back();
   }
 
   void Flush() {
+    std::lock_guard guard{lock};
+
     NOBIND_VERBOSE(STORE, "flushing object store\n");
     for (auto &store : object_store) {
       for (auto const &[key, val] : store)
