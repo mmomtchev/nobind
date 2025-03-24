@@ -26,7 +26,7 @@ struct EmptyEnvInstanceData {};
 
 struct BaseEnvInstanceData {
 #ifndef NOBIND_NO_OBJECT_STORE
-  ObjectStore<void *> _Nobind_object_store;
+  ObjectStore<void *> *_Nobind_object_store;
 #endif
   std::thread::id js_thread;
   // Per-environment constructors for all proxied types
@@ -466,7 +466,12 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 #endif
 #ifndef NOBIND_NO_OBJECT_STORE
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  instance->_Nobind_object_store.Expire(class_idx, self, this->Value());
+  if (instance->_Nobind_object_store != nullptr)
+    instance->_Nobind_object_store->Expire(class_idx, self, this->Value());
+  else
+    // Finalizers seem to run after the environment cleanup hook
+    // Two questions: how and why?
+    NOBIND_VERBOSE(STORE, "ObjectStore has already been finalized\n");
 #endif
 
   if (owned && self != nullptr) {
@@ -516,7 +521,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
       try {
         (this->*ctor)(info);
 #ifndef NOBIND_NO_OBJECT_STORE
-        instance->_Nobind_object_store.Put(class_idx, self, this->Value());
+        instance->_Nobind_object_store->Put(class_idx, self, this->Value());
         NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create new JS object with C++ object\n");
 #endif
         Napi::MemoryManagement::AdjustExternalMemory(env, sizeof(CLASS));
@@ -559,7 +564,7 @@ template <bool OWNED>
 NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
 #ifndef NOBIND_NO_OBJECT_STORE
-  Napi::Value stored = instance->_Nobind_object_store.Get(class_idx, obj);
+  Napi::Value stored = instance->_Nobind_object_store->Get(class_idx, obj);
   if (!stored.IsEmpty())
     return stored;
 #endif
@@ -573,7 +578,7 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
   }
 
 #ifndef NOBIND_NO_OBJECT_STORE
-  instance->_Nobind_object_store.Put(class_idx, obj, r);
+  instance->_Nobind_object_store->Put(class_idx, obj, r);
 #endif
   return r;
 }
@@ -583,7 +588,7 @@ template <bool OWNED>
 NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *obj) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
 #ifndef NOBIND_NO_OBJECT_STORE
-  Napi::Value stored = instance->_Nobind_object_store.Get(class_idx, obj);
+  Napi::Value stored = instance->_Nobind_object_store->Get(class_idx, obj);
   if (!stored.IsEmpty())
     return stored;
 #endif
@@ -598,7 +603,7 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, const CLASS *o
   }
 
 #ifndef NOBIND_NO_OBJECT_STORE
-  instance->_Nobind_object_store.Put(class_idx, obj, r);
+  instance->_Nobind_object_store->Put(class_idx, obj, r);
 #endif
   return r;
 }

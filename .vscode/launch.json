@@ -90,6 +90,22 @@
       "externalConsole": false,
       "MIMode": "lldb",
       "setupCommands": []
+    },
+    {
+      "name": "(lldb) Launch example",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "/usr/local/bin/node",
+      "args": [
+        "${workspaceFolder}/example/node_modules/.bin/tsx",
+        "hello.ts"
+      ],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}/example",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "setupCommands": []
     }
   ]
 }

@@ -61,10 +61,9 @@ namespace Nobind {
 template <typename T> class ObjectStore {
   // Is this really needed?
   std::mutex lock;
-  std::vector<std::unordered_map<T, Napi::Reference<Napi::Value> *>> object_store;
+  std::vector<std::unordered_map<T, Napi::Reference<Napi::Value>>> object_store;
 
   template <typename U> Napi::Value GetLocked(size_t class_idx, U *ptr) {
-    NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
     auto &store = object_store.at(class_idx);
     auto el = store.find(static_cast<T>(ptr));
     if (el == store.end()) {
@@ -72,13 +71,11 @@ template <typename T> class ObjectStore {
       return Napi::Value{};
     }
 
-    auto *ref = (*el).second;
-    Napi::Value js = ref->Value();
+    Napi::Value js = el->second.Value();
     if (js.IsEmpty()) {
       NOBIND_VERBOSE(STORE, "expired\n");
       // The chain is still here but the goat is nowhere to be found
       store.erase(static_cast<T>(ptr));
-      delete ref;
       return Napi::Value{};
     }
 
@@ -87,8 +84,13 @@ template <typename T> class ObjectStore {
   }
 
 public:
+  explicit ObjectStore(size_t s) : lock{}, object_store(s) {}
+  ObjectStore() = delete;
+  ObjectStore(const ObjectStore &) = delete;
+
   template <typename U> Napi::Value Get(size_t class_idx, U *ptr) {
     std::lock_guard guard{lock};
+    NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Get from object store: ");
     return GetLocked(class_idx, ptr);
   }
 
@@ -98,38 +100,33 @@ public:
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "create in object store\n");
     auto &store = object_store.at(class_idx);
 
-    auto ref = new Napi::Reference<Napi::Value>;
-    *ref = Napi::Reference<Napi::Value>::New(js);
     // insert or assign to replace existing elements, refer to the
     // last part of the comment at the top
-    store.insert_or_assign(static_cast<T>(ptr), ref);
+    store.insert_or_assign(static_cast<T>(ptr), Napi::Reference<Napi::Value>::New(js));
   }
 
   template <typename U> NOBIND_INLINE void Expire(size_t class_idx, U *ptr, Napi::Value js) {
     std::lock_guard guard{lock};
 
-    Napi::Value stored = GetLocked(class_idx, ptr);
     NOBIND_VERBOSE_TYPE(STORE, U, ptr, "Expire from object store: ");
+    Napi::Value stored = GetLocked(class_idx, ptr);
     if (stored.IsEmpty()) {
-      NOBIND_VERBOSE(STORE, "already expired\n");
       return;
     }
     if (js.IsEmpty()) {
       // If the stored reference is not empty and this one is empty
       // (which can happen only without basic finalizers), the only
       // explanation is that the stored object is a new wrapper
-      NOBIND_VERBOSE(STORE, "already expired (no basic finalizers)");
+      NOBIND_VERBOSE_TYPE(STORE, U, ptr, "already expired (no basic finalizers)");
       return;
     }
     // Are we expiring the right object?
     if (stored == js) {
-      NOBIND_VERBOSE(STORE, "expiring\n");
+      NOBIND_VERBOSE_TYPE(STORE, U, ptr, "expiring\n");
       auto &store = object_store.at(class_idx);
-      auto *ref = store.at(static_cast<T>(ptr));
       store.erase(static_cast<T>(ptr));
-      delete ref;
     } else {
-      NOBIND_VERBOSE(STORE, "new object present\n");
+      NOBIND_VERBOSE_TYPE(STORE, U, ptr, "new object present\n");
     }
   }
 
@@ -144,15 +141,15 @@ public:
     Expire(idx, const_cast<U *>(ptr), js);
   }
 
-  void Init(size_t s) { object_store.resize(s); }
+  ~ObjectStore() {
+    std::lock_guard guard{lock};
 
-  void Flush() {
     NOBIND_VERBOSE(STORE, "flushing object store\n");
-    for (auto &type : object_store) {
-      for (auto &element : type) {
-        delete element.second;
+    for (auto &store : object_store) {
+      while (!store.empty()) {
+        NOBIND_VERBOSE(STORE, "erasing object %p\n", store.cbegin()->first);
+        store.erase(store.cbegin()->first);
       }
-      type.clear();
     }
   }
 };

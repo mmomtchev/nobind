@@ -50,12 +50,13 @@ public:
   ~Module() noexcept(false) {
 #ifndef NOBIND_NO_OBJECT_STORE
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
-    instance->_Nobind_object_store.Init(class_idx_);
+    instance->_Nobind_object_store = new ObjectStore<void *>(class_idx_);
     auto r = napi_add_env_cleanup_hook(
         env_,
         [](void *arg) {
           auto instance = static_cast<BaseEnvInstanceData *>(arg);
-          instance->_Nobind_object_store.Flush();
+          delete instance->_Nobind_object_store;
+          instance->_Nobind_object_store = nullptr;
         },
         instance);
     if (r != napi_ok) {

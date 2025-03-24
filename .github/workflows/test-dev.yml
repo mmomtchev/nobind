@@ -38,10 +38,12 @@ jobs:
           cd example
           npm install --ignore-scripts
           npm link nobind17
-          npx node-gyp configure build
-          node -p "require('./build/Release/hello.node').hello('Garga')"
+          npx node-gyp configure build --debug
+          node -p "require('./lib/hello.node').hello('Garga')"
           npx tsx hello.ts
         shell: bash
+        env:
+          NOBIND_DEBUG_STORE: 1
 
 
   options:
