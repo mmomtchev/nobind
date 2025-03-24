@@ -145,8 +145,8 @@ public:
 
   void Flush() {
     NOBIND_VERBOSE(STORE, "flushing object store\n");
-    for (auto i = object_store.begin(); i != object_store.end(); i++)
-      i->clear();
+    for (size_t i = 0; i < object_store.size(); i++)
+      object_store.at(i).clear();
   }
 };
 } // namespace Nobind
