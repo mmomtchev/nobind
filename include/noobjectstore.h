@@ -84,8 +84,9 @@ template <typename T> class ObjectStore {
   }
 
 public:
-  ObjectStore(size_t s) : lock{}, object_store(s) {}
+  explicit ObjectStore(size_t s) : lock{}, object_store(s) {}
   ObjectStore() = delete;
+  ObjectStore(const ObjectStore &) = delete;
 
   template <typename U> Napi::Value Get(size_t class_idx, U *ptr) {
     std::lock_guard guard{lock};
