@@ -151,7 +151,7 @@ public:
     for (size_t i = 0; i < object_store.size(); i++) {
       auto &store = object_store.at(i);
       NOBIND_VERBOSE(STORE, "size is %lu\n", static_cast<unsigned long>(store.size()));
-      auto v = store.cbegin() == store.cend();
+      auto v = store.begin() == store.end();
       NOBIND_VERBOSE(STORE, "iterator cmp %lu\n", static_cast<unsigned long>(v));
 
       // while (store.size() > 0) {
