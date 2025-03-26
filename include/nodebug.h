@@ -3,6 +3,7 @@
 #ifndef _MSC_VER
 #include <cxxabi.h>
 #endif
+#include <cstdarg>
 #include <sstream>
 #include <string>
 #include <thread>
