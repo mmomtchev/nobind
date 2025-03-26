@@ -26,7 +26,13 @@ template <const char *...OPTS> struct NobindDebug {
       }
     }
   }
-  template <typename U> static std::string Demangle() { return Demangle(typeid(U).name()); }
+  template <typename U> static std::string Demangle() {
+#if defined(_CPPRTTI) || defined(__GNUG__)
+    return Demangle(typeid(U).name());
+#else
+    return "[Compile with RTTI too see type information]"s;
+#endif
+  }
   // https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
   static std::string Demangle(const char *name) {
 #ifndef _MSC_VER
