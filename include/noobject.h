@@ -466,12 +466,13 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 #endif
 #ifndef NOBIND_NO_OBJECT_STORE
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  if (instance->_Nobind_object_store != nullptr)
+  if (instance->_Nobind_object_store != nullptr) {
     instance->_Nobind_object_store->Expire(class_idx, self, this->Value());
-  else
+  } else {
     // Finalizers seem to run after the environment cleanup hook
     // Two questions: how and why?
     NOBIND_VERBOSE(STORE, "ObjectStore has already been finalized\n");
+  }
 #endif
 
   if (owned && self != nullptr) {
