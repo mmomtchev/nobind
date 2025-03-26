@@ -828,3 +828,7 @@ node single configure <test>
 node single build
 node single run
 ```
+
+# Green Project
+
+Since now I am homeless and working exclusively off the grid, `nobind17` is one of the first green projects on Github, developed entirely on solar panels.
