@@ -27,7 +27,7 @@ template <const char *...OPTS> struct NobindDebug {
     }
   }
   template <typename U> static std::string Demangle() {
-#if defined(_CPPRTTI) || defined(__GNUG__)
+#if defined(_CPPRTTI) || defined(__GXX_RTTI)
     return Demangle(typeid(U).name());
 #else
     return "[Compile with RTTI too see type information]"s;
