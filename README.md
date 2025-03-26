@@ -832,3 +832,9 @@ node single run
 # Green Project
 
 Since now I am homeless and working exclusively off the grid, `nobind17` is one of the first green projects on Github, developed entirely on solar panels.
+
+I want to extend my gratitude to everyone who made this possible:
+ * [Github](https://github.com), who despite the fact that they are providing real-time information abount my usage patterns to the people extorting me, are also providing the necessary resources for continuous integration for free, as well as hosting the `npm` repository
+ * [Bback Market](https://backmarket.fr), who sold me an Apple Macbook M2 with lots of RAM and a larger SSD with a discount, despite the fact that they had to choose a unit with sticky keys
+ * [Apple](https://apple.com) for making such an incredibly power-efficient notebook computer that can be run off solar panels with ease
+ * And of course, the brilliant automative technician who converted my trusty Renault Master 2 to an RV and who sold it to me at a discount
