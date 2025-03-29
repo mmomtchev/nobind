@@ -35,8 +35,6 @@ struct BaseEnvInstanceData {
 
 template <typename T> struct EnvInstanceData : BaseEnvInstanceData, public T {};
 
-static const std::function<void(Napi::BasicEnv)> NobindNullFinalizer = [](Napi::BasicEnv) {};
-
 // The JS proxy object type
 template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectWrap<CLASS>> {
   template <typename T> friend class Typemap::FromJS;
@@ -436,7 +434,7 @@ private:
   }
 
   // Register a custom finalizer
-  NOBIND_INLINE void SetFinalizer(std::function<void(Napi::BasicEnv)> f) { finalizer = f; }
+  NOBIND_INLINE void SetFinalizer(std::function<void(Napi::BasicEnv, CLASS *self)> f) { finalizer = f; }
 
   // To look up the class constructor in the per-instance data
   static size_t class_idx;
@@ -449,7 +447,7 @@ private:
   // Should we destroy it in the destructor
   bool owned;
   // A custom finalizer to be called when destroying
-  std::function<void(Napi::BasicEnv)> finalizer;
+  std::function<void(Napi::BasicEnv, CLASS *self)> finalizer;
 #ifndef NOBIND_NO_ASYNC_LOCKING
   // The async reentrancy lock
   std::mutex async_lock;
@@ -481,7 +479,10 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
     NOBIND_VERBOSE(STORE, "ObjectStore has already been finalized\n");
 #endif
 
-  if (owned && self != nullptr) {
+  if (finalizer) {
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "running custom finalizer\n");
+    finalizer(env, self);
+  } else if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
       delete self;
       Napi::MemoryManagement::AdjustExternalMemory(env, -static_cast<int64_t>(sizeof(CLASS)));
@@ -499,7 +500,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 // * From C++ with a Napi::External<> pointer -> it must construct a proxy for this object
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
-    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info), finalizer(NobindNullFinalizer)
+    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info), finalizer()
 #ifndef NOBIND_NO_ASYNC_LOCKING
       ,
       async_lock{}
