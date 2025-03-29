@@ -13,8 +13,9 @@ namespace Typemap {
 // C++ can keep a copy of this shared_ptr, the deleter
 // will signal the JS GC that C++ is done with this object
 template <typename T> class FromJS<std::shared_ptr<T>> {
-  using OBJCLASS = NoObjectWrap<std::remove_cv_t<std::remove_reference_t<T>>>;
-  std::shared_ptr<T> val_;
+  using TYPE = std::remove_cv_t<std::remove_reference_t<T>>;
+  using OBJCLASS = NoObjectWrap<TYPE>;
+  std::shared_ptr<TYPE> val_;
   OBJCLASS *wrapper_;
 
 public:
@@ -22,9 +23,9 @@ public:
     static_assert(std::is_object_v<T> && !std::is_scalar_v<T>, "shared_ptr FromJS works only with objects");
     OBJCLASS::CheckInstance(val);
     wrapper_ = OBJCLASS::Unwrap(val.ToObject());
-    T *underlying = wrapper_->Get();
+    TYPE *underlying = wrapper_->Get();
     Napi::ObjectReference *persistent = new Napi::ObjectReference;
-    val_ = std::shared_ptr<T>(underlying, [persistent](void *p) {
+    val_ = std::shared_ptr<TYPE>(underlying, [persistent](void *p) {
       NOBIND_VERBOSE_TYPE(OBJECT, T, static_cast<T *>(p), "Finalizing shared_ptr passed to C++\n");
       // Deleting the last copy of the shared_ptr
       // will release the persistent

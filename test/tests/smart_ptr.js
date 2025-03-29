@@ -2,9 +2,14 @@ const { assert } = require('chai');
 
 describe('shared_ptr', () => {
   describe('take_shared_ptr', () => {
-    it('nominal', () => {
+    it('plain', () => {
       const o = new dll.Hello('Mulder');
       assert.isNumber(dll.takeSharedPtr(o));
+    });
+
+    it('const', () => {
+      const o = new dll.Hello('Mulder');
+      assert.isNumber(dll.takeConstSharedPtr(o));
     });
 
     it('exception', () => {
