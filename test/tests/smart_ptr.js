@@ -6,6 +6,12 @@ describe('shared_ptr', () => {
       const o = new dll.Hello('Mulder');
       assert.isNumber(dll.takeSharedPtr(o));
     });
+
+    it('exception', () => {
+      assert.throws(() => {
+        dll.takeSharedPtr({});
+      }, /Expected a Hello/);
+    });
   });
 
   describe('return_shared_ptr', () => {

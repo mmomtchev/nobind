@@ -67,7 +67,8 @@ public:
       // No need for shenanigans when we copy
       return OBJCLASS::template New<true>(env_, new T{*val_});
     } else {
-      // Keep the actual shared_ptr in the finalizer
+      // Keep a copy of the shared_ptr in the custom finalizer
+      // and wrap this as a normal pointer
       Napi::Value r = OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_.get());
       OBJCLASS *wrapper = OBJCLASS::Unwrap(r.ToObject());
       std::shared_ptr<T> *owner = new std::shared_ptr<T>(val_);
