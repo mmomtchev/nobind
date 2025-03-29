@@ -615,7 +615,7 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::CheckInstance(
   }
   Napi::Object obj = val.ToObject();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  if (!obj.InstanceOf(instance->_Nobind_cons[class_idx].Value())) {
+  if (name == NOBIND_NAME_NOT_INITIALIZED || !obj.InstanceOf(instance->_Nobind_cons[class_idx].Value())) {
     throw Napi::TypeError::New(env, "Expected a "s +
                                         (name != NOBIND_NAME_NOT_INITIALIZED ? name : "<unknown to nobind17 class>"s));
   }

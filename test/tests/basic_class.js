@@ -40,6 +40,15 @@ describe('methods', () => {
       o.greet(2);
     }, /Expected a string/);
   });
+
+  it('undeclared class', () => {
+    const o = new dll.Hello('Garga');
+    assert.throws(() => {
+      // TypeScript won't notice this error - the argument
+      // is of unknown type
+      dll.takeUndeclared(o);
+    }, 'Expected a <unknown to nobind17 class>');
+  });
 });
 
 describe('getters', () => {
