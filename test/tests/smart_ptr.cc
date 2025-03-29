@@ -10,7 +10,7 @@ std::shared_ptr<Hello> return_shared_ptr(const std::string &name) {
   return std::shared_ptr<Hello>(Hello::Factory(name));
 }
 
-NOBIND_MODULE(basic_class, m) {
+NOBIND_MODULE(smart_ptr, m) {
   m.def<Hello>("Hello")
       .cons<std::string &>()
       .def<&Hello::Id>("get_id")
@@ -19,4 +19,5 @@ NOBIND_MODULE(basic_class, m) {
       .def<&Hello::Factory>("factory");
 
   m.def<&take_shared_ptr>("takeSharedPtr");
+  m.def<&return_shared_ptr>("returnSharedPtr");
 }

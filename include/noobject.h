@@ -35,6 +35,8 @@ struct BaseEnvInstanceData {
 
 template <typename T> struct EnvInstanceData : BaseEnvInstanceData, public T {};
 
+static const std::function<void(Napi::BasicEnv)> NobindNullFinalizer = [](Napi::BasicEnv) {};
+
 // The JS proxy object type
 template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectWrap<CLASS>> {
   template <typename T> friend class Typemap::FromJS;
@@ -433,6 +435,9 @@ private:
     return returned;
   }
 
+  // Register a custom finalizer
+  NOBIND_INLINE void SetFinalizer(std::function<void(Napi::BasicEnv)> f) { finalizer = f; }
+
   // To look up the class constructor in the per-instance data
   static size_t class_idx;
   // For TypeScript
@@ -443,6 +448,8 @@ private:
   CLASS *self;
   // Should we destroy it in the destructor
   bool owned;
+  // A custom finalizer to be called when destroying
+  std::function<void(Napi::BasicEnv)> finalizer;
 #ifndef NOBIND_NO_ASYNC_LOCKING
   // The async reentrancy lock
   std::mutex async_lock;
@@ -492,7 +499,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 // * From C++ with a Napi::External<> pointer -> it must construct a proxy for this object
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
-    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info)
+    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info), finalizer(NobindNullFinalizer)
 #ifndef NOBIND_NO_ASYNC_LOCKING
       ,
       async_lock{}
