@@ -28,3 +28,11 @@ describe('shared_ptr', () => {
     });
   });
 });
+
+describe('unique_ptr', () => {
+  it('create and use unique_ptr from JS', () => {
+    const u = dll.returnUniquePtr('Mulder and Scully');
+    assert.instanceOf(u, dll.HelloUPtr);
+    assert.strictEqual(u.greet('Agents'), 'hello Agents Mulder and Scully');
+  });
+});

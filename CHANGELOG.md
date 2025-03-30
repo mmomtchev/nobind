@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Initial interaction with the garbage collector statistics - currently only for objects that do not grow once created (objects are reported to the GC with their initial size)
 -   Automatic support for C++ iterators via built-in helpers
 -   Basic smart pointers support
+-   Support for returning non-copy constructible objects from C++ by C++17 copy elision
 -   Shortcuts for defining both a sync and an async version methods in one call
 -   New `Nobind::ReturnCopy` return attribute allows to always copy the returned object
 -   Fix [#30](https://github.com/mmomtchev/nobind/issues/30), `m.ext<T>(...)` accepts only functions with `T &` as first parameter

@@ -1044,8 +1044,11 @@ public:
       // This is a nested object from a getter (for a class member object), return a nested reference
       object = &val;
     } else {
-      // This is a stack-allocated object, copy it to the heap
-      object = new T(val);
+      // This is a stack-allocated object, copy/move it to the heap
+      if constexpr (std::is_copy_constructible_v<T>)
+        object = new T(val);
+      else
+        object = new T(std::move(val));
     }
   }
   // and wrapping it in a proxy, by default JS will own this new copy
