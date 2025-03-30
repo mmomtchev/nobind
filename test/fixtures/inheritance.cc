@@ -19,5 +19,6 @@ int DerivedAbstract::Id() { return id; }
 
 int require_Base(const Base &o) { return o.get(); }
 int require_IF1(const IF1 &o) { return o.ret1(); }
+int require_Derived(const Derived &o) { return o.derived_get(); }
 
 const Base &return_Base(const Base &o) { return o; }

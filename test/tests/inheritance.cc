@@ -38,4 +38,6 @@ NOBIND_MODULE(inheritance, m) {
   // (it works only with the first class which is the JS parent)
   m.def<&require_IF1>("requireIF1");
   m.def<&return_Base>("returnBase");
+
+  m.def<&require_Derived>("requireDerived");
 }

@@ -25,6 +25,14 @@ it('nominal', () => {
   assert.strictEqual(d.ret2(), 2);
 });
 
+it('incompatible object', () => {
+  const o = new dll.Base(36);
+  assert.throws(() => {
+    // @ts-expect-error
+    dll.requireDerived(o);
+  }, /Expected a Derived/);
+});
+
 it('abstract', () => {
   const d = new dll.DerivedAbstract(17);
   assert.instanceOf(d, dll.DerivedAbstract);

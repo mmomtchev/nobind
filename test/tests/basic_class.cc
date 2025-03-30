@@ -20,6 +20,10 @@ std::string ToStringWithArg(Hello &obj, int id) {
 // This() is CLASS &
 void NotIterable(Hello &) { throw std::runtime_error("Not iterable"); }
 
+// Class unknown to Nobind
+class Undeclared {};
+void take_undeclared(const Undeclared &) {}
+
 NOBIND_MODULE(basic_class, m) {
   static constexpr bool False = false;
 
@@ -37,4 +41,6 @@ NOBIND_MODULE(basic_class, m) {
       .ext<&NotIterable>(Napi::Symbol::WellKnown(m.Env(), "iterator"))
       .ext<&ToString>("toString")
       .ext<&ToStringWithArg>("toStringWithArg");
+
+  m.def<&take_undeclared>("takeUndeclared");
 }

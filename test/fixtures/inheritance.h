@@ -43,5 +43,6 @@ public:
 };
 
 int require_Base(const Base &);
+int require_Derived(const Derived &);
 int require_IF1(const IF1 &);
 const Base &return_Base(const Base &);
