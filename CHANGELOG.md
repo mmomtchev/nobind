@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   New `Nobind::ReturnCopy` return attribute allows to always copy the returned object
 -   Fix [#30](https://github.com/mmomtchev/nobind/issues/30), `m.ext<T>(...)` accepts only functions with `T &` as first parameter
 -   Fix [#34](https://github.com/mmomtchev/nobind/issues/34), getters of members of class type return dangling references
+-   Fix [#53](https://github.com/mmomtchev/nobind/issues/53), guard against calling functions that take undeclared to `nobind17` classes as arguments
 
 ### [1.2.1] 2024-07-16
 
