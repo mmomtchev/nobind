@@ -434,7 +434,10 @@ private:
   }
 
   // Register a custom finalizer
-  NOBIND_INLINE void SetFinalizer(std::function<void(Napi::BasicEnv, CLASS *self)> f) { finalizer = f; }
+  NOBIND_INLINE void SetFinalizer(std::function<void(Napi::BasicEnv, CLASS *self)> f) {
+    NOBIND_ASSERT(!finalizer);
+    finalizer = f;
+  }
 
   // To look up the class constructor in the per-instance data
   static size_t class_idx;

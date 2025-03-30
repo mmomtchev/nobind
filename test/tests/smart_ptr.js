@@ -76,10 +76,14 @@ describe('shared_ptr', () => {
     );
   });
 
-  it('object store interaction', () => {
+  it.only('object store interaction', () => {
     const o1 = dll.returnSharedPtr('Doggett');
     const o2 = dll.takeAndReturnSharedPtr(o1);
+    const o3 = dll.takeAndReturnSharedPtr(o2);
+    const o4 = dll.takeAndReturnSharedPtr(o1);
     assert.strictEqual(o1, o2);
+    assert.strictEqual(o1, o3);
+    assert.strictEqual(o1, o4);
   });
 });
 

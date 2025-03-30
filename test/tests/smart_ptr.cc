@@ -40,5 +40,5 @@ NOBIND_MODULE(smart_ptr, m) {
   m.def<&take_unique_ptr>("takeUniquePtr", "takeUniquePtrAsync");
   m.def<&return_unique_ptr>("returnUniquePtr", "returnUniquePtrAsync");
 
-  m.def<&take_and_return_shared_ptr>("takeAndReturnSharedPtr");
+  m.def<&take_and_return_shared_ptr, Nobind::ReturnShared>("takeAndReturnSharedPtr");
 }
