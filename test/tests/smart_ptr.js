@@ -75,6 +75,12 @@ describe('shared_ptr', () => {
       assert.isRejected(dll.returnSharedPtrAsync(2), /Expected a string/)
     );
   });
+
+  it('object store interaction', () => {
+    const o1 = dll.returnSharedPtr('Doggett');
+    const o2 = dll.takeAndReturnSharedPtr(o1);
+    assert.strictEqual(o1, o2);
+  });
 });
 
 describe('unique_ptr', () => {

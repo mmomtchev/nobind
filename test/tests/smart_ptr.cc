@@ -21,6 +21,9 @@ std::unique_ptr<Hello> return_unique_ptr(const std::string &name) {
 // Helper for the unique_ptr class
 std::string HelloGreet(const std::unique_ptr<Hello> &o, std::string s) { return o->Greet(s); }
 
+// Stub to test the object store interaction
+std::shared_ptr<Hello> take_and_return_shared_ptr(std::shared_ptr<Hello> in) { return in; }
+
 NOBIND_MODULE(smart_ptr, m) {
   m.def<Hello>("Hello")
       .cons<std::string &>()
@@ -36,4 +39,6 @@ NOBIND_MODULE(smart_ptr, m) {
   m.def<std::unique_ptr<Hello>>("HelloUPtr").ext<&HelloGreet>("greet");
   m.def<&take_unique_ptr>("takeUniquePtr", "takeUniquePtrAsync");
   m.def<&return_unique_ptr>("returnUniquePtr", "returnUniquePtrAsync");
+
+  m.def<&take_and_return_shared_ptr>("takeAndReturnSharedPtr");
 }
