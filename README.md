@@ -801,6 +801,14 @@ When encountering compilation errors, start with this quick checklist:
 
 `nobind17` will automatically protect objects coming from JavaScript from the garbage collector for the duration of each call - including asynchronous calls. However if the C++ code intends to keep a pointer to an object received from JavaScript for latest use, it must ensure that this object will stay protected from the garbage collector. There is a example in `example/monster_ptr.h` which handles this case. C++ will receive a non-copyconstuctible `Napi::Reference` that it must keep for as long as the object is used.
 
+### C++ smart pointers
+
+`nobind17@2` includes built-in support for `std::shared_ptr`. Shared pointers play very nicely with JavaScript as they are included in the JavaScript reference counting. A shared pointer is treated as a normal object - any method that returns a shared pointer will create a normal JavaScript object and any method that expects a shared pointer will take any normal JavaScript object. Copying this pointer on the C++ side will correctly interact with the GC and will prevent the object from being collected until the last pointer on the C++ side is destroyed.
+
+`std::unique_ptr` support is much more limited. Currently, these objects must be wrapped separately, creating a new object type on which one may define class extensions so that is works almost as a normal object.
+
+Check `test/tests/smart_ptr.cc` for an example that includes an `std::unique_ptr`.
+
 ### Parsing structures
 
 A very common pattern in JavaScript, inspired by the `kwargs` feature in Python, is to call a method using an object with named values. You can check the `MonsterDefinition` implementation in `./example` for an example on how to transform a structure containing optional values. The transformation itself is implemented in `monster.h` and includes a TypeScript definition.
