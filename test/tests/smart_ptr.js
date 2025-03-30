@@ -2,6 +2,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
 const { assert } = chai;
+const { mocha_object_store } = require('../opts');
 
 describe('shared_ptr', () => {
   describe('take_shared_ptr', () => {
@@ -76,7 +77,10 @@ describe('shared_ptr', () => {
     );
   });
 
-  it('object store interaction', () => {
+  it('object store interaction', function () {
+    if (!mocha_object_store()) {
+      this.skip();
+    }
     const o1 = dll.returnSharedPtr('Doggett');
     const o2 = dll.takeAndReturnSharedPtr(o1);
     const o3 = dll.takeAndReturnSharedPtr(o2);
