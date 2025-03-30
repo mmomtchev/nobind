@@ -71,12 +71,14 @@ public:
       // Keep a copy of the shared_ptr in the custom finalizer
       // and wrap this as a normal pointer
       Napi::Value r = OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_.get());
-      OBJCLASS *wrapper = OBJCLASS::Unwrap(r.ToObject());
-      std::shared_ptr<T> *owner = new std::shared_ptr<T>(val_);
-      wrapper->SetFinalizer([owner](Napi::BasicEnv env, T *p) -> void {
-        NOBIND_VERBOSE_TYPE(OBJECT, T, p, "Finalizing shared_ptr obtained from C++\n");
-        delete owner;
-      });
+      if constexpr (!RETATTR.isShared()) {
+        OBJCLASS *wrapper = OBJCLASS::Unwrap(r.ToObject());
+        std::shared_ptr<T> *owner = new std::shared_ptr<T>(val_);
+        wrapper->SetFinalizer([owner](Napi::BasicEnv env, T *p) -> void {
+          NOBIND_VERBOSE_TYPE(OBJECT, T, p, "Finalizing shared_ptr obtained from C++\n");
+          delete owner;
+        });
+      }
       return r;
     }
   }
