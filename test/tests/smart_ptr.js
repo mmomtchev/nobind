@@ -76,7 +76,7 @@ describe('shared_ptr', () => {
     );
   });
 
-  it.only('object store interaction', () => {
+  it('object store interaction', () => {
     const o1 = dll.returnSharedPtr('Doggett');
     const o2 = dll.takeAndReturnSharedPtr(o1);
     const o3 = dll.takeAndReturnSharedPtr(o2);

@@ -111,10 +111,12 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
   };
 
 public:
+  using Finalizer = std::function<void(Napi::BasicEnv, CLASS *)>;
+
   // JS convention constructor
   NoObjectWrap(const Napi::CallbackInfo &);
   // C++ convention constructors
-  template <bool OWNED> static Napi::Value New(Napi::Env, CLASS *);
+  template <bool OWNED> static Napi::Value New(Napi::Env, CLASS *, Finalizer = Finalizer{});
   template <bool OWNED> static Napi::Value New(Napi::Env, const CLASS *);
   virtual ~NoObjectWrap() override;
 #ifdef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER
@@ -434,9 +436,9 @@ private:
   }
 
   // Register a custom finalizer
-  NOBIND_INLINE void SetFinalizer(std::function<void(Napi::BasicEnv, CLASS *self)> f) {
-    NOBIND_ASSERT(!finalizer);
-    finalizer = f;
+  NOBIND_INLINE void SetFinalizer(Finalizer f) {
+    NOBIND_ASSERT(!finalizer_);
+    finalizer_ = f;
   }
 
   // To look up the class constructor in the per-instance data
@@ -450,7 +452,7 @@ private:
   // Should we destroy it in the destructor
   bool owned;
   // A custom finalizer to be called when destroying
-  std::function<void(Napi::BasicEnv, CLASS *self)> finalizer;
+  Finalizer finalizer_;
 #ifndef NOBIND_NO_ASYNC_LOCKING
   // The async reentrancy lock
   std::mutex async_lock;
@@ -482,9 +484,9 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
     NOBIND_VERBOSE(STORE, "ObjectStore has already been finalized\n");
 #endif
 
-  if (finalizer) {
+  if (finalizer_) {
     NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "running custom finalizer\n");
-    finalizer(env, self);
+    finalizer_(env, self);
   } else if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
       delete self;
@@ -503,7 +505,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 // * From C++ with a Napi::External<> pointer -> it must construct a proxy for this object
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
-    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info), finalizer()
+    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info), finalizer_()
 #ifndef NOBIND_NO_ASYNC_LOCKING
       ,
       async_lock{}
@@ -572,7 +574,7 @@ NoObjectWrap<CLASS>::GetClass(Napi::Env env, const char *name,
 
 template <typename CLASS>
 template <bool OWNED>
-NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
+NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj, Finalizer finalizer) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
 #ifndef NOBIND_NO_OBJECT_STORE
   Napi::Value stored = instance->_Nobind_object_store->Get(class_idx, obj);
@@ -586,6 +588,11 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
 
   if constexpr (OWNED) {
     Napi::MemoryManagement::AdjustExternalMemory(env, sizeof(CLASS));
+  }
+
+  if (finalizer) {
+    NoObjectWrap<CLASS> *wrapper = NoObjectWrap<CLASS>::Unwrap(r.ToObject());
+    wrapper->finalizer_ = finalizer;
   }
 
 #ifndef NOBIND_NO_OBJECT_STORE
