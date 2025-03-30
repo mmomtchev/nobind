@@ -14,6 +14,7 @@ describe('shared_ptr', () => {
 
     it('exception', () => {
       assert.throws(() => {
+        // @ts-expect-error
         dll.takeSharedPtr({});
       }, /Expected a Hello/);
     });
@@ -21,9 +22,9 @@ describe('shared_ptr', () => {
 
   describe('return_shared_ptr', () => {
     it('nominal', () => {
-      const o = dll.returnSharedPtr('Sully');
+      const o = dll.returnSharedPtr('Scully');
       assert.instanceOf(o, dll.Hello);
-      assert.strictEqual(o.greet('Agent'), 'hello Agent Sully');
+      assert.strictEqual(o.greet('Agent'), 'hello Agent Scully');
     });
   });
 });
