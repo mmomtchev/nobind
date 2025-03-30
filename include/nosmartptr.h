@@ -68,17 +68,16 @@ public:
       // No need for shenanigans when we copy
       return OBJCLASS::template New<true>(env_, new T{*val_});
     } else {
-      std::shared_ptr<T> *owner = new std::shared_ptr<T>(val_);
       if constexpr (RETATTR.isShared()) {
         // ReturnShared does not have a finalizer, this is a normal pointer
         return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(env_, val_.get());
       } else {
         // Keep a copy of the shared_ptr in the custom finalizer
         // and wrap this as a normal pointer
+        // (the destruction of the object will destroy the lambda and shared_ptr)
         return OBJCLASS::template New<RETATTR.ShouldOwn<true>()>(
-            env_, val_.get(), [owner](Napi::BasicEnv env, T *p) -> void {
+            env_, val_.get(), [owner = this->val_](Napi::BasicEnv env, T *p) -> void {
               NOBIND_VERBOSE_TYPE(OBJECT, T, p, "Finalizing shared_ptr obtained from C++\n");
-              delete owner;
             });
       }
     }
