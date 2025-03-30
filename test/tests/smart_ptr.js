@@ -1,4 +1,7 @@
-const { assert } = require('chai');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
+chai.use(chaiAsPromised);
+const { assert } = chai;
 
 describe('shared_ptr', () => {
   describe('take_shared_ptr', () => {
@@ -20,19 +23,92 @@ describe('shared_ptr', () => {
     });
   });
 
+  describe('take_shared_ptr Async', () => {
+    it('plain', (done) => {
+      const o = new dll.Hello('Mulder');
+      dll.takeSharedPtrAsync(o).then((r) => {
+        assert.isNumber(r);
+        done();
+      }).catch(done);
+    });
+
+    it('const', (done) => {
+      const o = new dll.Hello('Mulder');
+      dll.takeConstSharedPtrAsync(o).then((r) => {
+        assert.isNumber(r);
+        done();
+      }).catch(done);
+    });
+
+    it('exception', () =>
+      // @ts-expect-error
+      assert.isRejected(dll.takeSharedPtrAsync({}), /Expected a Hello/)
+    );
+  });
+
   describe('return_shared_ptr', () => {
     it('nominal', () => {
       const o = dll.returnSharedPtr('Scully');
       assert.instanceOf(o, dll.Hello);
       assert.strictEqual(o.greet('Agent'), 'hello Agent Scully');
     });
+
+    it('exception', () => {
+      assert.throws(() => {
+        // @ts-expect-error
+        dll.returnSharedPtr(2);
+      }, /Expected a string/);
+    });
+  });
+
+  describe('return_shared_ptr Async', () => {
+    it('nominal', (done) => {
+      dll.returnSharedPtrAsync('Scully').then((o) => {
+        assert.instanceOf(o, dll.Hello);
+        assert.strictEqual(o.greet('Agent'), 'hello Agent Scully');
+        done();
+      }).catch(done);
+    });
+
+    it('exception', () =>
+      // @ts-expect-error
+      assert.isRejected(dll.returnSharedPtrAsync(2), /Expected a string/)
+    );
   });
 });
 
 describe('unique_ptr', () => {
-  it('create and use unique_ptr from JS', () => {
+  it('sync', () => {
     const u = dll.returnUniquePtr('Mulder and Scully');
     assert.instanceOf(u, dll.HelloUPtr);
     assert.strictEqual(u.greet('Agents'), 'hello Agents Mulder and Scully');
   });
+
+  it('exception', () => {
+    assert.throws(() => {
+      // @ts-expect-error
+      dll.returnUniquePtr(12);
+    }, /Expected a string/);
+  });
+
+  it('async', (done) => {
+    dll.returnUniquePtrAsync('Mulder and Scully').then((u) => {
+      assert.instanceOf(u, dll.HelloUPtr);
+      assert.strictEqual(u.greet('Agents'), 'hello Agents Mulder and Scully');
+      done();
+    }).catch(done);
+  });
+
+  it('async', (done) => {
+    dll.returnUniquePtrAsync('Mulder and Scully').then((u) => {
+      assert.instanceOf(u, dll.HelloUPtr);
+      assert.strictEqual(u.greet('Agents'), 'hello Agents Mulder and Scully');
+      done();
+    }).catch(done);
+  });
+
+  it('async exception', () =>
+    // @ts-expect-error
+    assert.isRejected(dll.returnUniquePtrAsync(12), 'Expected a string')
+  );
 });

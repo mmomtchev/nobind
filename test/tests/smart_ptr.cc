@@ -29,11 +29,11 @@ NOBIND_MODULE(smart_ptr, m) {
       .def<&Hello::id, Nobind::ReadOnly>("id")
       .def<&Hello::Factory>("factory");
 
-  m.def<&take_shared_ptr>("takeSharedPtr");
-  m.def<&take_const_shared_ptr>("takeConstSharedPtr");
-  m.def<&return_shared_ptr>("returnSharedPtr");
+  m.def<&take_shared_ptr>("takeSharedPtr", "takeSharedPtrAsync");
+  m.def<&take_const_shared_ptr>("takeConstSharedPtr", "takeConstSharedPtrAsync");
+  m.def<&return_shared_ptr>("returnSharedPtr", "returnSharedPtrAsync");
 
   m.def<std::unique_ptr<Hello>>("HelloUPtr").ext<&HelloGreet>("greet");
-  m.def<&take_unique_ptr>("takeUniquePtr");
-  m.def<&return_unique_ptr>("returnUniquePtr");
+  m.def<&take_unique_ptr>("takeUniquePtr", "takeUniquePtrAsync");
+  m.def<&return_unique_ptr>("returnUniquePtr", "returnUniquePtrAsync");
 }
