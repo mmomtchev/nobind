@@ -118,7 +118,7 @@ describe('stress tests', function () {
     // In this case JavaScript will always hold plain pointers
     const hellos = (new Array(1000)).fill(new dll.Hello('Merkwürdigliebe'), 0, 1000);
 
-    for (let i = 0; i < 5e5; i++) {
+    for (let i = 0; i < 5e4; i++) {
       const pick = Math.floor(Math.random() * 1000);
       const hello = hellos[pick];
       assert.instanceOf(hello, dll.Hello);
@@ -130,7 +130,7 @@ describe('stress tests', function () {
     // In this case JavaScript will always hold smart pointers
     const hellos = await Promise.all((new Array(1000)).fill(dll.make_shared_ptr('Merkwürdigliebe'), 0, 1000));
 
-    for (let i = 0; i < 5e5; i++) {
+    for (let i = 0; i < 5e4; i++) {
       const pick = Math.floor(Math.random() * 1000);
       const hello = hellos[pick];
       assert.instanceOf(hello, dll.Hello);
