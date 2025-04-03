@@ -272,7 +272,7 @@ m.def<Hello>("Hello")
 
 Everything is fully automatic. Raising a C++ exception will reject the `Promise`.
 
-Enabling async mode will allow the JS user to potentially call the C++ method while a previous invocation is still running. If the C++ method is not fully reentrant, a wrapper with a lock mechanism should be implemented.
+Enabling async mode will allow the JS user to potentially call the C++ method while a previous invocation is still running. Refer to the section below on async locking for more details.
 
 Specifying two names will automatically create both a sync and an async version. Do not add `Nobind::ReturnAsync` in this case:
 
