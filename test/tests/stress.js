@@ -111,4 +111,31 @@ describe('stress tests', function () {
         assert.strictEqual(v[i], orig[i]);
     }
   });
+
+  // Test if https://github.com/mmomtchev/nobind/issues/54
+  // is an actual problem
+  it('shared_ptr (start with a plain pointer)', async () => {
+    // In this case JavaScript will always hold plain pointers
+    const hellos = (new Array(1000)).fill(new dll.Hello('Merkwürdigliebe'), 0, 1000);
+
+    for (let i = 0; i < 5e4; i++) {
+      const pick = Math.floor(Math.random() * 1000);
+      const hello = hellos[pick];
+      assert.instanceOf(hello, dll.Hello);
+      assert.strictEqual(hello.greet('Dr.'), 'hello Dr. Merkwürdigliebe');
+      hellos[pick] = await dll.take_and_return_shared_ptr(hello);
+    }
+  });
+  it('shared_ptr (start with a shared pointer)', async () => {
+    // In this case JavaScript will always hold smart pointers
+    const hellos = await Promise.all((new Array(1000)).fill(dll.make_shared_ptr('Merkwürdigliebe'), 0, 1000));
+
+    for (let i = 0; i < 5e4; i++) {
+      const pick = Math.floor(Math.random() * 1000);
+      const hello = hellos[pick];
+      assert.instanceOf(hello, dll.Hello);
+      assert.strictEqual(hello.greet('Dr.'), 'hello Dr. Merkwürdigliebe');
+      hellos[pick] = await dll.take_and_return_shared_ptr(hello);
+    }
+  });
 });

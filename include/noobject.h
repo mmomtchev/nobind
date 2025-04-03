@@ -111,10 +111,12 @@ template <typename CLASS> class NoObjectWrap : public Napi::ObjectWrap<NoObjectW
   };
 
 public:
+  using Finalizer = std::function<void(Napi::BasicEnv, CLASS *)>;
+
   // JS convention constructor
   NoObjectWrap(const Napi::CallbackInfo &);
   // C++ convention constructors
-  template <bool OWNED> static Napi::Value New(Napi::Env, CLASS *);
+  template <bool OWNED> static Napi::Value New(Napi::Env, CLASS *, Finalizer = Finalizer{});
   template <bool OWNED> static Napi::Value New(Napi::Env, const CLASS *);
   virtual ~NoObjectWrap() override;
 #ifdef NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER
@@ -433,6 +435,12 @@ private:
     return returned;
   }
 
+  // Register a custom finalizer
+  NOBIND_INLINE void SetFinalizer(Finalizer f) {
+    NOBIND_ASSERT(!finalizer_);
+    finalizer_ = f;
+  }
+
   // To look up the class constructor in the per-instance data
   static size_t class_idx;
   // For TypeScript
@@ -443,6 +451,8 @@ private:
   CLASS *self;
   // Should we destroy it in the destructor
   bool owned;
+  // A custom finalizer to be called when destroying
+  Finalizer finalizer_;
 #ifndef NOBIND_NO_ASYNC_LOCKING
   // The async reentrancy lock
   std::mutex async_lock;
@@ -475,7 +485,10 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   }
 #endif
 
-  if (owned && self != nullptr) {
+  if (finalizer_) {
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "running custom finalizer\n");
+    finalizer_(env, self);
+  } else if (owned && self != nullptr) {
     if constexpr (!std::is_abstract_v<CLASS> && std::is_destructible_v<CLASS>) {
       delete self;
       Napi::MemoryManagement::AdjustExternalMemory(env, -static_cast<int64_t>(sizeof(CLASS)));
@@ -493,7 +506,7 @@ template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
 // * From C++ with a Napi::External<> pointer -> it must construct a proxy for this object
 template <typename CLASS>
 NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
-    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info)
+    : Napi::ObjectWrap<NoObjectWrap<CLASS>>(info), finalizer_()
 #ifndef NOBIND_NO_ASYNC_LOCKING
       ,
       async_lock{}
@@ -562,7 +575,7 @@ NoObjectWrap<CLASS>::GetClass(Napi::Env env, const char *name,
 
 template <typename CLASS>
 template <bool OWNED>
-NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
+NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj, Finalizer finalizer) {
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
 #ifndef NOBIND_NO_OBJECT_STORE
   Napi::Value stored = instance->_Nobind_object_store->Get(class_idx, obj);
@@ -576,6 +589,11 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj) {
 
   if constexpr (OWNED) {
     Napi::MemoryManagement::AdjustExternalMemory(env, sizeof(CLASS));
+  }
+
+  if (finalizer) {
+    NoObjectWrap<CLASS> *wrapper = NoObjectWrap<CLASS>::Unwrap(r.ToObject());
+    wrapper->finalizer_ = finalizer;
   }
 
 #ifndef NOBIND_NO_OBJECT_STORE
@@ -1037,8 +1055,11 @@ public:
       // This is a nested object from a getter (for a class member object), return a nested reference
       object = &val;
     } else {
-      // This is a stack-allocated object, copy it to the heap
-      object = new T(val);
+      // This is a stack-allocated object, copy/move it to the heap
+      if constexpr (std::is_copy_constructible_v<T>)
+        object = new T(val);
+      else
+        object = new T(std::move(val));
     }
   }
   // and wrapping it in a proxy, by default JS will own this new copy

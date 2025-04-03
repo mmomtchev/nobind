@@ -20,6 +20,7 @@
 #include <noiterator.h>
 #include <nonumbermaps.h>
 #include <noobject.h>
+#include <nosmartptr.h>
 #include <nostl.h>
 #include <nostringmaps.h>
 

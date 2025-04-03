@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Implement synchronous garbage-collection through basic finalizers - this pushes the minimum supported `node-addon-api` to 8.3.0 and it requires Node.js 18.20, 20.12, 21.6 or 22+ - check for `NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER` macro to ensure that the feature is enabled
 -   Initial interaction with the garbage collector statistics - currently only for objects that do not grow once created (objects are reported to the GC with their initial size)
 -   Automatic support for C++ iterators via built-in helpers
+-   Basic smart pointers support
+-   Support for returning non-copy constructible objects from C++ by C++17 copy elision
 -   Shortcuts for defining both a sync and an async version methods in one call
 -   New `Nobind::ReturnCopy` return attribute allows to always copy the returned object
 -   Fix [#30](https://github.com/mmomtchev/nobind/issues/30), `m.ext<T>(...)` accepts only functions with `T &` as first parameter
