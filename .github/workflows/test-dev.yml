@@ -11,17 +11,46 @@ on:
       - '*.md'
 
 jobs:
-  release:
+  default:
     runs-on: ${{ matrix.platform }}
 
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ubuntu-20.04, windows-2019, windows-2022, macos-latest]
+        platform: [ubuntu-latest, ubuntu-22.04, windows-2019, windows-2022, macos-latest]
         node-version: ['18.17', 18, 20, 22, 23]
-        exclude:
-          - platform: ubuntu-20.04
-            node-version: 23
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm install
+      - run: npm test
+      - name: Link the package
+        run: npm link
+      - name: Check the example
+        run: |
+          cd example
+          npm install --ignore-scripts
+          npm link nobind17
+          npx node-gyp configure build --debug
+          node -p "require('./lib/hello.node').hello('Garga')"
+          npx node-gyp configure build
+          node -p "require('./lib/hello.node').hello('Garga')"
+          npx tsx hello.ts
+        shell: bash
+
+
+  legacy:
+    runs-on: ubuntu-latest
+    container: ubuntu:20.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['18.17', 18, 20, 22, 23]
 
     steps:
       - uses: actions/checkout@v3
