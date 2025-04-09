@@ -58,6 +58,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Setup dependencies
+        run: apt-get -y install python3 g++ make
+        env:
+          DEBIAN_FRONTEND: noninteractive
       - run: npm install
       - run: npm test
       - name: Link the package
