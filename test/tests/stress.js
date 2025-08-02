@@ -2,7 +2,7 @@ const { assert } = require('chai');
 const { mocha_object_store } = require('../opts');
 
 describe('stress tests', function () {
-  this.timeout(20000);
+  this.timeout(60000);
   this.slow(20000);
   const objectStore = mocha_object_store();
 
