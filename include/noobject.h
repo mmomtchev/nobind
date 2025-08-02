@@ -18,6 +18,8 @@
 #include <notypes.h>
 #include <notypescript.h>
 
+#include <uv.h>
+
 using namespace std::literals::string_literals;
 
 namespace Nobind {
@@ -29,6 +31,9 @@ struct BaseEnvInstanceData {
   ObjectStore<void *> *_Nobind_object_store;
 #endif
   std::thread::id js_thread;
+  uv_async_t js_thread_async_handle;
+  std::queue<std::function<void()>> js_thread_jobs;
+  std::mutex js_thread_jobs_lock;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
 };

@@ -45,11 +45,7 @@
       "cwd": "${workspaceFolder}/test",
       "environment": [
         {
-          "name": "NOBIND_DEBUG_LOCK",
-          "value": "1"
-        },
-        {
-          "name": "NOBIND_DEBUG_STORE",
+          "name": "NOBIND_DEBUG_OBJECT",
           "value": "1"
         }
       ],

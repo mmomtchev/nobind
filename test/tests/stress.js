@@ -140,7 +140,7 @@ describe('stress tests', function () {
     }
   });
 
-  it.only('test shared_ptr destruction in background threads', async () => {
+  it('test shared_ptr destruction in background threads', async () => {
     // https://github.com/mmomtchev/nobind/issues/56
     const q = [];
     for (let i = 0; i < 5e4; i++) {

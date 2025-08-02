@@ -10,6 +10,7 @@
 #include <typeinfo>
 #include <unordered_map>
 
+#include <nohelpers.h>
 #include <notypes.h>
 
 #include <noattributes.h>
@@ -150,6 +151,7 @@ public:
   /* We make this assumption that is not guaranteed by the C++ specs but it seems to be true on all compilers */       \
   static_assert(&Nobind::BaseEnvInstanceData::_Nobind_cons ==                                                          \
                 &Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>::_Nobind_cons);                                           \
+  static_assert(&Nobind::BaseEnvInstanceData::js_thread == &Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>::js_thread);   \
   char const Nobind_##MODULE_NAME##_name[] = #MODULE_NAME;                                                             \
   void Nobind_##MODULE_NAME##_Init_Wrapper(Nobind::Module<Nobind_##MODULE_NAME##_name> &);                             \
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env, Napi::Object);                                           \
@@ -159,6 +161,7 @@ public:
     auto instance = new Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>;                                                   \
     instance->js_thread = std::this_thread::get_id();                                                                  \
     env.SetInstanceData(instance);                                                                                     \
+    Nobind::InitMainThreadQueue<Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>>(env);                                     \
     Nobind::Module<Nobind_##MODULE_NAME##_name> m{env, exports};                                                       \
     Nobind_##MODULE_NAME##_Init_Wrapper(m);                                                                            \
     return exports;                                                                                                    \

@@ -53,7 +53,9 @@ std::shared_ptr<Hello> make_shared_ptr(std::string name) { return std::make_shar
 
 // https://github.com/mmomtchev/nobind/issues/56
 std::queue<std::shared_ptr<Hello>> smart_ptr_collection;
+std::mutex smart_ptr_collection_lock;
 void take_and_keep_100_shared_ptr(std::shared_ptr<Hello> in) {
+  std::lock_guard lock{smart_ptr_collection_lock};
   smart_ptr_collection.push(in);
   // Keep only 100 pointers and destroy when above the limit
   // This runs in a background thread
@@ -62,6 +64,7 @@ void take_and_keep_100_shared_ptr(std::shared_ptr<Hello> in) {
 }
 std::vector<std::string> return_kept_shared_ptr() {
   std::vector<std::string> r;
+  std::lock_guard lock{smart_ptr_collection_lock};
   while (!smart_ptr_collection.empty()) {
     r.push_back(smart_ptr_collection.front()->Greet("Citizen"));
     smart_ptr_collection.pop();
