@@ -31,10 +31,10 @@ struct BaseEnvInstanceData {
 #ifndef NOBIND_NO_OBJECT_STORE
   ObjectStore<void *> *_Nobind_object_store;
 #endif
-  std::thread::id js_thread;
-  uv_async_t js_thread_async_handle;
-  std::queue<std::function<void()>> js_thread_jobs;
-  std::mutex js_thread_jobs_lock;
+  std::thread::id _Nobind_js_thread;
+  uv_async_t _Nobind_js_thread_async_handle;
+  std::queue<std::function<void()>> _Nobind_js_thread_jobs;
+  std::mutex _Nobind_js_thread_jobs_lock;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
 };
@@ -654,7 +654,7 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() NOBIND_
 #if defined(NOBIND_THROW_ON_EVENT_LOOP_BLOCK) or defined(NOBIND_WARN_ON_EVENT_LOOP_BLOCK)
   Napi::Env env = this->Env();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  if (instance->js_thread == std::this_thread::get_id()) {
+  if (instance->_Nobind_js_thread == std::this_thread::get_id()) {
     bool acquired = async_lock.try_lock();
     if (acquired) {
       NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked on the main thread w/o contention\n");

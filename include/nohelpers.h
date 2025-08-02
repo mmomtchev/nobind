@@ -17,14 +17,14 @@ template <typename T> void RunMainThreadQueue(uv_async_t *async) {
   auto env_data = reinterpret_cast<T *>(async->data);
 
   // As the lambdas are very light, it is better to not release the lock at all
-  std::lock_guard<std::mutex> lock(env_data->js_thread_jobs_lock);
-  while (!env_data->js_thread_jobs.empty()) {
-    env_data->js_thread_jobs.front()();
-    env_data->js_thread_jobs.pop();
+  std::lock_guard<std::mutex> lock(env_data->_Nobind_js_thread_jobs_lock);
+  while (!env_data->_Nobind_js_thread_jobs.empty()) {
+    env_data->_Nobind_js_thread_jobs.front()();
+    env_data->_Nobind_js_thread_jobs.pop();
   }
   // Disable the async because the queue is empty
   // (we do not want to block Node from exiting)
-  uv_unref(reinterpret_cast<uv_handle_t *>(&env_data->js_thread_async_handle));
+  uv_unref(reinterpret_cast<uv_handle_t *>(&env_data->_Nobind_js_thread_async_handle));
 }
 
 /* ---------------------------------------------------------------------------
@@ -35,11 +35,11 @@ template <typename T> void InitMainThreadQueue(Napi::Env env) {
   uv_loop_t *event_loop;
   if (napi_get_uv_event_loop(env, &event_loop) != napi_ok)
     std::abort();
-  if (uv_async_init(event_loop, &env_data->js_thread_async_handle, RunMainThreadQueue<T>) != 0)
+  if (uv_async_init(event_loop, &env_data->_Nobind_js_thread_async_handle, RunMainThreadQueue<T>) != 0)
     std::abort();
   // The initial status of the async handle is inactive
-  uv_unref(reinterpret_cast<uv_handle_t *>(&env_data->js_thread_async_handle));
-  env_data->js_thread_async_handle.data = static_cast<void *>(env_data);
+  uv_unref(reinterpret_cast<uv_handle_t *>(&env_data->_Nobind_js_thread_async_handle));
+  env_data->_Nobind_js_thread_async_handle.data = static_cast<void *>(env_data);
 }
 
 /* ---------------------------------------------------------------------------
@@ -47,15 +47,15 @@ template <typename T> void InitMainThreadQueue(Napi::Env env) {
  * ---------------------------------------------------------------------------*/
 template <typename T> void RunOnJSMainThread(Napi::BasicEnv env, std::function<void()> &&job) {
   auto env_data = env.GetInstanceData<T>();
-  if (env_data->js_thread == std::this_thread::get_id()) {
+  if (env_data->_Nobind_js_thread == std::this_thread::get_id()) {
     // Run synchronously when called on the main thread
     job();
   } else {
-    std::lock_guard<std::mutex> lock(env_data->js_thread_jobs_lock);
-    env_data->js_thread_jobs.emplace(std::move(job));
-    if (uv_async_send(&env_data->js_thread_async_handle) != 0)
+    std::lock_guard<std::mutex> lock(env_data->_Nobind_js_thread_jobs_lock);
+    env_data->_Nobind_js_thread_jobs.emplace(std::move(job));
+    if (uv_async_send(&env_data->_Nobind_js_thread_async_handle) != 0)
       std::abort();
-    uv_ref(reinterpret_cast<uv_handle_t *>(&env_data->js_thread_async_handle));
+    uv_ref(reinterpret_cast<uv_handle_t *>(&env_data->_Nobind_js_thread_async_handle));
   }
 }
 }; // namespace Nobind
