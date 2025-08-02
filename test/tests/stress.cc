@@ -50,8 +50,20 @@ std::vector<Hello *> take_and_return_ptr_vector(const std::vector<Hello *> &inpu
 std::shared_ptr<Hello> take_and_return_shared_ptr(const std::shared_ptr<Hello> in) { return in; }
 std::shared_ptr<Hello> make_shared_ptr(std::string name) { return std::make_shared<Hello>(name); }
 
-std::string take_shared_ptr(std::shared_ptr<Hello> in) {
-  return in->Greet("Citizen");
+// https://github.com/mmomtchev/nobind/issues/56
+std::queue<std::shared_ptr<Hello>> smart_ptr_collection;
+void take_and_keep_100_shared_ptr(std::shared_ptr<Hello> in) {
+  smart_ptr_collection.push(in);
+  while (smart_ptr_collection.size() > 100)
+    smart_ptr_collection.pop();
+}
+std::vector<std::string> return_kept_shared_ptr() {
+  std::vector<std::string> r;
+  while (!smart_ptr_collection.empty()) {
+    r.push_back(smart_ptr_collection.front()->Greet("Citizen"));
+    smart_ptr_collection.pop();
+  }
+  return r;
 }
 
 NOBIND_MODULE(stress, m) {
@@ -82,5 +94,8 @@ NOBIND_MODULE(stress, m) {
 
   m.def<&take_and_return_shared_ptr, Nobind::ReturnAsync>("take_and_return_shared_ptr");
   m.def<&make_shared_ptr, Nobind::ReturnAsync>("make_shared_ptr");
-  m.def<&take_shared_ptr, Nobind::ReturnAsync>("take_shared_ptr");
+
+  // https://github.com/mmomtchev/nobind/issues/56
+  m.def<&take_and_keep_100_shared_ptr, Nobind::ReturnAsync>("take_and_keep_100_shared_ptr");
+  m.def<&return_kept_shared_ptr>("return_kept_shared_ptr");
 }
