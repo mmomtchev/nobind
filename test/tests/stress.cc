@@ -50,6 +50,10 @@ std::vector<Hello *> take_and_return_ptr_vector(const std::vector<Hello *> &inpu
 std::shared_ptr<Hello> take_and_return_shared_ptr(const std::shared_ptr<Hello> in) { return in; }
 std::shared_ptr<Hello> make_shared_ptr(std::string name) { return std::make_shared<Hello>(name); }
 
+std::string take_shared_ptr(std::shared_ptr<Hello> in) {
+  return in->Greet("Citizen");
+}
+
 NOBIND_MODULE(stress, m) {
   m.def<Hello>("Hello")
       .cons<std::string &>()
@@ -78,4 +82,5 @@ NOBIND_MODULE(stress, m) {
 
   m.def<&take_and_return_shared_ptr, Nobind::ReturnAsync>("take_and_return_shared_ptr");
   m.def<&make_shared_ptr, Nobind::ReturnAsync>("make_shared_ptr");
+  m.def<&take_shared_ptr, Nobind::ReturnAsync>("take_shared_ptr");
 }
