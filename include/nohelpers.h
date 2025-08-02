@@ -1,5 +1,6 @@
 #include "nonapi.h"
 #include <functional>
+#include <thread>
 
 // This standard construct (schedule a job to run on the
 // main thread should probably be part of Node-API) in

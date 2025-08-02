@@ -8,6 +8,7 @@
 #include <iostream>
 #include <nonapi.h>
 #include <numeric>
+#include <queue>
 #include <thread>
 #include <tuple>
 #include <type_traits>
