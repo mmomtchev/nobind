@@ -5,6 +5,7 @@
 #include <nobind.h>
 
 #include <memory>
+#include <queue>
 #include <vector>
 
 constexpr auto NestedAsync = Nobind::ReturnNested | Nobind::ReturnAsync;
@@ -54,6 +55,8 @@ std::shared_ptr<Hello> make_shared_ptr(std::string name) { return std::make_shar
 std::queue<std::shared_ptr<Hello>> smart_ptr_collection;
 void take_and_keep_100_shared_ptr(std::shared_ptr<Hello> in) {
   smart_ptr_collection.push(in);
+  // Keep only 100 pointers and destroy when above the limit
+  // This runs in a background thread
   while (smart_ptr_collection.size() > 100)
     smart_ptr_collection.pop();
 }
