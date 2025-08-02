@@ -391,21 +391,21 @@ private:
                                      std::index_sequence_for<ARGS...>{});
   }
   // Third stage
-  template <const ReturnAttribute &RETATTR, typename THIS, typename RETURN, typename... ARGS,
-            RETURN (*FUNC)(THIS, ARGS...), std::size_t... I>
+  template <const ReturnAttribute &RETATTR, typename SELF, typename RETURN, typename... ARGS,
+            RETURN (*FUNC)(SELF, ARGS...), std::size_t... I>
   NOBIND_INLINE Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
-                                             std::integral_constant<RETURN (*)(THIS, ARGS...), FUNC>,
+                                             std::integral_constant<RETURN (*)(SELF, ARGS...), FUNC>,
                                              std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     try {
-      auto this_obj = FromJSValue<THIS>(info.This());
+      auto this_obj = FromJSValue<SELF>(info.This());
       // Call the FromJS constructors
       size_t idx = 0;
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
 #ifndef NOBIND_NO_ASYNC_LOCKING
-      FromJSLockGuard<THIS> this_guard{this_obj};
+      FromJSLockGuard<SELF> this_guard{this_obj};
       [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
 #endif
 
