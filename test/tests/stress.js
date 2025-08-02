@@ -126,6 +126,7 @@ describe('stress tests', function () {
       hellos[pick] = await dll.take_and_return_shared_ptr(hello);
     }
   });
+
   it('shared_ptr (start with a shared pointer)', async () => {
     // In this case JavaScript will always hold smart pointers
     const hellos = await Promise.all((new Array(1000)).fill(dll.make_shared_ptr('Merkwürdigliebe'), 0, 1000));
@@ -136,6 +137,25 @@ describe('stress tests', function () {
       assert.instanceOf(hello, dll.Hello);
       assert.strictEqual(hello.greet('Dr.'), 'hello Dr. Merkwürdigliebe');
       hellos[pick] = await dll.take_and_return_shared_ptr(hello);
+    }
+  });
+
+  it('test shared_ptr destruction in background threads', async () => {
+    // https://github.com/mmomtchev/nobind/issues/56
+    // Make nobind create shared pointers out of anonymous
+    // JS objects and process them asynchronously to ensure
+    // that the JS reference is never released in a background
+    // thread
+    const q = [];
+    for (let i = 0; i < 5e4; i++) {
+      const pick = Math.floor(Math.random() * 1000);
+      q.push(dll.take_shared_ptr(new dll.Hello('Rasczak')));
+    }
+
+    const r = await Promise.all(q);
+    assert.lengthOf(r, 5e4);
+    for (const s of r) {
+      assert.strictEqual(s, 'hello Citizen Rasczak');
     }
   });
 });
