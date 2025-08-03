@@ -143,11 +143,11 @@ describe('stress tests', function () {
   it('test shared_ptr destruction in background threads', async () => {
     // https://github.com/mmomtchev/nobind/issues/56
     const q = [];
-    for (let i = 0; i < 5e4; i++) {
+    for (let i = 0; i < 500; i++) {
       q.push(dll.take_and_keep_100_shared_ptr(new dll.Hello('Rasczak')));
     }
     const p = await Promise.all(q);
-    assert.lengthOf(p, 5e4);
+    assert.lengthOf(p, 500);
 
     const r = dll.return_kept_shared_ptr();
     assert.lengthOf(r, 100);

@@ -4,9 +4,13 @@
 
 #include <nobind.h>
 
+#include <chrono>
 #include <memory>
 #include <queue>
+#include <thread>
 #include <vector>
+
+using namespace std::chrono_literals;
 
 constexpr auto NestedAsync = Nobind::ReturnNested | Nobind::ReturnAsync;
 constexpr auto SharedAsync = Nobind::ReturnShared | Nobind::ReturnAsync;
@@ -55,6 +59,7 @@ std::shared_ptr<Hello> make_shared_ptr(std::string name) { return std::make_shar
 std::queue<std::shared_ptr<Hello>> smart_ptr_collection;
 std::mutex smart_ptr_collection_lock;
 void take_and_keep_100_shared_ptr(std::shared_ptr<Hello> in) {
+  std::this_thread::sleep_for(5ms);
   std::lock_guard lock{smart_ptr_collection_lock};
   smart_ptr_collection.push(in);
   // Keep only 100 pointers and destroy when above the limit
