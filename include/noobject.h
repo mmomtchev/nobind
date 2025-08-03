@@ -19,20 +19,19 @@
 #include <notypes.h>
 #include <notypescript.h>
 
-#include <uv.h>
-
 using namespace std::literals::string_literals;
 
 namespace Nobind {
 
 struct EmptyEnvInstanceData {};
 
+template <typename T> void RunMainThreadQueue(Napi::Env env, Napi::Function callback, nullptr_t *, void *);
 struct BaseEnvInstanceData {
 #ifndef NOBIND_NO_OBJECT_STORE
   ObjectStore<void *> *_Nobind_object_store;
 #endif
   std::thread::id _Nobind_js_thread;
-  uv_async_t _Nobind_js_thread_async_handle;
+  Napi::TypedThreadSafeFunction<nullptr_t, void, RunMainThreadQueue<BaseEnvInstanceData>> _Nobind_tsfn;
   std::queue<std::function<void()>> _Nobind_js_thread_jobs;
   std::mutex _Nobind_js_thread_jobs_lock;
   // Per-environment constructors for all proxied types

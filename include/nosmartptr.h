@@ -1,4 +1,5 @@
 #pragma once
+#include <nohelpers.h>
 #include <notypes.h>
 
 #include <memory>

@@ -10,7 +10,6 @@
 #include <typeinfo>
 #include <unordered_map>
 
-#include <nohelpers.h>
 #include <notypes.h>
 
 #include <noattributes.h>
@@ -162,7 +161,6 @@ public:
     auto instance = new Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>;                                                   \
     instance->_Nobind_js_thread = std::this_thread::get_id();                                                          \
     env.SetInstanceData(instance);                                                                                     \
-    Nobind::InitMainThreadQueue<Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>>(env);                                     \
     Nobind::Module<Nobind_##MODULE_NAME##_name> m{env, exports};                                                       \
     Nobind_##MODULE_NAME##_Init_Wrapper(m);                                                                            \
     return exports;                                                                                                    \
