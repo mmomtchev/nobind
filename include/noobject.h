@@ -645,7 +645,7 @@ template <typename CLASS> NOBIND_INLINE CLASS *NoObjectWrap<CLASS>::Get() { retu
 #ifndef NOBIND_NO_ASYNC_LOCKING
 template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() NOBIND_NOEXCEPT {
   NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locking\n");
-#if defined(NOBIND_THROW_ON_EVENT_LOOP_BLOCK) or defined(NOBIND_WARN_ON_EVENT_LOOP_BLOCK)
+#if defined(NOBIND_THROW_ON_EVENT_LOOP_BLOCK) || defined(NOBIND_WARN_ON_EVENT_LOOP_BLOCK)
   Napi::Env env = this->Env();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
   if (instance->js_thread == std::this_thread::get_id()) {
