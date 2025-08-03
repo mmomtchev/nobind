@@ -28,14 +28,17 @@ public:
     TYPE *underlying = wrapper_->Get();
     Napi::ObjectReference *persistent = new Napi::ObjectReference;
     *persistent = Napi::Persistent(val.ToObject());
-    val_ = std::shared_ptr<TYPE>(underlying, [persistent, env](void *p) {
+
+    // Deleting the last copy of the shared_ptr
+    // will release the persistent
+    auto *deleter = new std::function([persistent, underlying]() {
+      NOBIND_VERBOSE_TYPE(OBJECT, T, static_cast<T *>(underlying), "Releasing JS reference\n");
+      delete persistent;
+    });
+
+    val_ = std::shared_ptr<TYPE>(underlying, [deleter, env](void *p) {
       NOBIND_VERBOSE_TYPE(OBJECT, T, static_cast<T *>(p), "Finalizing shared_ptr passed to C++\n");
-      // Deleting the last copy of the shared_ptr
-      // will release the persistent
-      RunOnJSMainThread<BaseEnvInstanceData>(env, [persistent, p]() {
-        NOBIND_VERBOSE_TYPE(OBJECT, T, static_cast<T *>(p), "Releasing JS reference\n");
-        delete persistent;
-      });
+      RunOnJSMainThread<BaseEnvInstanceData>(env, deleter);
     });
   }
   NOBIND_INLINE std::shared_ptr<T> Get() { return val_; }

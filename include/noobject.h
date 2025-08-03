@@ -25,15 +25,15 @@ namespace Nobind {
 
 struct EmptyEnvInstanceData {};
 
-template <typename T> void RunMainThreadQueue(Napi::Env env, Napi::Function callback, nullptr_t *, void *);
+template <typename T>
+void RunMainThreadQueue(Napi::Env env, Napi::Function callback, nullptr_t *, std::function<void()> *);
 struct BaseEnvInstanceData {
 #ifndef NOBIND_NO_OBJECT_STORE
   ObjectStore<void *> *_Nobind_object_store;
 #endif
   std::thread::id _Nobind_js_thread;
-  Napi::TypedThreadSafeFunction<nullptr_t, void, RunMainThreadQueue<BaseEnvInstanceData>> _Nobind_tsfn;
-  std::queue<std::function<void()>> _Nobind_js_thread_jobs;
-  std::mutex _Nobind_js_thread_jobs_lock;
+  Napi::TypedThreadSafeFunction<nullptr_t, std::function<void()>, RunMainThreadQueue<BaseEnvInstanceData>>
+      _Nobind_js_thread_jobs;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
 };
