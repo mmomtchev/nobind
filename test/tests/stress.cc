@@ -4,8 +4,13 @@
 
 #include <nobind.h>
 
+#include <chrono>
 #include <memory>
+#include <queue>
+#include <thread>
 #include <vector>
+
+using namespace std::chrono_literals;
 
 constexpr auto NestedAsync = Nobind::ReturnNested | Nobind::ReturnAsync;
 constexpr auto SharedAsync = Nobind::ReturnShared | Nobind::ReturnAsync;
@@ -50,8 +55,26 @@ std::vector<Hello *> take_and_return_ptr_vector(const std::vector<Hello *> &inpu
 std::shared_ptr<Hello> take_and_return_shared_ptr(const std::shared_ptr<Hello> in) { return in; }
 std::shared_ptr<Hello> make_shared_ptr(std::string name) { return std::make_shared<Hello>(name); }
 
-std::string take_shared_ptr(std::shared_ptr<Hello> in) {
-  return in->Greet("Citizen");
+// https://github.com/mmomtchev/nobind/issues/56
+std::queue<std::shared_ptr<Hello>> smart_ptr_collection;
+std::mutex smart_ptr_collection_lock;
+void take_and_keep_100_shared_ptr(std::shared_ptr<Hello> in) {
+  std::this_thread::sleep_for(5ms);
+  std::lock_guard lock{smart_ptr_collection_lock};
+  smart_ptr_collection.push(in);
+  // Keep only 100 pointers and destroy when above the limit
+  // This runs in a background thread
+  while (smart_ptr_collection.size() > 100)
+    smart_ptr_collection.pop();
+}
+std::vector<std::string> return_kept_shared_ptr() {
+  std::vector<std::string> r;
+  std::lock_guard lock{smart_ptr_collection_lock};
+  while (!smart_ptr_collection.empty()) {
+    r.push_back(smart_ptr_collection.front()->Greet("Citizen"));
+    smart_ptr_collection.pop();
+  }
+  return r;
 }
 
 NOBIND_MODULE(stress, m) {
@@ -82,5 +105,8 @@ NOBIND_MODULE(stress, m) {
 
   m.def<&take_and_return_shared_ptr, Nobind::ReturnAsync>("take_and_return_shared_ptr");
   m.def<&make_shared_ptr, Nobind::ReturnAsync>("make_shared_ptr");
-  m.def<&take_shared_ptr, Nobind::ReturnAsync>("take_shared_ptr");
+
+  // https://github.com/mmomtchev/nobind/issues/56
+  m.def<&take_and_keep_100_shared_ptr, Nobind::ReturnAsync>("take_and_keep_100_shared_ptr");
+  m.def<&return_kept_shared_ptr>("return_kept_shared_ptr");
 }

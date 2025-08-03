@@ -8,6 +8,7 @@
 #include <iostream>
 #include <nonapi.h>
 #include <numeric>
+#include <queue>
 #include <thread>
 #include <tuple>
 #include <type_traits>
@@ -17,6 +18,8 @@
 #include <noobjectstore.h>
 #include <notypes.h>
 #include <notypescript.h>
+
+#include <uv.h>
 
 using namespace std::literals::string_literals;
 
@@ -28,7 +31,10 @@ struct BaseEnvInstanceData {
 #ifndef NOBIND_NO_OBJECT_STORE
   ObjectStore<void *> *_Nobind_object_store;
 #endif
-  std::thread::id js_thread;
+  std::thread::id _Nobind_js_thread;
+  uv_async_t _Nobind_js_thread_async_handle;
+  std::queue<std::function<void()>> _Nobind_js_thread_jobs;
+  std::mutex _Nobind_js_thread_jobs_lock;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
 };
@@ -385,21 +391,21 @@ private:
                                      std::index_sequence_for<ARGS...>{});
   }
   // Third stage
-  template <const ReturnAttribute &RETATTR, typename THIS, typename RETURN, typename... ARGS,
-            RETURN (*FUNC)(THIS, ARGS...), std::size_t... I>
+  template <const ReturnAttribute &RETATTR, typename SELF, typename RETURN, typename... ARGS,
+            RETURN (*FUNC)(SELF, ARGS...), std::size_t... I>
   NOBIND_INLINE Napi::Value ExtensionWrapper(const Napi::CallbackInfo &info,
-                                             std::integral_constant<RETURN (*)(THIS, ARGS...), FUNC>,
+                                             std::integral_constant<RETURN (*)(SELF, ARGS...), FUNC>,
                                              std::index_sequence<I...>) {
     Napi::Env env = info.Env();
 
     try {
-      auto this_obj = FromJSValue<THIS>(info.This());
+      auto this_obj = FromJSValue<SELF>(info.This());
       // Call the FromJS constructors
       size_t idx = 0;
       std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
       CheckArgLength(env, idx, info.Length());
 #ifndef NOBIND_NO_ASYNC_LOCKING
-      FromJSLockGuard<THIS> this_guard{this_obj};
+      FromJSLockGuard<SELF> this_guard{this_obj};
       [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
 #endif
 
@@ -648,7 +654,7 @@ template <typename CLASS> NOBIND_INLINE void NoObjectWrap<CLASS>::Lock() NOBIND_
 #if defined(NOBIND_THROW_ON_EVENT_LOOP_BLOCK) || defined(NOBIND_WARN_ON_EVENT_LOOP_BLOCK)
   Napi::Env env = this->Env();
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
-  if (instance->js_thread == std::this_thread::get_id()) {
+  if (instance->_Nobind_js_thread == std::this_thread::get_id()) {
     bool acquired = async_lock.try_lock();
     if (acquired) {
       NOBIND_VERBOSE_TYPE(LOCK, CLASS, self, "Locked on the main thread w/o contention\n");

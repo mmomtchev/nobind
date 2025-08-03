@@ -142,18 +142,15 @@ describe('stress tests', function () {
 
   it('test shared_ptr destruction in background threads', async () => {
     // https://github.com/mmomtchev/nobind/issues/56
-    // Make nobind create shared pointers out of anonymous
-    // JS objects and process them asynchronously to ensure
-    // that the JS reference is never released in a background
-    // thread
     const q = [];
-    for (let i = 0; i < 5e4; i++) {
-      const pick = Math.floor(Math.random() * 1000);
-      q.push(dll.take_shared_ptr(new dll.Hello('Rasczak')));
+    for (let i = 0; i < 500; i++) {
+      q.push(dll.take_and_keep_100_shared_ptr(new dll.Hello('Rasczak')));
     }
+    const p = await Promise.all(q);
+    assert.lengthOf(p, 500);
 
-    const r = await Promise.all(q);
-    assert.lengthOf(r, 5e4);
+    const r = dll.return_kept_shared_ptr();
+    assert.lengthOf(r, 100);
     for (const s of r) {
       assert.strictEqual(s, 'hello Citizen Rasczak');
     }
