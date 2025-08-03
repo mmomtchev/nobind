@@ -22,9 +22,6 @@ template <typename T> void RunMainThreadQueue(uv_async_t *async) {
     env_data->_Nobind_js_thread_jobs.front()();
     env_data->_Nobind_js_thread_jobs.pop();
   }
-  // Disable the async because the queue is empty
-  // (we do not want to block Node from exiting)
-  uv_unref(reinterpret_cast<uv_handle_t *>(&env_data->_Nobind_js_thread_async_handle));
 }
 
 /* ---------------------------------------------------------------------------
@@ -37,7 +34,7 @@ template <typename T> void InitMainThreadQueue(Napi::Env env) {
     std::abort();
   if (uv_async_init(event_loop, &env_data->_Nobind_js_thread_async_handle, RunMainThreadQueue<T>) != 0)
     std::abort();
-  // The initial status of the async handle is inactive
+  // Do not block the event loop exit
   uv_unref(reinterpret_cast<uv_handle_t *>(&env_data->_Nobind_js_thread_async_handle));
   env_data->_Nobind_js_thread_async_handle.data = static_cast<void *>(env_data);
 }
@@ -66,7 +63,6 @@ template <typename T> void RunOnJSMainThread(Napi::BasicEnv env, std::function<v
     env_data->_Nobind_js_thread_jobs.emplace(std::move(job));
     if (uv_async_send(&env_data->_Nobind_js_thread_async_handle) != 0)
       std::abort();
-    uv_ref(reinterpret_cast<uv_handle_t *>(&env_data->_Nobind_js_thread_async_handle));
   }
 }
 }; // namespace Nobind
