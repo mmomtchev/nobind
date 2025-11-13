@@ -5,7 +5,7 @@ describe('nobind', function () {
   const tests = framework.list();
   for (const t of tests) {
     describe(t, () => {
-      before('configure', () => framework.configure(t, undefined, process.env.ENABLE_ASAN && ['--debug', '--enable_asan'] || []));
+      before('configure', () => framework.configure(t, undefined, process.env.ENABLE_ASAN && ['--debug', '--enable_asan'] || ['--debug']));
       before('build', () => framework.build());
       before('load', () => framework.load(t, process.env.ENABLE_ASAN && 'Debug'));
       if (mocha_typescript()) {
