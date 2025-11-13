@@ -100,6 +100,7 @@ jobs:
           - '-DNOBIND_NO_OBJECT_STORE'
           - '-DNOBIND_NO_TYPESCRIPT_GENERATOR'
           - '-DNOBIND_NO_ASYNC_LOCKING'
+          - '-DNOBIND_NO_BASIC_FINALIZERS'
           - '-DNODE_ADDON_API_REQUIRE_BASIC_FINALIZERS'
 
     steps:
@@ -119,13 +120,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18.x
+      - name: Use Node.js 24.x
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 24.x
       - run: npm install
+      - name: Find ASAN library
+        id: asan-lib
+        run: echo LD_PRELOAD=$(gcc -print-file-name=libasan.so) >> $GITHUB_OUTPUT
       - run: npm test
         env:
           ENABLE_ASAN: 1
           LSAN_OPTIONS: suppressions=${{ github.workspace }}/test/napi-leaks-suppression.txt
-          LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libasan.so.6.0.0
+          LD_PRELOAD: ${{ steps.asan-lib.outputs.LD_PRELOAD }}
