@@ -474,11 +474,11 @@ std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == nullptr); }
 
 template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "synchronous delete\n");
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "synchronous (basic finalizer) delete [owned=%s]\n", owned ? "true" : "false");
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   Napi::Env env{this->Env()};
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "asynchronous delete\n");
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "asynchronous delete (no basic finalizer) [owned=%s]\n", owned ? "true" : "false");
 #endif
 #ifndef NOBIND_NO_OBJECT_STORE
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
@@ -524,7 +524,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
     // From C++
     owned = info[1].ToBoolean().Value();
     self = info[0].As<Napi::External<CLASS>>().Data();
-    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create wrapper for C++ object\n");
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create wrapper for C++ object [owned=%s]\n", owned ? "true": "false");
     return;
   }
   // From JS
@@ -589,7 +589,9 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj, Fi
     return stored;
 #endif
 
-  napi_value ext = Napi::External<CLASS>::New(env, obj);
+  napi_value ext = Napi::External<CLASS>::New(env, obj, [](Napi::BasicEnv env, CLASS *p) {
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, p, "Destroying the Napi::External for %p\n", p);
+  });
   napi_value own = Napi::Boolean::New(env, OWNED);
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
 
