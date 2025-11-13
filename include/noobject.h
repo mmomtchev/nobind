@@ -589,9 +589,7 @@ NOBIND_INLINE Napi::Value NoObjectWrap<CLASS>::New(Napi::Env env, CLASS *obj, Fi
     return stored;
 #endif
 
-  napi_value ext = Napi::External<CLASS>::New(env, obj, [](Napi::BasicEnv env, CLASS *p) {
-    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, p, "Destroying the Napi::External for %p\n", p);
-  });
+  napi_value ext = Napi::External<CLASS>::New(env, obj);
   napi_value own = Napi::Boolean::New(env, OWNED);
   Napi::Value r = instance->_Nobind_cons[class_idx].New({ext, own});
 
