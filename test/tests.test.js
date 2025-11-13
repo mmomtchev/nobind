@@ -14,7 +14,10 @@ describe('nobind', function () {
       before('load', () => framework.load(t, debug ? 'Debug' : 'Release'));
       if (mocha_typescript()) {
         before('generate types', () => framework.gen_typescript());
-        it('check types', () => framework.check_typescript(t));
+        it('check types', function () {
+          this.repeats(10);
+          framework.check_typescript(t);
+        });
       }
       framework.register(t);
       after('GC', global.gc);
