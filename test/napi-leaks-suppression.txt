@@ -1,6 +1,19 @@
 # All leaks listed here are non-repeat offenders
 # (ie they happen only a fixed number of times per process execution)
 
+# List maintained at
+# https://gist.github.com/mmomtchev/07fad9af00bc6faa9c404e614de908da
+# git clone https://gist.github.com/07fad9af00bc6faa9c404e614de908da.git
+
+# With Node.js 24+ there has been a dramatic improvement in V8
+# compared to previous versions, leaving only a few cases
+
 # Known leaks in Node-API
 leak:napi_module_register
 leak:napi_register_module_v1
+
+# Known leaks in the Node.js 24 runtime
+leak:node::contextify::Contextify
+
+# Known leaks in V8
+# (none atm)
