@@ -9,6 +9,10 @@ on:
     branches: main
     paths-ignore:
       - '*.md'
+  schedule:
+      # schedule a regular Sunday Mass to check that
+      # everything still works
+      - cron: '30 12 * * 0'
 
 jobs:
   default:
