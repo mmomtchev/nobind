@@ -7,10 +7,13 @@ describe('nobind', function () {
     describe(t, () => {
       before('configure', () => framework.configure(t, undefined, process.env.ENABLE_ASAN && ['--debug', '--enable_asan'] || ['--debug']));
       before('build', () => framework.build());
-      before('load', () => framework.load(t, process.env.ENABLE_ASAN && 'Debug'));
+      before('load', () => framework.load(t, 'Debug'));
       if (mocha_typescript()) {
         before('generate types', () => framework.gen_typescript());
-        it('check types', () => framework.check_typescript(t));
+        it('check types', function () {
+          this.repeats(10);
+          framework.check_typescript(t);
+        });
       }
       framework.register(t);
       after('GC', global.gc);
