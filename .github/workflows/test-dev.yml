@@ -119,6 +119,21 @@ jobs:
           CXXFLAGS: ${{ matrix.options }}
   
 
+  debug:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Use Node.js 24
+        uses: actions/setup-node@v3
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm test
+        env:
+          ENABLE_DEBUG: 1
+
+
   asan:
     runs-on: ubuntu-22.04
 
