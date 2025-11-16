@@ -39,6 +39,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - run: npm test
+        env:
+          ENABLE_ASAN: 1
       - name: Link the package
         run: npm link
       - name: Check the example
@@ -77,6 +79,8 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
       - run: npm install
       - run: npm test
+        env:
+          ENABLE_ASAN: 1
       - name: Link the package
         run: npm link
       - name: Check the example
