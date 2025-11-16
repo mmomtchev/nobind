@@ -40,7 +40,7 @@ jobs:
       - run: npm install
       - run: npm test
         env:
-          ENABLE_ASAN: 1
+          ENABLE_DEBUG: 1
       - name: Link the package
         run: npm link
       - name: Check the example
@@ -80,7 +80,7 @@ jobs:
       - run: npm install
       - run: npm test
         env:
-          ENABLE_ASAN: 1
+          ENABLE_DEBUG: 1
       - name: Link the package
         run: npm link
       - name: Check the example
