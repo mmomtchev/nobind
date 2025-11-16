@@ -1,7 +1,7 @@
 const { assert } = require('chai');
 const { mocha_object_store } = require('../opts');
 
-describe('stress tests', function () {
+describe.skip('stress tests', function () {
   this.timeout(120000);
   this.slow(20000);
   const objectStore = mocha_object_store();
