@@ -158,7 +158,7 @@ public:
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env, Napi::Object);                                           \
   NODE_API_MODULE(MODULE_NAME, Nobind_##MODULE_NAME##_Init_Wrapper)                                                    \
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                              \
-    NOBIND_DEBUG_INIT;                                                                                                 \
+    NOBIND_DEBUG_INIT(#MODULE_NAME);                                                                                   \
     auto instance = new Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>;                                                   \
     instance->_Nobind_js_thread = std::this_thread::get_id();                                                          \
     env.SetInstanceData(instance);                                                                                     \

@@ -41,6 +41,8 @@ jobs:
       - run: npm test
         env:
           ENABLE_DEBUG: 1
+          NOBIND_DEBUG_STORE: 1
+          NOBIND_DEBUG_OBJECT: 1
       - name: Link the package
         run: npm link
       - name: Check the example
@@ -55,7 +57,9 @@ jobs:
           node -p "require('./lib/hello.node').hello('Garga')"
           npx tsx hello.ts
         shell: bash
-
+        env:
+          NOBIND_DEBUG_STORE: 1
+          NOBIND_DEBUG_OBJECT: 1
 
   legacy:
     runs-on: ubuntu-latest
