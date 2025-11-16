@@ -98,6 +98,7 @@ jobs:
           npm link nobind17
           npx node-gyp configure build --debug
           node -p "require('./lib/hello.node').hello('Garga')"
+          npx tsx hello.ts
           npx node-gyp configure build
           node -p "require('./lib/hello.node').hello('Garga')"
           npx tsx hello.ts
