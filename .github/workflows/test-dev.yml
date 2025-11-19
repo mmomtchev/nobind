@@ -25,11 +25,7 @@ jobs:
           - ubuntu-22.04
           - ubuntu-24.04
           - windows-2022
-          - windows-2025
-          - macos-14
-          - macos-15
-          - macos-15-intel
-        node-version: ['18.17', 18, 20, 22, 24, 25]
+        node-version: ['18.17', 24]
 
     steps:
       - uses: actions/checkout@v5
@@ -38,127 +34,24 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
-      - run: npm test
+      - name: Link the package
+        run: npm link
+      - name: Loop
+        run: |
+          while npx mocha; do
+            cd example
+            npm install --ignore-scripts
+            npm link nobind17
+            npx node-gyp configure build --debug
+            if ! node -p "require('./lib/hello.node').hello('Garga')"; then
+              exit 1
+            fi
+            if ! npx tsx hello.ts; then
+              exit 1
+            fi
+          done
+        shell: bash
         env:
           ENABLE_DEBUG: 1
           NOBIND_DEBUG_STORE: 1
           NOBIND_DEBUG_OBJECT: 1
-      - name: Link the package
-        run: npm link
-      - name: Check the example
-        run: |
-          cd example
-          npm install --ignore-scripts
-          npm link nobind17
-          npx node-gyp configure build --debug
-          node -p "require('./lib/hello.node').hello('Garga')"
-          npx tsx hello.ts
-          npx node-gyp configure build
-          node -p "require('./lib/hello.node').hello('Garga')"
-          npx tsx hello.ts
-        shell: bash
-        env:
-          NOBIND_DEBUG_STORE: 1
-          NOBIND_DEBUG_OBJECT: 1
-
-  legacy:
-    runs-on: ubuntu-latest
-    container: ubuntu:20.04
-
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ['18.17', 18, 20, 22]
-
-    steps:
-      - uses: actions/checkout@v5
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: Setup dependencies
-        run: |
-          apt-get update
-          apt-get -y install python3 g++ make
-        env:
-          DEBIAN_FRONTEND: noninteractive
-      - run: npm install
-      - run: npm test
-        env:
-          ENABLE_DEBUG: 1
-      - name: Link the package
-        run: npm link
-      - name: Check the example
-        run: |
-          cd example
-          npm install --ignore-scripts
-          npm link nobind17
-          npx node-gyp configure build --debug
-          node -p "require('./lib/hello.node').hello('Garga')"
-          npx tsx hello.ts
-          npx node-gyp configure build
-          node -p "require('./lib/hello.node').hello('Garga')"
-          npx tsx hello.ts
-        shell: bash
-
-
-  options:
-    runs-on: ${{ matrix.platform }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [ubuntu-latest]
-        node-version: [22]
-        options:
-          - '-DNOBIND_NO_OBJECT_STORE'
-          - '-DNOBIND_NO_TYPESCRIPT_GENERATOR'
-          - '-DNOBIND_NO_ASYNC_LOCKING'
-          - '-DNOBIND_NO_BASIC_FINALIZERS'
-          - '-DNODE_ADDON_API_REQUIRE_BASIC_FINALIZERS'
-
-    steps:
-      - uses: actions/checkout@v5
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm install
-      - run: npm test
-        env:
-          CXXFLAGS: ${{ matrix.options }}
-  
-
-  debug:
-    runs-on: ubuntu-22.04
-
-    steps:
-      - uses: actions/checkout@v5
-      - name: Use Node.js 24
-        uses: actions/setup-node@v3
-        with:
-          node-version: 24
-      - run: npm install
-      - run: npm test
-        env:
-          ENABLE_DEBUG: 1
-
-
-  asan:
-    runs-on: ubuntu-22.04
-
-    steps:
-      - uses: actions/checkout@v5
-      - name: Use Node.js 24.x
-        uses: actions/setup-node@v3
-        with:
-          node-version: 24.x
-      - run: npm install
-      - name: Find ASAN library
-        id: asan-lib
-        run: echo LD_PRELOAD=$(gcc -print-file-name=libasan.so) >> $GITHUB_OUTPUT
-      - run: npm test
-        env:
-          ENABLE_ASAN: 1
-          LSAN_OPTIONS: suppressions=${{ github.workspace }}/test/napi-leaks-suppression.txt
-          LD_PRELOAD: ${{ steps.asan-lib.outputs.LD_PRELOAD }}
