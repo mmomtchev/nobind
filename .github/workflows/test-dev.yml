@@ -35,18 +35,19 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - name: Link the package
-        run: npm link
+        run: |
+          npm link
+          cd example
+          npm install --no-scripts
+          npm link nobind17
+          npx node-gyp configure build --debug
       - name: Loop
         run: |
           while npx mocha; do
-            cd example
-            npm install --ignore-scripts
-            npm link nobind17
-            npx node-gyp configure build --debug
-            if ! node -p "require('./lib/hello.node').hello('Garga')"; then
+            if ! node -p "require('./example/lib/hello.node').hello('Garga')"; then
               exit 1
             fi
-            if ! npx tsx hello.ts; then
+            if ! npx tsx ./example/hello.ts; then
               exit 1
             fi
           done
