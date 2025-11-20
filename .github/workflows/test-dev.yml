@@ -53,3 +53,4 @@ jobs:
         env:
           NOBIND_DEBUG_STORE: 1
           NOBIND_DEBUG_OBJECT: 1
+          CXXFLAGS: -DNOBIND_NO_OBJECT_STORE
