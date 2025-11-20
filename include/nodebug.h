@@ -1,5 +1,5 @@
 #pragma once
-#ifdef DEBUG
+#if 1
 #ifndef _MSC_VER
 #include <cxxabi.h>
 #endif
