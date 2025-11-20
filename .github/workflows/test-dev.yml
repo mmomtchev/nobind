@@ -38,7 +38,7 @@ jobs:
           cd example
           npm install --no-scripts
           npm link nobind17
-          npx node-gyp configure build
+          npx node-gyp configure build --debug
       - name: Loop
         run: |
           while npx mocha; do
@@ -51,6 +51,6 @@ jobs:
           done
         shell: bash
         env:
-          DISABLE_DEBUG: 1
-          NOBIND_DEBUG_STORE: 1
-          NOBIND_DEBUG_OBJECT: 1
+          ENABLE_DEBUG: 1
+          NO_NOBIND_DEBUG_STORE: 1
+          NO_NOBIND_DEBUG_OBJECT: 1
