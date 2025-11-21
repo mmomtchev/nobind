@@ -40,7 +40,7 @@ jobs:
           npx node-gyp configure build
       - name: Loop
         run: |
-          while ./node -p "require('./example/lib/hello.node').hello('Garga')"; do
+          while node -p "require('./example/lib/hello.node').hello('Garga')"; do
             true
           done
         shell: bash
