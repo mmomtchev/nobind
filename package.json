@@ -19,7 +19,7 @@
     "@types/node": "^24.10.1",
     "benny": "^3.7.1",
     "chai": "^4.3.10",
-    "chai-as-promised": "^7.1.1",
+    "chai-as-promised": "^8.0.2",
     "mocha": "^11.7.5",
     "node-gyp": "^12.1.0",
     "typescript": "^5.7.3"
