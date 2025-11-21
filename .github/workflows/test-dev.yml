@@ -46,7 +46,7 @@ jobs:
           cp $(which node) node
           /usr/libexec/PlistBuddy -c "Add :com.apeple.security.get-task-allow bool true" tmp.entitlements
           codesign -s - -f --entitlements tmp.entitlements ./node
-          chmod 1777 /cores
+          sudo chmod 1777 /cores
           ls -al /cores
           touch /cores/test
           ls -al /cores
