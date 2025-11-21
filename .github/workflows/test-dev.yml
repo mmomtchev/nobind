@@ -41,7 +41,7 @@ jobs:
       - name: Loop
         run: |
           ulimit -c unlimited
-          while sudo node -p "require('./example/lib/hello.node').hello('Garga'); do
+          while sudo node -p "require('./example/lib/hello.node').hello('Garga')"; do
             true
           done
           sudo chmod -R +rwx /cores/*
