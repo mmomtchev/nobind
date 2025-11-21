@@ -42,14 +42,18 @@ jobs:
         run: |
           ulimit -c
           ulimit -c unlimited
-          ulimit -c
-          sudo chmod -R a+wrx /cores
+          ulimit -
+          cp $(which node) node
+          /usr/libexec/PlistBuddy -c "Add :com.apeple.security.get-task-allow bool true" tmp.entitlements
+          codesign -s - -f --entitlements tmp.entitlements ./node
+          chmod 1777 /cores
           ls -al /cores
           touch /cores/test
           ls -al /cores
-          while sudo node -p "require('./example/lib/hello.node').hello('Garga')"; do
+          while sudo ./node -p "require('./example/lib/hello.node').hello('Garga')"; do
             true
           done
+          ls -al /cores
           sudo chmod -R +rwx /cores/*
         shell: bash
         env:
