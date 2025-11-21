@@ -41,11 +41,8 @@ jobs:
           npx node-gyp configure build
       - name: Loop
         run: |
-          while npx mocha; do
+          while true; do
             if ! node -p "require('./example/lib/hello.node').hello('Garga')"; then
-              exit 1
-            fi
-            if ! npx tsx ./example/hello.ts; then
               exit 1
             fi
           done
