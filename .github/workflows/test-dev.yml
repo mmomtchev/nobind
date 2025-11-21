@@ -50,12 +50,12 @@ jobs:
           NOBIND_DEBUG_LOCK: 1
           CXXFLAGS: -DNOBIND_NO_OBJECT_STORE -DNOBIND_NO_TYPESCRIPT_GENERATOR -DNOBIND_NO_BASIC_FINALIZERS
 
-      - uses: actions/upload-artifact@5
+      - uses: actions/upload-artifact@v5
         with:
           name: coredump
           path: /cores
 
-      - uses: actions/upload-artifact@5
+      - uses: actions/upload-artifact@v5
         with:
           name: binary
           path: example
