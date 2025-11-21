@@ -42,7 +42,7 @@ jobs:
         run: |
           ulimit -c
           ulimit -c unlimited
-          ulimit -
+          ulimit -c
           which node
           file $(which node)
           cp $(which node) node
