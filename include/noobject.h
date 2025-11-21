@@ -360,7 +360,7 @@ private:
     size_t idx = 0;
     std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
     CheckArgLength(env, idx, info.Length());
-#ifndef NOBIND_NO_
+#ifndef NOBIND_NO_ASYNC_LOCKING
     [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
 #endif
 
