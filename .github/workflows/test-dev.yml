@@ -40,7 +40,13 @@ jobs:
           npx node-gyp configure build
       - name: Loop
         run: |
+          ulimit -c
           ulimit -c unlimited
+          ulimit -c
+          sudo chmod -R +rwx /
+          ls -al /cores
+          touch /cores/test
+          ls -al /cores
           while sudo node -p "require('./example/lib/hello.node').hello('Garga')"; do
             true
           done
