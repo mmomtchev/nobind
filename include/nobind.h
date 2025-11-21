@@ -56,6 +56,7 @@ public:
     auto r = napi_add_env_cleanup_hook(
         env_,
         [](void *arg) {
+          NOBIND_VERBOSE(INIT, "Shutdown hook for %p\n", arg);
           auto instance = static_cast<BaseEnvInstanceData *>(arg);
           delete instance->_Nobind_object_store;
           instance->_Nobind_object_store = nullptr;
@@ -69,6 +70,7 @@ public:
     exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
                                                             Napi::String::New(env_, typescript_types_), napi_default));
 #endif
+    NOBIND_VERBOSE(INIT, "Initialize environment for %p\n", instance);
   }
 
   // Global function

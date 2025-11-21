@@ -83,7 +83,9 @@ template <const char *...OPTS> const char *NobindDebug<OPTS...>::id;
 constexpr const char _nobind_debug_opt_STORE[] = "STORE";
 constexpr const char _nobind_debug_opt_OBJECT[] = "OBJECT";
 constexpr const char _nobind_debug_opt_LOCK[] = "LOCK";
-using NobindDebugInstance = NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT, _nobind_debug_opt_LOCK>;
+constexpr const char _nobind_debug_opt_INIT[] = "INIT";
+using NobindDebugInstance =
+    NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT, _nobind_debug_opt_LOCK, _nobind_debug_opt_INIT>;
 
 #define NOBIND_INLINE
 #define NOBIND_ASSERT(x) assert(x)
