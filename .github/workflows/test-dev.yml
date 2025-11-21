@@ -37,7 +37,9 @@ jobs:
           cd example
           npm install --no-scripts
           npm link nobind17
-          npx node-gyp configure build
+          npx node-gyp configure build -v
+        env:
+          CXXFLAGS: -DNOBIND_NO_ASYNC_LOCKING -DNOBIND_NO_OBJECT_STORE -DNOBIND_NO_TYPESCRIPT_GENERATOR -DNOBIND_NO_BASIC_FINALIZERS
       - name: Loop
         run: |
           while true; do
@@ -48,4 +50,3 @@ jobs:
         shell: bash
         env:
           NOBIND_DEBUG_INIT: 1
-          CXXFLAGS: -DNOBIND_NO_ASYNC_LOCKING -DNOBIND_NO_OBJECT_STORE -DNOBIND_NO_TYPESCRIPT_GENERATOR -DNOBIND_NO_BASIC_FINALIZERS

@@ -56,21 +56,22 @@ public:
     auto r = napi_add_env_cleanup_hook(
         env_,
         [](void *arg) {
-          NOBIND_VERBOSE(INIT, "Shutdown hook for %p\n", arg);
+          NOBIND_VERBOSE(INIT, "Shutdown hook begin for %p\n", arg);
           auto instance = static_cast<BaseEnvInstanceData *>(arg);
           delete instance->_Nobind_object_store;
           instance->_Nobind_object_store = nullptr;
+          NOBIND_VERBOSE(INIT, "Shutdown hook end for %p\n", arg);
         },
         instance);
     if (r != napi_ok) {
       throw Napi::Error::New(env_, "Failed to register Object Store cleanup hook");
     }
+    NOBIND_VERBOSE(INIT, "Initialize environment for %p\n", instance);
 #endif
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
                                                             Napi::String::New(env_, typescript_types_), napi_default));
 #endif
-    NOBIND_VERBOSE(INIT, "Initialize environment for %p\n", instance);
   }
 
   // Global function
