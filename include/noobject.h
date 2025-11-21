@@ -37,6 +37,10 @@ struct BaseEnvInstanceData {
   std::mutex _Nobind_js_thread_jobs_lock;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
+
+  ~BaseEnvInstanceData() {
+    NOBIND_VERBOSE(INIT, "Destroy instance data, jobs on the queue %d\n", _Nobind_js_thread_jobs.size());
+  }
 };
 
 template <typename T> struct EnvInstanceData : BaseEnvInstanceData, public T {};
