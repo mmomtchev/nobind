@@ -5,9 +5,9 @@
 #endif
 
 #ifndef NAPI_VERSION
-#define NAPI_VERSION 6
-#elif NAPI_VERSION < 6
-#error NAPI_VERSION 6 is the minimum supported target (Node.js >=14)
+#define NAPI_VERSION 8
+#elif NAPI_VERSION < 8
+#error NAPI_VERSION 8 is the minimum supported target (Node.js >=14)
 #endif
 
 #if __cplusplus < 201703L

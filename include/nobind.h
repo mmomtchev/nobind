@@ -50,24 +50,36 @@ public:
   }
 
   ~Module() noexcept(false) {
-#ifndef NOBIND_NO_OBJECT_STORE
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
+    NOBIND_VERBOSE(INIT, "Environment setup for %p\n", instance);
+#ifndef NOBIND_NO_OBJECT_STORE
     instance->_Nobind_object_store = new ObjectStore<void *>(class_idx_);
-    auto r = napi_add_env_cleanup_hook(
+#endif
+    auto r = napi_add_async_cleanup_hook(
         env_,
-        [](void *arg) {
-          NOBIND_VERBOSE(INIT, "Shutdown hook begin for %p\n", arg);
+        [](napi_async_cleanup_hook_handle hook, void *arg) {
           auto instance = static_cast<BaseEnvInstanceData *>(arg);
+          NOBIND_VERBOSE(INIT, "Environment cleanup hook for %p\n", instance);
+#ifndef NOBIND_NO_OBJECT_STORE
           delete instance->_Nobind_object_store;
           instance->_Nobind_object_store = nullptr;
-          NOBIND_VERBOSE(INIT, "Shutdown hook end for %p\n", arg);
+#endif
+          instance->_Nobind_js_thread_async_handle->data = hook;
+          uv_close(reinterpret_cast<uv_handle_t *>(instance->_Nobind_js_thread_async_handle), [](uv_handle_t *async) {
+            NOBIND_VERBOSE(INIT, "Environment cleanup hook bottom half\n");
+            auto hook = static_cast<napi_async_cleanup_hook_handle>(async->data);
+            delete reinterpret_cast<uv_async_t *>(async);
+            auto r = napi_remove_async_cleanup_hook(hook);
+            if (r != napi_ok) {
+              fprintf(stderr, "Failed to destroy async handle\n");
+              abort();
+            }
+          });
         },
-        instance);
+        instance, nullptr);
     if (r != napi_ok) {
       throw Napi::Error::New(env_, "Failed to register Object Store cleanup hook");
     }
-    NOBIND_VERBOSE(INIT, "Initialize environment for %p\n", instance);
-#endif
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
                                                             Napi::String::New(env_, typescript_types_), napi_default));

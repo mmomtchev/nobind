@@ -32,11 +32,12 @@ template <typename T> void InitMainThreadQueue(Napi::Env env) {
   uv_loop_t *event_loop;
   if (napi_get_uv_event_loop(env, &event_loop) != napi_ok)
     std::abort();
-  if (uv_async_init(event_loop, &env_data->_Nobind_js_thread_async_handle, RunMainThreadQueue<T>) != 0)
+  env_data->_Nobind_js_thread_async_handle = new uv_async_t;
+  if (uv_async_init(event_loop, env_data->_Nobind_js_thread_async_handle, RunMainThreadQueue<T>) != 0)
     std::abort();
   // Do not block the event loop exit
-  uv_unref(reinterpret_cast<uv_handle_t *>(&env_data->_Nobind_js_thread_async_handle));
-  env_data->_Nobind_js_thread_async_handle.data = static_cast<void *>(env_data);
+  uv_unref(reinterpret_cast<uv_handle_t *>(env_data->_Nobind_js_thread_async_handle));
+  env_data->_Nobind_js_thread_async_handle->data = static_cast<void *>(env_data);
 }
 
 /* ---------------------------------------------------------------------------
@@ -61,7 +62,7 @@ template <typename T> void RunOnJSMainThread(Napi::BasicEnv env, std::function<v
     // it will still be alive when the tasklets run
     std::lock_guard<std::mutex> lock(env_data->_Nobind_js_thread_jobs_lock);
     env_data->_Nobind_js_thread_jobs.emplace(std::move(job));
-    if (uv_async_send(&env_data->_Nobind_js_thread_async_handle) != 0)
+    if (uv_async_send(env_data->_Nobind_js_thread_async_handle) != 0)
       std::abort();
   }
 }
