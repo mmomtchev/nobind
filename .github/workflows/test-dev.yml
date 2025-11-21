@@ -42,7 +42,9 @@ jobs:
         run: |
           ulimit -c
           ulimit -c unlimited
-          ulimit -c
+          ulimit -
+          which node
+          file $(which node)
           cp $(which node) node
           /usr/libexec/PlistBuddy -c "Add :com.apeple.security.get-task-allow bool true" tmp.entitlements
           codesign -s - -f --entitlements tmp.entitlements ./node
