@@ -41,24 +41,6 @@
           'destination': 'lib'
         }
       ]
-    },
-    {
-      'target_name': 'hello.d.ts',
-      'type': 'none',
-      'dependencies': [ 'hello' ],
-      'actions': [
-        {
-          'action_name': 'typescript_bindings',
-          'inputs': [ '<(PRODUCT_DIR)/hello.node' ],
-          'outputs': [ 'lib/hello.d.ts' ],
-          'action': [
-            'node',
-            'gen_typescript.js',
-            '<@(_inputs)',
-            '<@(_outputs)'
-          ]
-        }
-      ]
     }
   ]
 }
