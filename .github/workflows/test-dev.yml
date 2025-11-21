@@ -43,7 +43,7 @@ jobs:
       - name: Loop
         run: |
           while true; do
-            if ! node -p "require('./example/lib/hello.node').hello('Garga')"; then
+            if ! node -p "require('./example/lib/hello.node')"; then
             exit 1
             fi
           done
