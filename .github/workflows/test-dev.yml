@@ -56,7 +56,7 @@ jobs:
           sysctl kern.coredump
           sudo sysctl kern.coredump=1
           sysctl kern.coredump
-          while sudo ./node -p "require('./example/lib/hello.node').hello('Garga')"; do
+          while ./node -p "require('./example/lib/hello.node').hello('Garga')"; do
             true
           done
           ls -al /cores
