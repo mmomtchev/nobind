@@ -360,7 +360,7 @@ private:
     size_t idx = 0;
     std::tuple<FromJS_t<ARGS>...> args{FromJSArgs<ARGS>(info, idx)...};
     CheckArgLength(env, idx, info.Length());
-#ifndef NOBIND_NO_ASYNC_LOCKING
+#ifndef NOBIND_NO_
     [[maybe_unused]] std::tuple<FromJSLockGuard<ARGS>...> release_guards{std::get<I>(args)...};
 #endif
 
@@ -474,11 +474,13 @@ std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == nullptr); }
 
 template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "synchronous (basic finalizer) delete [owned=%s]\n", owned ? "true" : "false");
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "synchronous (basic finalizer) delete [owned=%s]\n",
+                      owned ? "true" : "false");
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   Napi::Env env{this->Env()};
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "asynchronous delete (no basic finalizer) [owned=%s]\n", owned ? "true" : "false");
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "asynchronous delete (no basic finalizer) [owned=%s]\n",
+                      owned ? "true" : "false");
 #endif
 #ifndef NOBIND_NO_OBJECT_STORE
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
@@ -524,7 +526,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
     // From C++
     owned = info[1].ToBoolean().Value();
     self = info[0].As<Napi::External<CLASS>>().Data();
-    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create wrapper for C++ object [owned=%s]\n", owned ? "true": "false");
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create wrapper for C++ object [owned=%s]\n", owned ? "true" : "false");
     return;
   }
   // From JS
@@ -920,10 +922,12 @@ public:
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, val_, "FromJS & Lock\n");
     if (wrapper_)
       wrapper_->Lock();
   }
   NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, val_, "FromJS & Unlock\n");
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -972,10 +976,12 @@ public:
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, val_, "FromJS * Lock\n");
     if (wrapper_)
       wrapper_->Lock();
   }
   NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, val_, "FromJS * Unlock\n");
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -1035,10 +1041,12 @@ public:
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, object_, "FromJS Lock\n");
     if (wrapper_)
       wrapper_->Lock();
   }
   NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, object_, "FromJS Unlock\n");
     if (wrapper_)
       wrapper_->Unlock();
   }

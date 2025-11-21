@@ -40,39 +40,10 @@ jobs:
           npx node-gyp configure build
       - name: Loop
         run: |
-          ulimit -c
-          ulimit -c unlimited
-          ulimit -c
-          which node
-          file $(which node)
-          cp $(which node) node
-          /usr/libexec/PlistBuddy -c "Add :com.apeple.security.get-task-allow bool true" tmp.entitlements
-          codesign -s - -f --entitlements tmp.entitlements ./node
-          chmod 755 ./node
-          file ./node
-          sudo chmod 1777 /cores
-          ls -al /cores
-          touch /cores/test
-          ls -al /cores
-          sysctl kern.coredump
-          sudo sysctl kern.coredump=1
-          sysctl kern.coredump
           while ./node -p "require('./example/lib/hello.node').hello('Garga')"; do
             true
           done
-          ls -al /cores
-          sudo chmod -R +rwx /cores/*
         shell: bash
         env:
           NOBIND_DEBUG_LOCK: 1
           CXXFLAGS: -DNOBIND_NO_OBJECT_STORE -DNOBIND_NO_TYPESCRIPT_GENERATOR -DNOBIND_NO_BASIC_FINALIZERS
-
-      - uses: actions/upload-artifact@v5
-        with:
-          name: coredump
-          path: /cores
-
-      - uses: actions/upload-artifact@v5
-        with:
-          name: binary
-          path: example

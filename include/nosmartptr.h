@@ -41,10 +41,12 @@ public:
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, this, "FromJS shared_ptr Lock\n");
     if (wrapper_)
       wrapper_->Lock();
   }
   NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, this, "FromJS shared_ptr Unlock\n");
     if (wrapper_)
       wrapper_->Unlock();
   }

@@ -186,11 +186,13 @@ template <typename T> class FromJSLockGuard {
 public:
   FromJSLockGuard(FromJS_t<T> &tm) : tm_(tm) {
     if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::lock) {
+      NOBIND_VERBOSE(LOCK, "Lock guard init\n");
       tm_.Lock();
     }
   };
   virtual ~FromJSLockGuard() {
     if constexpr (FromJSTypemapHasLocking<FromJS_t<T>>::unlock) {
+      NOBIND_VERBOSE(LOCK, "Lock guard destroyed\n");
       tm_.Unlock();
     }
   }
