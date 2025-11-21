@@ -43,7 +43,7 @@ jobs:
           ulimit -c
           ulimit -c unlimited
           ulimit -c
-          sudo chmod -R +rwx /
+          sudo chmod -R +rwx /cores
           ls -al /cores
           touch /cores/test
           ls -al /cores
