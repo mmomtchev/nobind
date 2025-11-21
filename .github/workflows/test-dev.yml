@@ -19,7 +19,6 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     strategy:
-      fail-fast: false
       matrix:
         platform:
           - macos-latest
@@ -41,12 +40,22 @@ jobs:
           npx node-gyp configure build
       - name: Loop
         run: |
-          while true; do
-            if ! node -p "require('./example/lib/hello.node').hello('Garga')"; then
-              exit 1
-            fi
+          ulimit -c unlimited
+          while sudo node -p "require('./example/lib/hello.node').hello('Garga'); do
+            true
           done
+          sudo chmod -R +rwx /cores/*
         shell: bash
         env:
           NOBIND_DEBUG_LOCK: 1
           CXXFLAGS: -DNOBIND_NO_OBJECT_STORE -DNOBIND_NO_TYPESCRIPT_GENERATOR -DNOBIND_NO_BASIC_FINALIZERS
+
+      - uses: actions/upload-artifact@5
+        with:
+          name: coredump
+          path: /cores
+
+      - uses: actions/upload-artifact@5
+        with:
+          name: binary
+          path: example
