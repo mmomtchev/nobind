@@ -6,7 +6,7 @@
       "NAPI_EXPERIMENTAL",
       "NODE_ADDON_API_DISABLE_DEPRECATED",
       "NODE_API_EXPERIMENTAL_HAS_POST_FINALIZER",
-      "NAPI_VERSION=6"
+      "NAPI_VERSION=8"
     ],
     "projectIncludes": [
       "${workspaceFolder}/node_modules/node-addon-api",

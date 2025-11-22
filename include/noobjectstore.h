@@ -144,10 +144,10 @@ public:
   ~ObjectStore() {
     std::lock_guard guard{lock};
 
-    NOBIND_VERBOSE(STORE, "flushing object store\n");
+    NOBIND_VERBOSE(STORE, "Flushing object store\n");
     for (auto &store : object_store) {
       while (!store.empty()) {
-        NOBIND_VERBOSE(STORE, "erasing object %p\n", store.cbegin()->first);
+        NOBIND_VERBOSE(STORE, "Erasing object %p\n", store.cbegin()->first);
         store.erase(store.cbegin()->first);
       }
     }
