@@ -15,12 +15,14 @@ namespace Nobind {
 template <const char *...OPTS> struct NobindDebug {
   static constexpr const char *const debug_opt_names[] = {OPTS...};
   static bool debug_opt_enabled[sizeof...(OPTS)];
+  static const char *id;
 
-  static void Init() {
+  static void Init(const char *module_name) {
+    id = module_name;
     for (size_t i = 0; i < sizeof...(OPTS); i++) {
       std::string var_name = "NOBIND_DEBUG_"s + debug_opt_names[i];
       if (std::getenv(var_name.c_str())) {
-        printf("%s debug enabled\n", debug_opt_names[i]);
+        printf("<%s> %s debug enabled\n", id, debug_opt_names[i]);
         debug_opt_enabled[i] = true;
       } else {
         debug_opt_enabled[i] = false;
@@ -61,7 +63,7 @@ template <const char *...OPTS> struct NobindDebug {
       std::ostringstream tid;
       tid << std::this_thread::get_id();
 
-      std::printf("[%s : %p (tid %s)] ", type.c_str(), obj, tid.str().c_str());
+      std::printf("<%s> [%s : %p (tid %s)] ", id, type.c_str(), obj, tid.str().c_str());
       std::vprintf(fmt, args);
     }
   }
@@ -69,21 +71,25 @@ template <const char *...OPTS> struct NobindDebug {
     if (Enabled<OPT>()) {
       va_list args;
       va_start(args, fmt);
+      std::printf("<%s> ", id);
       std::vprintf(fmt, args);
     }
   }
 };
 template <const char *...OPTS> bool NobindDebug<OPTS...>::debug_opt_enabled[sizeof...(OPTS)];
+template <const char *...OPTS> const char *NobindDebug<OPTS...>::id;
 
 // String literals as template arguments requires C++20
 constexpr const char _nobind_debug_opt_STORE[] = "STORE";
 constexpr const char _nobind_debug_opt_OBJECT[] = "OBJECT";
 constexpr const char _nobind_debug_opt_LOCK[] = "LOCK";
-using NobindDebugInstance = NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT, _nobind_debug_opt_LOCK>;
+constexpr const char _nobind_debug_opt_INIT[] = "INIT";
+using NobindDebugInstance =
+    NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_opt_OBJECT, _nobind_debug_opt_LOCK, _nobind_debug_opt_INIT>;
 
 #define NOBIND_INLINE
 #define NOBIND_ASSERT(x) assert(x)
-#define NOBIND_DEBUG_INIT Nobind::NobindDebugInstance::Init()
+#define NOBIND_DEBUG_INIT(m) Nobind::NobindDebugInstance::Init(m)
 
 #define NOBIND_VERBOSE(SYS, ...) NobindDebugInstance::Log<_nobind_debug_opt_##SYS>(__VA_ARGS__)
 
@@ -94,7 +100,7 @@ using NobindDebugInstance = NobindDebug<_nobind_debug_opt_STORE, _nobind_debug_o
 
 #define NOBIND_INLINE inline
 #define NOBIND_ASSERT(x)
-#define NOBIND_DEBUG_INIT
+#define NOBIND_DEBUG_INIT(m)
 #define NOBIND_VERBOSE(...)
 #define NOBIND_VERBOSE_TYPE(...)
 #endif

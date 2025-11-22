@@ -32,11 +32,16 @@ struct BaseEnvInstanceData {
   ObjectStore<void *> *_Nobind_object_store;
 #endif
   std::thread::id _Nobind_js_thread;
-  uv_async_t _Nobind_js_thread_async_handle;
+  uv_async_t *_Nobind_js_thread_async_handle;
   std::queue<std::function<void()>> _Nobind_js_thread_jobs;
   std::mutex _Nobind_js_thread_jobs_lock;
+  napi_async_cleanup_hook_handle _Nobind_environment_cleanup_hook;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
+
+  ~BaseEnvInstanceData() {
+    NOBIND_VERBOSE(INIT, "Destroy instance data, jobs on the queue %d\n", _Nobind_js_thread_jobs.size());
+  }
 };
 
 template <typename T> struct EnvInstanceData : BaseEnvInstanceData, public T {};
@@ -474,11 +479,13 @@ std::vector<std::vector<typename NoObjectWrap<CLASS>::InstanceVoidMethodCallback
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() { assert(self == nullptr); }
 
 template <typename CLASS> void NoObjectWrap<CLASS>::Finalize(Napi::BasicEnv env) {
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "synchronous (basic finalizer) delete [owned=%s]\n", owned ? "true" : "false");
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "synchronous (basic finalizer) delete [owned=%s]\n",
+                      owned ? "true" : "false");
 #else
 template <typename CLASS> NoObjectWrap<CLASS>::~NoObjectWrap() {
   Napi::Env env{this->Env()};
-  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "asynchronous delete (no basic finalizer) [owned=%s]\n", owned ? "true" : "false");
+  NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "asynchronous delete (no basic finalizer) [owned=%s]\n",
+                      owned ? "true" : "false");
 #endif
 #ifndef NOBIND_NO_OBJECT_STORE
   auto instance = env.GetInstanceData<BaseEnvInstanceData>();
@@ -524,7 +531,7 @@ NoObjectWrap<CLASS>::NoObjectWrap(const Napi::CallbackInfo &info)
     // From C++
     owned = info[1].ToBoolean().Value();
     self = info[0].As<Napi::External<CLASS>>().Data();
-    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create wrapper for C++ object [owned=%s]\n", owned ? "true": "false");
+    NOBIND_VERBOSE_TYPE(OBJECT, CLASS, self, "create wrapper for C++ object [owned=%s]\n", owned ? "true" : "false");
     return;
   }
   // From JS
@@ -920,10 +927,12 @@ public:
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, val_, "FromJS & Lock\n");
     if (wrapper_)
       wrapper_->Lock();
   }
   NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, val_, "FromJS & Unlock\n");
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -972,10 +981,12 @@ public:
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, val_, "FromJS * Lock\n");
     if (wrapper_)
       wrapper_->Lock();
   }
   NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, val_, "FromJS * Unlock\n");
     if (wrapper_)
       wrapper_->Unlock();
   }
@@ -1035,10 +1046,12 @@ public:
 
 #ifndef NOBIND_NO_ASYNC_LOCKING
   NOBIND_INLINE void Lock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, object_, "FromJS Lock\n");
     if (wrapper_)
       wrapper_->Lock();
   }
   NOBIND_INLINE void Unlock() NOBIND_NOEXCEPT {
+    NOBIND_VERBOSE_TYPE(LOCK, T, object_, "FromJS Unlock\n");
     if (wrapper_)
       wrapper_->Unlock();
   }

@@ -50,21 +50,36 @@ public:
   }
 
   ~Module() noexcept(false) {
-#ifndef NOBIND_NO_OBJECT_STORE
     auto instance = env_.GetInstanceData<BaseEnvInstanceData>();
+    NOBIND_VERBOSE(INIT, "Environment setup for %p\n", instance);
+#ifndef NOBIND_NO_OBJECT_STORE
     instance->_Nobind_object_store = new ObjectStore<void *>(class_idx_);
-    auto r = napi_add_env_cleanup_hook(
+#endif
+    auto r = napi_add_async_cleanup_hook(
         env_,
-        [](void *arg) {
+        [](napi_async_cleanup_hook_handle hook, void *arg) {
           auto instance = static_cast<BaseEnvInstanceData *>(arg);
+          NOBIND_VERBOSE(INIT, "Environment cleanup hook for %p\n", instance);
+          NOBIND_ASSERT(instance->_Nobind_environment_cleanup_hook == hook);
+#ifndef NOBIND_NO_OBJECT_STORE
           delete instance->_Nobind_object_store;
           instance->_Nobind_object_store = nullptr;
+#endif
+          uv_close(reinterpret_cast<uv_handle_t *>(instance->_Nobind_js_thread_async_handle), [](uv_handle_t *async) {
+            auto instance = static_cast<BaseEnvInstanceData *>(async->data);
+            NOBIND_VERBOSE(INIT, "Environment cleanup hook bottom half for %p\n", instance);
+            delete reinterpret_cast<uv_async_t *>(async);
+            auto r = napi_remove_async_cleanup_hook(instance->_Nobind_environment_cleanup_hook);
+            if (r != napi_ok) {
+              fprintf(stderr, "Failed to destroy async handle\n");
+              std::abort();
+            }
+          });
         },
-        instance);
+        instance, &instance->_Nobind_environment_cleanup_hook);
     if (r != napi_ok) {
       throw Napi::Error::New(env_, "Failed to register Object Store cleanup hook");
     }
-#endif
 #ifndef NOBIND_NO_TYPESCRIPT_GENERATOR
     exports_.DefineProperty(Napi::PropertyDescriptor::Value(NOBIND_TYPESCRIPT_PROP,
                                                             Napi::String::New(env_, typescript_types_), napi_default));
@@ -158,7 +173,7 @@ public:
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env, Napi::Object);                                           \
   NODE_API_MODULE(MODULE_NAME, Nobind_##MODULE_NAME##_Init_Wrapper)                                                    \
   Napi::Object Nobind_##MODULE_NAME##_Init_Wrapper(Napi::Env env, Napi::Object exports) {                              \
-    NOBIND_DEBUG_INIT;                                                                                                 \
+    NOBIND_DEBUG_INIT(#MODULE_NAME);                                                                                   \
     auto instance = new Nobind::EnvInstanceData<INSTANCE_DATA_TYPE>;                                                   \
     instance->_Nobind_js_thread = std::this_thread::get_id();                                                          \
     env.SetInstanceData(instance);                                                                                     \
