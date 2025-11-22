@@ -78,7 +78,7 @@ You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-examp
 
 It is published as an npm package that will also install `node-addon-api`.
 
-Starting from Node.js 18, C++17 is the default build mode for both Node.js itself and for addons. Unless you set manually `NAPI_VERSION` in your project, `nobind17@2.0` will default to `NAPI_VERSION=9` which requires Node.js 18.17, 20.3 or 21 and later. Older versions use `NAPI_VERSION-6` which allows backward compatibility of the generated binary addon with Node.js 14 and later - even when using Node.js 18 as the build platform.
+Starting from Node.js 18, C++17 is the default build mode for both Node.js itself and for addons. Unless you set manually `NAPI_VERSION` in your project, `nobind17@2.0` defaults to `NAPI_VERSION=8` which requires Node.js 16 or later. Older versions use `NAPI_VERSION=6` which allows backward compatibility of the generated binary addon with Node.js 14 and later - even when using Node.js 18 as the build platform.
 
 `nobind17` is designed to be very easy to use - there is no learning curve at all - while allowing to deal with the most common situations that arise when creating bindings for C++ libraries to be used from Node.js.
 
