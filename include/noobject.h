@@ -35,6 +35,7 @@ struct BaseEnvInstanceData {
   uv_async_t *_Nobind_js_thread_async_handle;
   std::queue<std::function<void()>> _Nobind_js_thread_jobs;
   std::mutex _Nobind_js_thread_jobs_lock;
+  napi_async_cleanup_hook_handle _Nobind_environment_cleanup_hook;
   // Per-environment constructors for all proxied types
   std::vector<Napi::FunctionReference> _Nobind_cons;
 

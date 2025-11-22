@@ -60,23 +60,23 @@ public:
         [](napi_async_cleanup_hook_handle hook, void *arg) {
           auto instance = static_cast<BaseEnvInstanceData *>(arg);
           NOBIND_VERBOSE(INIT, "Environment cleanup hook for %p\n", instance);
+          NOBIND_ASSERT(instance->_Nobind_environment_cleanup_hook == hook);
 #ifndef NOBIND_NO_OBJECT_STORE
           delete instance->_Nobind_object_store;
           instance->_Nobind_object_store = nullptr;
 #endif
-          instance->_Nobind_js_thread_async_handle->data = hook;
           uv_close(reinterpret_cast<uv_handle_t *>(instance->_Nobind_js_thread_async_handle), [](uv_handle_t *async) {
-            NOBIND_VERBOSE(INIT, "Environment cleanup hook bottom half\n");
-            auto hook = static_cast<napi_async_cleanup_hook_handle>(async->data);
+            auto instance = static_cast<BaseEnvInstanceData *>(async->data);
+            NOBIND_VERBOSE(INIT, "Environment cleanup hook bottom half for %p\n", instance);
             delete reinterpret_cast<uv_async_t *>(async);
-            auto r = napi_remove_async_cleanup_hook(hook);
+            auto r = napi_remove_async_cleanup_hook(instance->_Nobind_environment_cleanup_hook);
             if (r != napi_ok) {
               fprintf(stderr, "Failed to destroy async handle\n");
               abort();
             }
           });
         },
-        instance, nullptr);
+        instance, &instance->_Nobind_environment_cleanup_hook);
     if (r != napi_ok) {
       throw Napi::Error::New(env_, "Failed to register Object Store cleanup hook");
     }
