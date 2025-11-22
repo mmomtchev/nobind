@@ -72,7 +72,7 @@ public:
             auto r = napi_remove_async_cleanup_hook(instance->_Nobind_environment_cleanup_hook);
             if (r != napi_ok) {
               fprintf(stderr, "Failed to destroy async handle\n");
-              abort();
+              std::abort();
             }
           });
         },
