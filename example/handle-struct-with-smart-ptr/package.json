@@ -1,0 +1,15 @@
+{
+  "name": "test_package",
+  "version": "1.0.0",
+  "description": "nobind test package",
+  "author": "Momtchil Momtchev <momtchil@momtchev.com>",
+  "license": "ISC",
+  "dependencies": {
+    "nobind17": "^2.0.0",
+    "node-addon-api": "^8.3.1",
+    "node-gyp": "^11.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3"
+  }
+}

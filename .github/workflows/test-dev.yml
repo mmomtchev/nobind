@@ -41,16 +41,22 @@ jobs:
       - run: npm test
       - name: Link the package
         run: npm link
-      - name: Check the example
+      - name: Check the examples
         run: |
           cd example
-          npm install --ignore-scripts
-          npm link nobind17
-          npx node-gyp configure build --debug
-          node -p "require('./lib/hello.node').hello('Garga')"
-          npx node-gyp configure build
-          node -p "require('./lib/hello.node').hello('Garga')"
-          npx tsx hello.ts
+          set -e && for EXAMPLE in handle-struct-with-plain-ptr	hello-world handle-struct	handle-struct-with-smart-ptr; do
+            (
+              set -e
+              cd $EXAMPLE
+              npm install --ignore-scripts
+              npm link nobind17
+              npx node-gyp configure build --debug
+              node -p "(new (require('./lib/example.node').Hello)('Garga')).greet()"
+              npx node-gyp configure build
+              node -p "(new (require('./lib/example.node').Hello)('Garga')).greet()"
+              npx tsx example.ts
+            )
+          done
         shell: bash
 
 
@@ -79,16 +85,22 @@ jobs:
       - run: npm test
       - name: Link the package
         run: npm link
-      - name: Check the example
+      - name: Check the examples
         run: |
           cd example
-          npm install --ignore-scripts
-          npm link nobind17
-          npx node-gyp configure build --debug
-          node -p "require('./lib/hello.node').hello('Garga')"
-          npx node-gyp configure build
-          node -p "require('./lib/hello.node').hello('Garga')"
-          npx tsx hello.ts
+          set -e && for EXAMPLE in handle-struct-with-plain-ptr	hello-world handle-struct	handle-struct-with-smart-ptr; do
+            (
+              set -e
+              cd $EXAMPLE
+              npm install --ignore-scripts
+              npm link nobind17
+              npx node-gyp configure build --debug
+              node -p "(new (require('./lib/example.node').Hello)('Garga')).greet()"
+              npx node-gyp configure build
+              node -p "(new (require('./lib/example.node').Hello)('Garga')).greet()"
+              npx tsx example.ts
+            )
+          done
         shell: bash
 
 

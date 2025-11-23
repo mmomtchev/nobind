@@ -7,7 +7,7 @@
   },
   'targets': [
     {
-      'target_name': 'hello',
+      'target_name': 'example',
       'sources': [ 'hello.cc', 'monster.cc' ],
       'include_dirs': [
         '<!@(node -p "require(\'node-addon-api\').include")',
@@ -29,28 +29,32 @@
         'Release': {}
       }
     },
+    # This target copies either build/Debug/module.node
+    # or build/Release/module.node to ./lib
     {
       'target_name': 'action_after_build',
       'type': 'none',
-      'dependencies': [ 'hello' ],
+      'dependencies': [ 'example' ],
       'copies': [
         {
           'files': [
-            '<(PRODUCT_DIR)/hello.node'
+            '<(PRODUCT_DIR)/example.node'
           ],
           'destination': 'lib'
         }
       ]
     },
+    # This target extracts the TypeScript type
+    # definitions
     {
-      'target_name': 'hello.d.ts',
+      'target_name': 'example.d.ts',
       'type': 'none',
-      'dependencies': [ 'hello' ],
+      'dependencies': [ 'example' ],
       'actions': [
         {
           'action_name': 'typescript_bindings',
-          'inputs': [ '<(PRODUCT_DIR)/hello.node' ],
-          'outputs': [ 'lib/hello.d.ts' ],
+          'inputs': [ '<(PRODUCT_DIR)/example.node' ],
+          'outputs': [ 'lib/example.d.ts' ],
           'action': [
             'node',
             'gen_typescript.js',

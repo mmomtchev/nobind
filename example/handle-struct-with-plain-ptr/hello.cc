@@ -4,7 +4,6 @@
 
 #include "hello.h"
 #include "monster.h"
-#include "monster_ptr.h"
 
 int add(int a, int b) { return a + b; }
 
@@ -27,15 +26,3 @@ std::string Hello::Greet() {
   return r.str();
 }
 int Hello::id_ = 0;
-
-#include <nobind.h>
-
-NOBIND_MODULE(hello, m) {
-  m.def<&add>("add");
-  m.def<&gte>("gte");
-  m.def<&power>("pow");
-  m.def<&hello>("hello");
-  m.def<Hello>("Hello").cons<std::string &>().def<&Hello::Id>("id").def<&Hello::Greet>("greet");
-  m.def<&handleMonster>("handleMonster");
-  m.def<&handleMonsterPtr>("handleMonsterPtr");
-}
