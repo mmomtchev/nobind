@@ -1,5 +1,6 @@
 #pragma once
 #include "hello.h"
+#include <napi.h>
 #include <string>
 
 // Type TypeScript type
@@ -17,11 +18,20 @@ struct MonsterDefinition {
   bool fangs;
   enum Feature { CLAWS, HORN } feature;
 
-  // The easiest is to copy the object.
-  // Check monster_ptr for an example with a pointer
-  // to the actual JS-held object which may be kept
-  // on the C++ side
-  Hello greeter;
+  // C++ gets an actual pointer to the object held by JS
+  Hello *greeter;
+
+  // This is the tricky part
+  //
+  // This is needed to protect the above object from the GC
+  // when this pointer will be kept on the C++ side. This
+  // renders the structure non-copyconstructible. The JS
+  // object will be preserved as long as this exists.
+  //
+  // You don't need this part if the pointer won't be used
+  // after the function call, nobind protects it automatically
+  // even if the call is asynchronous
+  Napi::ObjectReference greeter_gc_guard;
 };
 
 MonsterDefinition handleMonster(MonsterDefinition v);
@@ -39,18 +49,7 @@ template <> class FromJS<MonsterDefinition> {
 
 public:
   inline explicit FromJS(Napi::Value val);
-  inline MonsterDefinition Get() { return val_; }
-
-  static const std::string TSType() { return MonsterDefinitionTSType; };
-};
-
-template <> class ToJS<MonsterDefinition> {
-  Napi::Env env_;
-  MonsterDefinition val_;
-
-public:
-  inline explicit ToJS(Napi::Env env, MonsterDefinition val) : env_(env), val_(val) {}
-  inline Napi::Value Get();
+  inline MonsterDefinition Get() { return std::move(val_); }
 
   static const std::string TSType() { return MonsterDefinitionTSType; };
 };
@@ -88,18 +87,6 @@ Nobind::TypemapOverrides::FromJS<MonsterDefinition>::FromJS(Napi::Value val) {
   else
     throw Napi::TypeError::New(env, std::string{"Invalid feature: "} + str_feature);
 
-  val_.greeter = Nobind::Typemap::FromJS<Hello>(obj.Get("greeter")).Get();
-}
-
-// Implement the construction of the JS struct here
-Napi::Value Nobind::TypemapOverrides::ToJS<MonsterDefinition>::Get() {
-  Napi::EscapableHandleScope scope{env_};
-  Napi::Object result = Napi::Object::New(env_);
-  result.Set("name", Nobind::Typemap::ToJS<std::string>(env_, val_.name).Get());
-  result.Set("eyes", Nobind::Typemap::ToJS<unsigned>(env_, val_.eyes).Get());
-  result.Set("fangs", Nobind::Typemap::ToJS<bool>(env_, val_.fangs).Get());
-  std::string feature = val_.feature == MonsterDefinition::CLAWS ? "claws" : "horn";
-  result.Set("feature", Nobind::Typemap::ToJS<std::string>(env_, feature).Get());
-  result.Set("greeter", Nobind::Typemap::ToJS<Hello>(env_, val_.greeter).Get());
-  return scope.Escape(result);
+  val_.greeter = Nobind::Typemap::FromJS<Hello *>(obj.Get("greeter")).Get();
+  val_.greeter_gc_guard = Napi::Persistent(obj.Get("greeter").ToObject());
 }

@@ -30,11 +30,20 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: |
+      - name: Check the examples
+        run: |
           cd example
-          npm install nobind17@${{ github.event.inputs.version }}
-          npm install node-gyp
-          cp node_modules/node-addon-api/except.gypi .
-          npx node-gyp configure build
-          node -p "require('./build/Release/hello.node').hello('Garga')"
+          set -e && for EXAMPLE in handle-struct-with-plain-ptr	hello-world handle-struct	handle-struct-with-smart-ptr; do
+            (
+              set -e
+              cd $EXAMPLE
+              npm install --ignore-scripts
+              npm install nobind17@${{ github.event.inputs.version }}
+              npx node-gyp configure build --debug
+              node -p "(new (require('./lib/example.node').Hello)('Garga')).greet()"
+              npx node-gyp configure build
+              node -p "(new (require('./lib/example.node').Hello)('Garga')).greet()"
+              npx tsx example.ts
+            )
+          done
         shell: bash
