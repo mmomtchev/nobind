@@ -25,5 +25,3 @@ std::string Hello::Greet() {
   return r.str();
 }
 int Hello::id_ = 0;
-
-don't build
