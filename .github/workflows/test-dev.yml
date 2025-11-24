@@ -32,7 +32,7 @@ jobs:
         node-version: ['18.17', 18, 20, 22, 24, 25]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
@@ -70,7 +70,7 @@ jobs:
         node-version: ['18.17', 18, 20, 22]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
@@ -120,7 +120,7 @@ jobs:
           - '-DNODE_ADDON_API_REQUIRE_BASIC_FINALIZERS'
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
@@ -135,7 +135,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Use Node.js 24
         uses: actions/setup-node@v3
         with:
@@ -150,7 +150,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Use Node.js 24.x
         uses: actions/setup-node@v3
         with:
