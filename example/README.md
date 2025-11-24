@@ -6,7 +6,7 @@ There are four examples here:
 
   A most basic example with a simple C++ class exposed to JS.
 
-And three examples for handling an argument with an object with named fields on the JS side that transforms into a `struct` on the C++ side:
+And three non-trivial examples with complex custom typemaps for handling an argument with an object with named fields on the JS side that transforms into a `struct` on the C++ side:
 
 * `handle-struct`
   

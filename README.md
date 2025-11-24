@@ -129,7 +129,7 @@ cp node_modules/node-addon-api/except.gypi .
 
 You will be building your project with `node-gyp configure build`. `node-gyp` is usually installed globally.
 
-C++17 is the default build mode starting from Node.js 18.x. If you 
+C++17 is the default build mode starting from Node.js 18.x.
 
 ### Module definition
 
@@ -485,7 +485,7 @@ m.def<Hello>("Hello").ext<&ToString>("toString");
 
 The first argument of the class extension must be `const CLASS &`, `CLASS &` or `Napi::Value` - it will contain the `this` object.
 
-Currently, there is no way to register a getter with a function in order to override the `[@@toStringTag]` property.
+Currently, there is no way to register a getter with a function in order to override the `[@@toStringTag]` property, but you can register a normal function and replace the prototype in JavaScript.
 
 ### Directly accessing the underlying `node-addon-api`
 
@@ -573,6 +573,16 @@ public:
 ### The Object Store
 
 Starting from version 2, `nobind17` uses an object store. Each time a C++ object is wrapped, `nobind17` will remember this reference and as longer as the object is not garbage-collected, it will continue returning the same JS reference. This means that objects preserve their equality even if they cross multiple times the JS/C++ language barrier.
+
+For example, if the following C++ function is wrapped:
+
+```cpp
+SomeObject *PassThrough (SomeObject *o) {
+  return o;
+}
+```
+
+Then, in JavaScript the returned reference will be the same as the passed reference and not a new wrapping proxy. This will be true even if the value is transformed in some way, since all objects are remembered by their address.
 
 This is particularly important for `ReturnShared` objects and allows to avoid memory management issues related to having multiple JS wrappers for the same C++ object. With the Object Store, returning a C++ reference to an already existing object will reuse the existing JS reference. `ReturnCopy` will still copy the object and create a new underlying C++ object and a new JS wrapper for it.
 
@@ -667,7 +677,7 @@ The declaration and definition must use the same name. This allows the TypeScrip
 
 #### Dynamic class name
 
-When creating generic typemaps, the current TypeScript name of the type can be obtained by calling `NoObjectWrap<T>::GetName()` - this requires that the class has at least been previously declared.
+When creating generic typemaps that work for multiple types, the current TypeScript name of the type can be obtained by calling `NoObjectWrap<T>::GetName()` - this requires that the class has at least been previously declared.
 
 ```cpp
 static const std::string &TSType() { return NoObjectWrap<T>::::GetName(); };
@@ -845,6 +855,6 @@ Since now I am homeless and working exclusively off the grid, `nobind17` is one 
 
 I want to extend my gratitude to everyone who made this possible:
  * [Github](https://github.com), who despite the fact that they are providing real-time information abount my usage patterns to the people extorting me, are also providing the necessary resources for continuous integration for free, as well as hosting the `npm` repository
- * [Bback Market](https://backmarket.fr), who sold me an Apple Macbook M2 with lots of RAM and a larger SSD with a discount, despite the fact that they had to choose a unit with sticky keys
+ * [Back Market](https://backmarket.fr), who sold me an Apple Macbook M2 with lots of RAM and a larger SSD with a discount, despite the fact that they had to choose a unit with sticky keys
  * [Apple](https://apple.com) for making such an incredibly power-efficient notebook computer that can be run off solar panels with ease
  * And of course, the brilliant automative technician who converted my trusty Renault Master 2 to an RV and who sold it to me at a discount
