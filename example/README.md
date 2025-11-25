@@ -21,3 +21,5 @@ And three non-trivial examples with complex custom typemaps for handling an argu
   Which gives a raw pointer with some caveats, avoid this unless really necessary.
 
 You can refer to the unit tests for more examples, such as handling overloading, inheritance, arrays, maps, buffers and iterators.
+
+You can use [`nobind-example-project`](https://github.com/mmomtchev/nobind-example-project) or [`hadron-nobind-example-project`](https://github.com/mmomtchev/hadron-nobind-example-project) as a template for creating a new `nobind17` based project using `node-gyp` or `hadron` as build system.
