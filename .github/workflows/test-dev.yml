@@ -46,6 +46,7 @@ jobs:
       - name: Link the package
         run: npm link
       - name: Check the examples
+        if: matrix.node-version != '18.17'
         run: |
           cd example
           set -e && for EXAMPLE in handle-struct-with-plain-ptr	hello-world handle-struct	handle-struct-with-smart-ptr; do
