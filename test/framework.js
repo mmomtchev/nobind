@@ -78,7 +78,7 @@ function check_typescript(test, stdio) {
     execFileSync(npx, [
       'tsc',
       '--types @types/mocha,node,./dll.d.ts',
-      '--downlevelIteration', '--checkJs', '--noEmit', '--lib es2015',
+      '--checkJs', '--noEmit', '--lib es2015', '--ignoreConfig',
       `tests/${test}.js`
     ], { stdio: stdio || 'pipe', cwd: __dirname, env, shell: true });
   } catch (e) {

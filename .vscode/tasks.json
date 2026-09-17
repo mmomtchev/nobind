@@ -1,0 +1,92 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Configure a single unit test",
+      "type": "shell",
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "command": "node single.js configure ${fileBasenameNoExtension}",
+      "options": {
+        "cwd": "${workspaceFolder}/test"
+      },
+      "presentation": {
+        "close": true,
+        "echo": false
+      }
+    },
+    {
+      "label": "Build a single unit test",
+      "type": "shell",
+      "problemMatcher": {
+        "owner": "cpp",
+        "base": "$gcc",
+        "applyTo": "allDocuments",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}/test"
+        ],
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "command": "node single.js build",
+      "options": {
+        "cwd": "${workspaceFolder}/test"
+      },
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Configure a single unit test"
+      ]
+    },
+    {
+      "label": "Generate TypeScript types for the configured test",
+      "type": "shell",
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "command": "node single.js gen-types",
+      "options": {
+        "cwd": "${workspaceFolder}/test"
+      },
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Configure a single unit test",
+        "Build a single unit test"
+      ]
+    },
+    {
+      "label": "Check TypeScript types for the configured test",
+      "type": "shell",
+      "problemMatcher": {
+        "owner": "javascript",
+        "base": "$tsc",
+        "applyTo": "allDocuments",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}/test"
+        ],
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "command": "node single.js check-types",
+      "options": {
+        "cwd": "${workspaceFolder}/test"
+      },
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Configure a single unit test",
+        "Build a single unit test",
+        "Generate TypeScript types for the configured test"
+      ]
+    }
+  ]
+}

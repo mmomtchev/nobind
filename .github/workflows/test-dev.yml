@@ -10,9 +10,9 @@ on:
     paths-ignore:
       - '*.md'
   schedule:
-      # schedule a regular Sunday Mass to check that
-      # everything still works
-      - cron: '30 12 * * 0'
+    # schedule a regular Sunday Mass to check that
+    # everything still works
+    - cron: '30 12 * * 0'
 
 jobs:
   default:
@@ -29,7 +29,7 @@ jobs:
           - macos-14
           - macos-15
           - macos-15-intel
-        node-version: ['18.17', 18, 20, 22, 24, 25]
+        node-version: ['18.17', 18, 20, 22, 24, 26]
 
     steps:
       - uses: actions/checkout@v7
@@ -38,6 +38,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
+      - name: Use TypeScript 6 on Node 18.17 (TypeScript 7 tsc not compatible)
+        if: matrix.node-version == '18.17'
+        run: npm install typescript@6
       - run: npm test
       - name: Link the package
         run: npm link
@@ -58,7 +61,6 @@ jobs:
             )
           done
         shell: bash
-
 
   legacy:
     runs-on: ubuntu-latest
@@ -82,6 +84,9 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
       - run: npm install
+      - name: Use TypeScript 6 on Node 18.17 (TypeScript 7 tsc not compatible)
+        if: matrix.node-version == '18.17'
+        run: npm install typescript@6
       - run: npm test
       - name: Link the package
         run: npm link
@@ -102,7 +107,6 @@ jobs:
             )
           done
         shell: bash
-
 
   options:
     runs-on: ${{ matrix.platform }}
@@ -129,7 +133,6 @@ jobs:
       - run: npm test
         env:
           CXXFLAGS: ${{ matrix.options }}
-  
 
   debug:
     runs-on: ubuntu-22.04
@@ -144,7 +147,6 @@ jobs:
       - run: npm test
         env:
           ENABLE_DEBUG: 1
-
 
   asan:
     runs-on: ubuntu-22.04

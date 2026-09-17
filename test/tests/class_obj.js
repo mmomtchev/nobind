@@ -1,7 +1,7 @@
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
-const { assert } = chai;
+const { assert } = require('chai');
 
 describe('reference', () => {
   it('nominal', () => {
@@ -34,9 +34,11 @@ describe('reference', () => {
   describe('null', () => {
     it('null argument when Expected allowed', () => {
       assert.throws(() => {
+        // @ts-expect-error
         new dll.Hello(null);
       }, /Expected a string/);
       assert.throws(() => {
+        // @ts-expect-error
         assert.isNumber(dll.hello_ref(null));
       }, /Expected an object/);
     });
@@ -59,9 +61,11 @@ describe('reference', () => {
 
   it('undefined', () => {
     assert.throws(() => {
+      // @ts-expect-error
       new dll.Hello(null);
     }, /Expected a string/);
     assert.throws(() => {
+      // @ts-expect-error
       assert.isNumber(dll.hello_ref(undefined));
     }, /Expected an object/);
   });
@@ -99,12 +103,14 @@ describe('pointer', () => {
 
   it('null', () => {
     assert.throws(() => {
+      // @ts-expect-error
       assert.isNumber(dll.hello_ptr(null));
     }, /Expected an object/);
   });
 
   it('undefined', () => {
     assert.throws(() => {
+      // @ts-expect-error
       assert.isNumber(dll.hello_ptr(undefined));
     }, /Expected an object/);
   });

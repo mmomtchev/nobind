@@ -7,7 +7,6 @@ it('nominal', () => {
   assert.notInstanceOf(b, dll.Derived);
   assert.strictEqual(b.get(), 12);
   assert.strictEqual(b.base_get(), 12);
-
   const d = new dll.Derived(10);
   assert.instanceOf(d, dll.Derived);
   assert.instanceOf(d, dll.Base);
@@ -36,6 +35,8 @@ it('incompatible object', () => {
 it('abstract', () => {
   const d = new dll.DerivedAbstract(17);
   assert.instanceOf(d, dll.DerivedAbstract);
+  // https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/72133
+  // @ts-ignore This is a flaw in the chai typings
   assert.instanceOf(d, dll.Abstract);
   assert.strictEqual(d.id(), 17);
 

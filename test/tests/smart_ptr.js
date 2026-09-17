@@ -1,7 +1,7 @@
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
-const { assert } = chai;
+const { assert } = require('chai');
 const { mocha_object_store } = require('../opts');
 
 describe('shared_ptr', () => {
@@ -94,6 +94,8 @@ describe('shared_ptr', () => {
 describe('unique_ptr', () => {
   it('sync', () => {
     const u = dll.returnUniquePtr('Mulder and Scully');
+    // https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/72133
+    // @ts-ignore This is a flaw in the chai typings
     assert.instanceOf(u, dll.HelloUPtr);
     assert.strictEqual(u.greet('Agents'), 'hello Agents Mulder and Scully');
   });
@@ -107,6 +109,8 @@ describe('unique_ptr', () => {
 
   it('async', (done) => {
     dll.returnUniquePtrAsync('Mulder and Scully').then((u) => {
+      // https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/72133
+      // @ts-ignore This is a flaw in the chai typings
       assert.instanceOf(u, dll.HelloUPtr);
       assert.strictEqual(u.greet('Agents'), 'hello Agents Mulder and Scully');
       done();
@@ -115,6 +119,8 @@ describe('unique_ptr', () => {
 
   it('async', (done) => {
     dll.returnUniquePtrAsync('Mulder and Scully').then((u) => {
+      // https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/72133
+      // @ts-ignore This is a flaw in the chai typings
       assert.instanceOf(u, dll.HelloUPtr);
       assert.strictEqual(u.greet('Agents'), 'hello Agents Mulder and Scully');
       done();

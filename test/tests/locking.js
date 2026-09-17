@@ -2,7 +2,8 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const { mocha_locking } = require('../opts');
 chai.use(chaiAsPromised);
-const { assert } = chai;
+// This allows to work around the asserts must always have type requirement
+const { assert } = require('chai');
 
 describe('locking', function () {
   if (!mocha_locking())
