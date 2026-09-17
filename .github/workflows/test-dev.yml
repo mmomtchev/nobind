@@ -4,15 +4,15 @@ on:
   push:
     branches: main
     paths-ignore:
-      - "*.md"
+      - '*.md'
   pull_request:
     branches: main
     paths-ignore:
-      - "*.md"
+      - '*.md'
   schedule:
     # schedule a regular Sunday Mass to check that
     # everything still works
-    - cron: "30 12 * * 0"
+    - cron: '30 12 * * 0'
 
 jobs:
   default:
@@ -29,7 +29,7 @@ jobs:
           - macos-14
           - macos-15
           - macos-15-intel
-        node-version: ["18.17", 18, 20, 22, 24, 26]
+        node-version: ['18.17', 18, 20, 22, 24, 26]
 
     steps:
       - uses: actions/checkout@v7
@@ -69,7 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ["18.17", 18, 20, 22]
+        node-version: ['18.17', 18, 20, 22]
 
     steps:
       - uses: actions/checkout@v7
@@ -117,11 +117,11 @@ jobs:
         platform: [ubuntu-latest]
         node-version: [22]
         options:
-          - "-DNOBIND_NO_OBJECT_STORE"
-          - "-DNOBIND_NO_TYPESCRIPT_GENERATOR"
-          - "-DNOBIND_NO_ASYNC_LOCKING"
-          - "-DNOBIND_NO_BASIC_FINALIZERS"
-          - "-DNODE_ADDON_API_REQUIRE_BASIC_FINALIZERS"
+          - '-DNOBIND_NO_OBJECT_STORE'
+          - '-DNOBIND_NO_TYPESCRIPT_GENERATOR'
+          - '-DNOBIND_NO_ASYNC_LOCKING'
+          - '-DNOBIND_NO_BASIC_FINALIZERS'
+          - '-DNODE_ADDON_API_REQUIRE_BASIC_FINALIZERS'
 
     steps:
       - uses: actions/checkout@v7
