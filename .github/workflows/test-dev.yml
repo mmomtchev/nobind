@@ -37,6 +37,10 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Skip TypeScrpt on Node 18.17 (TypeScript 7 tsc not compatible)
+        if: matrix.node-version == '18.17'
+        shell: bash
+        run: echo "CXXFLAGS=-DNOBIND_NO_TYPESCRIPT_GENERATOR" >> $GITHUB_ENV
       - run: npm install
       - run: npm test
       - name: Link the package
