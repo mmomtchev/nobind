@@ -86,6 +86,7 @@ jobs:
       - run: npm install
       - name: Use TypeScript 6 on Node 18.17 (TypeScript 7 tsc not compatible)
         if: matrix.node-version == '18.17'
+        run: npm install typescript@6
       - run: npm test
       - name: Link the package
         run: npm link
