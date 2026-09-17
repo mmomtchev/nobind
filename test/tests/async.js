@@ -79,7 +79,7 @@ describe('class method', () => {
       .then(() => o.greet('Mr'))
       .then((r) => assert.strictEqual(r, 'hello Mr Garga'))
       .then(() => o.nothing())
-      .then((r) => assert.isUndefined());
+      .then((r) => assert.isUndefined(r));
   });
 
 
