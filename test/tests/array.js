@@ -44,7 +44,10 @@ describe('std::vector', () => {
     this.slow(5000);
     this.timeout(10000);
 
-    const array = [];
+    // Create an empty array that is typed in TypeScript
+    const array = [new dll.Critical];
+    array.splice(0, array.length);
+
     for (let i = 0; i < 10; i++)
       array.push(new dll.Critical);
 

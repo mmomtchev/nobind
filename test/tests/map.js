@@ -46,7 +46,9 @@ describe('std::map', () => {
     this.slow(5000);
     this.timeout(10000);
 
-    const map = { 'initial': new dll.Critical };
+    // The artistic gymnastics prevent TypeScript from assigning a constant type
+    // Read: const map = { ['initial': new dll.Critical }
+    const map = { ['initial'.toString()]: new dll.Critical };
     for (let i = 0; i < 10; i++)
       map[i.toString()] = new dll.Critical;
 
